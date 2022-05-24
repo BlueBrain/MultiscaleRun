@@ -1,0 +1,40 @@
+#!/bin/bash
+
+#SBATCH --job-name="multiscale_run"
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=32
+
+#SBATCH --account=proj40
+#SBATCH --partition=prod
+#SBATCH --constraint=clx
+#SBATCH --time=01:00:00
+
+#SBATCH --cpus-per-task=2
+#SBATCH --exclusive
+#SBATCH --mem=0
+#SBATCH --output="%x-%j.log"
+
+module purge
+module load unstable python-dev py-neurodamus hpe-mpi
+
+spack load neurodamus-neocortex+ngv
+spack load steps@develop+distmesh+petsc
+
+source ./python-venv/bin/activate
+
+# STEPS related
+export OMP_NUM_THREADS=1
+
+# driver script
+PYDRIVER=multiscale_run_STEPS4.py
+export which_STEPS=4
+export which_mesh=cubeBB
+echo " *** STEPS${which_STEPS} run *** "
+time srun dplace special -mpi -python ${PYDRIVER}
+
+# driver script
+PYDRIVER=multiscale_run_STEPS3.py
+export which_STEPS=3
+export which_mesh=cubeBB
+echo " *** STEPS${which_STEPS} run *** "
+time srun dplace special -mpi -python ${PYDRIVER}

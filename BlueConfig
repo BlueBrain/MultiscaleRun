@@ -1,0 +1,156 @@
+Run Default
+{
+    Date 21:09:2020
+    #CircuitPath /gpfs/bbp.cscs.ch/project/proj62/Circuits/O1/20201012
+    #METypePath /gpfs/bbp.cscs.ch/project/proj64/entities/emodels/2017.11.03/hoc
+    #MorphologyPath /gpfs/bbp.cscs.ch/project/proj59/entities/morphologies/2017.10.31
+    #nrnPath /gpfs/bbp.cscs.ch/project/proj62/Circuits/O1/20201012/sonata/networks/edges/functional/All/edges.h5
+    #CellLibraryFile /gpfs/bbp.cscs.ch/project/proj62/Circuits/O1/20201012/sonata/networks/nodes/All/nodes.h5
+
+    CircuitPath /gpfs/bbp.cscs.ch/project/proj62/Circuits/O1/20190912_spines
+    nrnPath /gpfs/bbp.cscs.ch/project/proj62/Circuits/O1/20190912_spines/sonata/networks/edges/functional/All/edges.h5
+    CellLibraryFile /gpfs/bbp.cscs.ch/project/proj62/Circuits/O1/20190912_spines/sonata/networks/nodes/All/nodes.h5
+    MorphologyPath /gpfs/bbp.cscs.ch/project/proj59/entities/morphologies/2017.10.31
+    METypePath /gpfs/bbp.cscs.ch/project/proj64/entities/emodels/2017.11.03/hoc
+
+    TargetFile user.target
+
+    OutputRoot output
+    CircuitTarget select
+    #CircuitTarget column
+    #CircuitTarget mc1_Column
+    RunMode RR
+    RNGMode UpdatedMCell
+    Duration 1
+    Dt 0.025
+}
+
+
+Circuit GLIA
+{
+    Engine NGV
+    #CircuitPath /gpfs/bbp.cscs.ch/data/scratch/proj62/ngv_circuits/20201006_full_sonata/build/
+    #CellLibraryFile /gpfs/bbp.cscs.ch/data/scratch/proj62/ngv_circuits/20201006_full_sonata/build/sonata/nodes/glia.h5
+    #MorphologyPath /gpfs/bbp.cscs.ch/data/scratch/proj62/ngv_circuits/20201006_full_sonata/build/morphologies
+    CircuitPath /gpfs/bbp.cscs.ch/project/proj62/scratch/ngv_circuits/20210211/build
+    CellLibraryFile /gpfs/bbp.cscs.ch/project/proj62/scratch/ngv_circuits/20210211/build/sonata/nodes/glia.h5
+    MorphologyPath /gpfs/bbp.cscs.ch/project/proj62/scratch/ngv_circuits/20210211/build/morphologies
+    MorphologyType h5
+    METypePath /gpfs/bbp.cscs.ch/project/proj62/NGV/emodels
+    #CircuitTarget AstroSingle
+    CircuitTarget AstroMini
+}
+
+
+Projection NeuroGlia
+{
+    Type NeuroGlial
+    Source All:
+    Destination GLIA:
+    #Path /gpfs/bbp.cscs.ch/data/scratch/proj62/ngv_circuits/20201006_full_sonata/build/sonata/edges/neuroglial.h5
+    Path /gpfs/bbp.cscs.ch/project/proj62/scratch/ngv_circuits/20210211/build/sonata/edges/neuroglial.h5
+}
+
+Projection GlioVascular
+{
+    Type GlioVascular
+    Destination GLIA:
+    Path /gpfs/bbp.cscs.ch/project/proj62/scratch/ngv_circuits/20210211/build/sonata/edges/gliovascular.h5
+}
+
+#Connection Neuronal
+{
+    Source src_cells
+    Destination select
+    SpontMinis 0.5
+    Weight 1
+}
+
+
+#Connection Glia_attach
+{
+    Source select
+    Destination astrocytes:Astrocytes
+}
+
+
+#original frequency of 50, then changed to 100
+#original amp of 20, then changed to 40
+Stimulus pulse1
+{
+        Mode                    Current
+        Pattern                 Pulse
+        AmpStart                20.000000
+        AmpEnd                  20.000000
+        Frequency               10
+        Width                   5
+        Delay                   1.000000
+        Duration                3000
+}
+
+
+Stimulus ThresholdExc
+{
+
+              Mode Current
+           Pattern Noise
+       MeanPercent 200
+          Variance 0.001
+             Delay 0.000000
+          Duration 30000.000000
+}
+
+
+StimulusInject ThresholdIntoExc
+{
+        Stimulus ThresholdExc
+        Target  src_cells
+}
+
+#restore this
+#StimulusInject pInj
+{
+  Stimulus   pulse1
+    Target   pre
+}
+
+Report voltage
+{
+        Target select
+          Type compartment
+      ReportOn v
+          Unit mV
+        Format Bin
+            Dt 0.1
+     StartTime 0
+       EndTime 1000
+}
+
+Report rcai_soma
+{
+        Target GLIA:Astrocytes
+          Type compartment
+       Scaling None
+      ReportOn reportcai_mcd
+          Unit nA
+        Format Bin
+            Dt 0.1
+     StartTime 0
+       EndTime 1000
+}
+
+
+
+Report rcai_compart
+{
+        Target GLIA:AllCmpAstrocytes
+          Type compartment
+       Scaling None
+      ReportOn reportcai_mcd
+          Unit nA
+        Format Bin
+            Dt 0.1
+     StartTime 0
+       EndTime 1000
+}
+

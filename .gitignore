@@ -1,0 +1,10 @@
+.logs/
+sim_conf/
+mcomplex.dat
+*.pyc
+__pycache__/
+output/
+core.*
+*.log
+python-venv/
+container_STEPS*.txt
