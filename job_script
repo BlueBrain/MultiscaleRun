@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="multiscale_run"
+#SBATCH --job-name="NGV"
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=32
 
@@ -30,11 +30,11 @@ PYDRIVER=multiscale_run_STEPS4.py
 export which_STEPS=4
 export which_mesh=cubeBB
 echo " *** STEPS${which_STEPS} run *** "
-time srun dplace special -mpi -python ${PYDRIVER}
+time srun dplace x86_64/special -mpi -python ${PYDRIVER}
 
 # driver script
 PYDRIVER=multiscale_run_STEPS3.py
 export which_STEPS=3
 export which_mesh=cubeBB
 echo " *** STEPS${which_STEPS} run *** "
-time srun dplace special -mpi -python ${PYDRIVER}
+time srun dplace x86_64/special -mpi -python ${PYDRIVER}

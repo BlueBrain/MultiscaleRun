@@ -8,3 +8,4 @@ core.*
 *.log
 python-venv/
 container_STEPS*.txt
+x86_64/

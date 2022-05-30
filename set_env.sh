@@ -12,6 +12,9 @@ then
 
     spack install steps@develop+distmesh+petsc
     spack install neurodamus-neocortex+ngv
+
+    rm -rf x86_64
+    build_neurodamus.sh mod
 else
     # ./set_env.sh {random arg}
     echo "Just loading already installed versions of steps & neurodamus."

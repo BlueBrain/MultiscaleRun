@@ -1,4 +1,9 @@
 
+Target Compartment AllComps_select
+{
+  select
+}
+
 Target Cell select
 {
   a79877

@@ -4,7 +4,8 @@ dualrun : Coupling Neuron & STEPS. The dualrun part of the script (STEPS3 versio
 triplerun : Coupling dualrun & metabolism. The triplerun part of the script (STEPS3 version) is based on the one found in the **triplerun** folder of [this repo](https://bbpgitlab.epfl.ch/molsys/metabolismndam).
 quadrun : Coupling triplerun & blood flow. [**WIP**]
 
-The BlueConfig & user.target are based on the ones found in [this repo](ttps://bbpgitlab.epfl.ch/hpc/sim/blueconfigs/-/tree/main/ngv-v6).
+The BlueConfig & user.target are based on the ones found in [this repo](https://bbpgitlab.epfl.ch/hpc/sim/blueconfigs/-/tree/main/ngv-v6).
+The mod folder is based on the one found in [this repo](https://bbpgitlab.epfl.ch/molsys/metabolismndam/-/tree/main/triplerun/custom_ndam_special_v1/polina_mod) with the addition of the mod files found [here](https://bbpgitlab.epfl.ch/hpc/sim/models/common/-/tree/main/mod/ngv).
 
 ## Environment Setup
 
