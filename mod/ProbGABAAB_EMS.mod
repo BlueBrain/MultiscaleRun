@@ -39,26 +39,26 @@ a Poisson process with rate 1/Dep.
 
 This model satisys all of (1)-(4).
 
+
 ENDCOMMENT
 
 
 NEURON {
     THREADSAFE
-    POINT_PROCESS ProbGABAAB_EMS
-
-    RANGE tau_r_GABAA, tau_d_GABAA, tau_r_GABAB, tau_d_GABAB
-    RANGE Use, u, Dep, Fac, u0, tsyn
-    RANGE unoccupied, occupied, Nrrp, release_accumulator
-
+	POINT_PROCESS ProbGABAAB_EMS
+	
+    RANGE tau_r_GABAA, tau_d_GABAA
+    GLOBAL tau_r_GABAB, tau_d_GABAB
+	RANGE Use, u, Dep, Fac, u0, tsyn
+    RANGE unoccupied, occupied, Nrrp,release_accumulator
+	
     RANGE i, i_GABAA, i_GABAB, g_GABAA, g_GABAB, g, e_GABAA, e_GABAB, GABAB_ratio
     RANGE A_GABAA_step, B_GABAA_step, A_GABAB_step, B_GABAB_step
-
     RANGE icl, ik
-    RANGE unoccupied, occupied
     USEION cl WRITE icl VALENCE -1
-    USEION k WRITE ik
+    USEION k WRITE ik    
     BBCOREPOINTER rng
-    RANGE synapseID, verboseLevel, selected_for_report, conductance
+    RANGE synapseID, selected_for_report, verboseLevel, conductance
     RANGE next_delay
     BBCOREPOINTER delay_times, delay_weights
     GLOBAL nc_type_param
@@ -67,30 +67,29 @@ NEURON {
     :RANGE sgid, tgid  : For debugging
 }
 
-UNITS	{
-  	(uS) = (microsiemens)
-  	(mV) = (millivolt)
-  	(nA) = (nanoamp)
+UNITS   {
+        (uS) = (microsiemens)
+        (mV) = (millivolt)
+        (nA) = (nanoamp)
 }
 
 PARAMETER {
-    tau_r_GABAA = 0.2   (ms)  : dual-exponential conductance profile
-    tau_d_GABAA = 8     (ms)  : IMPORTANT: tau_r < tau_d
-    tau_r_GABAB = 3.5   (ms)  : dual-exponential conductance profile :Placeholder value from hippocampal recordings SR
-    tau_d_GABAB = 260.9 (ms)  : IMPORTANT: tau_r < tau_d  :Placeholder value from hippocampal recordings
-    Use = 1.0           (1)   : Utilization of synaptic efficacy (just initial values! Use, Dep and Fac are overwritten by BlueBuilder assigned values)
-    Dep = 100           (ms)  : relaxation time constant from depression
-    Fac = 10            (ms)  : relaxation time constant from facilitation
-    e_GABAA = -80       (mV)  : GABAA reversal potential
-    e_GABAB = -97       (mV)  : GABAB reversal potential
-    gmax = .001         (uS)  : weight conversion factor (from nS to uS)
-    u0   = 0                  : initial value of u, which is the running value of release probability
-    Nrrp = 1            (1)   : Number of total release sites for given contact
-
+	tau_r_GABAA  = 0.2   (ms)  : dual-exponential conductance profile
+	tau_d_GABAA = 8   (ms)  : IMPORTANT: tau_r < tau_d
+    tau_r_GABAB  = 3.5   (ms)  : dual-exponential conductance profile :Placeholder value from hippocampal recordings SR
+	tau_d_GABAB = 260.9   (ms)  : IMPORTANT: tau_r < tau_d  :Placeholder value from hippocampal recordings
+	Use        = 1.0   (1)   : Utilization of synaptic efficacy (just initial values! Use, Dep and Fac are overwritten by BlueBuilder assigned values)
+	Dep   = 100   (ms)  : relaxation time constant from depression
+	Fac   = 10   (ms)  :  relaxation time constant from facilitation
+	e_GABAA    = -80     (mV)  : GABAA reversal potential
+    e_GABAB    = -97     (mV)  : GABAB reversal potential
+    gmax = .001 (uS) : weight conversion factor (from nS to uS)
+    u0 = 0 :initial value of u, which is the running value of release probability
+    Nrrp = 1 (1)  : Number of total release sites for given contact
     synapseID = 0
     verboseLevel = 0
     selected_for_report = 0
-    GABAB_ratio = 0     (1)   : The ratio of GABAB to GABAA
+	GABAB_ratio = 0 (1) : The ratio of GABAB to GABAA
     conductance = 0.0
     nc_type_param = 4
     minis_single_vesicle = 0   :// 0 - no limit (old behavior)
@@ -123,36 +122,36 @@ ENDVERBATIM
 
 
 ASSIGNED {
-        dt (ms)
-        v (mV)
-        i (nA)
+	v (mV)
+	i (nA)
         i_GABAA (nA)
         i_GABAB (nA)
         g_GABAA (uS)
         g_GABAB (uS)
-        factor_GABAA
-        factor_GABAB
         A_GABAA_step
         B_GABAA_step
         A_GABAB_step
         B_GABAB_step
-
-        rng
         icl     (nA)
         ik      (nA)
-        : MVR
-        unoccupied (1) : no. of unoccupied sites following release event
-        occupied   (1) : no. of occupied sites following one epoch of recovery
-        tsyn (ms) : the time of the last spike
-        u (1) : running release probability
+
+	g (uS)
+	factor_GABAA
+        factor_GABAB
+        rng
         usingR123            : TEMPORARY until mcellran4 completely deprecated
 
-        : stuff for delayed connections
-        delay_times
-        delay_weights
-        next_delay (ms)
+    : MVR
+    unoccupied (1) : no. of unoccupied sites following release event
+    occupied   (1) : no. of occupied sites following one epoch of recovery
+    tsyn (ms) : the time of the last spike
+    u (1) : running release probability
 :release_accumulator(0)
 
+    : stuff for delayed connections
+    delay_times
+    delay_weights
+    next_delay (ms)
 }
 
 STATE {
@@ -163,12 +162,15 @@ release_accumulator
         B_GABAB       : GABAB state variable to construct the dual-exponential profile - decays with conductance tau_d_GABAB
 }
 
+
 INITIAL {
         LOCAL tp_GABAA, tp_GABAB
 
         tsyn = 0
         u=u0
+
         release_accumulator=0
+
         : MVR
         unoccupied = 0
         occupied = Nrrp
@@ -187,17 +189,17 @@ INITIAL {
 
         factor_GABAB = -exp(-tp_GABAB/tau_r_GABAB)+exp(-tp_GABAB/tau_d_GABAB) :GABAB Normalization factor - so that when t = tp_GABAB, gsyn = gpeak
         factor_GABAB = 1/factor_GABAB
-
+        
         A_GABAA_step = exp(dt*(( - 1.0 ) / tau_r_GABAA))
         B_GABAA_step = exp(dt*(( - 1.0 ) / tau_d_GABAA))
         A_GABAB_step = exp(dt*(( - 1.0 ) / tau_r_GABAB))
         B_GABAB_step = exp(dt*(( - 1.0 ) / tau_d_GABAB))
 
-    VERBATIM
+        VERBATIM
         if( usingR123 ) {
             nrnran123_setseq((nrnran123_State*)_p_rng, 0, 0);
         }
-    ENDVERBATIM
+        ENDVERBATIM
 
         next_delay = -1
 
@@ -220,11 +222,13 @@ VERBATIM
 ENDVERBATIM
 }
 
-BREAKPOINT {
-        SOLVE state
 
+BREAKPOINT {
+	SOLVE state
+	
         g_GABAA = gmax*(B_GABAA-A_GABAA) :compute time varying conductance as the difference of state variables B_GABAA and A_GABAA
         g_GABAB = gmax*(B_GABAB-A_GABAB) :compute time varying conductance as the difference of state variables B_GABAB and A_GABAB
+        g = g_GABAA + g_GABAB
         i_GABAA = g_GABAA*(v-e_GABAA) :compute the GABAA driving force based on the time varying conductance, membrane potential, and GABAA reversal
         i_GABAB = g_GABAB*(v-e_GABAB) :compute the GABAB driving force based on the time varying conductance, membrane potential, and GABAB reversal
         icl = i_GABAA
@@ -240,6 +244,7 @@ PROCEDURE state() {
 }
 
 
+
 NET_RECEIVE (weight, weight_GABAA, weight_GABAB, Psurv, nc_type) {
     : Psurv - survival probability of unrecovered state
     : nc_type:
@@ -250,6 +255,8 @@ NET_RECEIVE (weight, weight_GABAA, weight_GABAB, Psurv, nc_type) {
     LOCAL result, ves, occu
     weight_GABAA = weight
     weight_GABAB = weight * GABAB_ratio
+    : Locals:
+    : Psurv - survival probability of unrecovered state
 
     INITIAL {
         if (nc_type == 0) {  :// presynaptic netcon
@@ -295,21 +302,21 @@ NET_RECEIVE (weight, weight_GABAA, weight_GABAB, Psurv, nc_type) {
     : Do not perform any calculations if the synapse (netcon) is deactivated. This avoids drawing from
     : random number stream. Also, disable in case of t < 0 (in case of ForwardSkip) which causes numerical
     : instability if synapses are activated.
-    if ( weight <= 0 || t < 0 ) {
-    VERBATIM
+    if (  weight <= 0 || t < 0 ) {
+VERBATIM
         return;
-    ENDVERBATIM
+ENDVERBATIM
     }
 
     : calc u at event-
     if (Fac > 0) {
-        u = u * exp(-(t - tsyn)/Fac)  :// update facilitation variable if Fac>0 Eq. 2 in Fuhrmann et al.
-    } else {
-        u = Use
-    }
-    if(Fac > 0){
-        u = u + Use*(1-u)  :// update facilitation variable if Fac>0 Eq. 2 in Fuhrmann et al.
-    }
+            u = u*exp(-(t - tsyn)/Fac) :update facilitation variable if Fac>0 Eq. 2 in Fuhrmann et al.
+       } else {
+              u = Use
+       }
+       if(Fac > 0){
+              u = u + Use*(1-u) :update facilitation variable if Fac>0 Eq. 2 in Fuhrmann et al.
+       }
 
     : recovery
     FROM counter = 0 TO (unoccupied - 1) {
@@ -317,8 +324,8 @@ NET_RECEIVE (weight, weight_GABAA, weight_GABAB, Psurv, nc_type) {
         Psurv = exp(-(t-tsyn)/Dep)
         result = urand()
         if (result>Psurv) {
-            occupied = occupied + 1     :// recover a previously unoccupied site
-            if ( verboseLevel > 0 ) {
+            occupied = occupied + 1     : recover a previously unoccupied site
+            if( verboseLevel > 0 ) {
                 UNITSOFF
                 printf( "Recovered! %f at time %g: Psurv = %g, urand=%g\n", synapseID, t, Psurv, result )
                 UNITSON
@@ -326,18 +333,18 @@ NET_RECEIVE (weight, weight_GABAA, weight_GABAB, Psurv, nc_type) {
         }
     }
 
-    ves = 0                  :// Initialize the number of released vesicles to 0
-    occu = occupied          :// Make a copy, so we can update occupied in the loop
+    ves = 0                  : Initialize the number of released vesicles to 0
+    occu = occupied   : Store the number of occupied sites in a local variable
     if (occu > 1 && minis_single_vesicle && nc_type == 1) {    : // if nc_type is spont_mini consider single vesicle
         occu = 1
     }
     FROM counter = 0 TO (occu - 1) {
         : iterate over all occupied sites and compute how many release
         result = urand()
-        if (result < u) {
+        if (result<u) {
             : release a single site!
-            occupied = occupied - 1  :// decrease the number of occupied sites by 1
-            ves = ves + 1            :// increase number of relesed vesicles by 1
+            occupied = occupied - 1  : decrease the number of occupied sites by 1
+            ves = ves + 1            : increase number of relesed vesicles by 1
         }
     }
 
@@ -351,7 +358,7 @@ NET_RECEIVE (weight, weight_GABAA, weight_GABAB, Psurv, nc_type) {
     tsyn = t
 
     if (ves > 0) { :no need to evaluate unless we have vesicle release
-    release_accumulator=release_accumulator+1
+	release_accumulator=release_accumulator+1
         A_GABAA = A_GABAA + ves/Nrrp*weight_GABAA*factor_GABAA
         B_GABAA = B_GABAA + ves/Nrrp*weight_GABAA*factor_GABAA
         A_GABAB = A_GABAB + ves/Nrrp*weight_GABAB*factor_GABAB
@@ -359,7 +366,7 @@ NET_RECEIVE (weight, weight_GABAA, weight_GABAB, Psurv, nc_type) {
 
         if ( verboseLevel > 0 ) {
             UNITSOFF
-            printf( "[Syn %f] Release! t = %g: vals %g %g %g %g\n", synapseID, t, A_GABAA, weight_GABAA, factor_GABAA, weight )
+            printf( "Release! %f at time %g: vals %g %g %g \n", synapseID, t, A_GABAA, weight_GABAA, factor_GABAA )
             UNITSON
         }
 
@@ -367,10 +374,11 @@ NET_RECEIVE (weight, weight_GABAA, weight_GABAB, Psurv, nc_type) {
         : total release failure
         if ( verboseLevel > 0 ) {
             UNITSOFF
-            printf("[Syn %f] Failure! t = %g: urand = %g\n", synapseID, t, result)
+            printf("Failure! %f at time %g: urand = %g\n", synapseID, t, result)
             UNITSON
         }
     }
+
 }
 
 
@@ -481,18 +489,20 @@ static void bbcore_write(double* x, int* d, int* x_offset, int* d_offset, _threa
   void *vv_delay_times = *((void**)(&_p_delay_times));
   void *vv_delay_weights = *((void**)(&_p_delay_weights));
 
-  if (d) {
+   if (d) {
+    // write stream ids
     uint32_t* di = ((uint32_t*)d) + *d_offset;
     nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
     nrnran123_getids3(*pv, di, di+1, di+2);
 
+    // write strem sequence
     unsigned char which;
     nrnran123_getseq(*pv, di+3, &which);
     di[4] = (int)which;
-    //printf("SYN bbcore_write %d %d %d\n", di[0], di[1], di[2]);
-
+    //printf("ProbGABAAB_EMS bbcore_write %d %d %d\n", di[0], di[1], di[2]);
+ 
   }
-  // reserve random123 parameters on serialization buffer
+
   *d_offset += 5;
 
   // serialize connection delay vectors
@@ -530,6 +540,7 @@ static void bbcore_write(double* x, int* d, int* x_offset, int* d_offset, _threa
 
 }
 
+
 static void bbcore_read(double* x, int* d, int* x_offset, int* d_offset, _threadargsproto_) {
   assert(!_p_rng && !_p_delay_times && !_p_delay_weights);
 
@@ -538,10 +549,12 @@ static void bbcore_read(double* x, int* d, int* x_offset, int* d_offset, _thread
   if (di[0] != 0 || di[1] != 0 || di[2] != 0) {
       nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
       *pv = nrnran123_newstream3(di[0], di[1], di[2]);
+
+      // restore stream sequence
       char which = (char)di[4];
       nrnran123_setseq(*pv, di[3], which);
   }
-  //printf("ProbAMPANMDA_EMS bbcore_read %d %d %d\n", di[0], di[1], di[2]);
+  //printf("ProbGABAAB_EMS bbcore_read %d %d %d\n", di[0], di[1], di[2]);
 
   int delay_times_sz = di[5];
   int delay_weights_sz = di[6];

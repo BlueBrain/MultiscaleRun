@@ -1,5 +1,6 @@
 module purge
-module load unstable python-dev py-neurodamus
+module load unstable python-dev py-neurodamus py-mpi4py julia
+module load intel gcc hpe-mpi
 
 # If no args provided, then the script purges any previous installation
 # of steps & neurodamus found in your system
@@ -12,9 +13,6 @@ then
 
     spack install steps@develop+distmesh+petsc
     spack install neurodamus-neocortex+ngv
-
-    rm -rf x86_64
-    build_neurodamus.sh mod
 else
     # ./set_env.sh {random arg}
     echo "Just loading already installed versions of steps & neurodamus."
@@ -22,7 +20,29 @@ fi
 spack load steps@develop+distmesh+petsc
 spack load neurodamus-neocortex+ngv
 
+if [ $# -eq 0 ]
+then
+    rm -rf x86_64
+    build_neurodamus.sh mod
+else
+    echo "custom special already built."
+fi
+
 # same approach as above
+if [ $# -eq 0 ]
+then
+    rm -rf ~/.julia
+    julia -e 'using Pkg; Pkg.add("IJulia")'
+    julia -e 'using Pkg; Pkg.add("DifferentialEquations")'
+    julia -e 'using Pkg; Pkg.add("DiffEqBase")'
+    julia -e 'using Pkg; Pkg.add("ParameterizedFunctions")'
+    julia -e 'using Pkg; Pkg.add("StaticArrays")'
+    julia -e 'using Pkg; Pkg.add("RecursiveArrayTools")'
+    julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
+else
+    echo "Julia packages already set."
+fi
+
 if [ $# -eq 0 ]
 then
     rm -rf ./python-venv
@@ -30,8 +50,23 @@ then
     source ./python-venv/bin/activate
 
     pip install psutil
+    pip install julia
+    pip install diffeqpy
+    pip install pympler
+    pip install h5py
 else
     source ./python-venv/bin/activate
 fi
+
+if [ $# -eq 0 ]
+then
+    rm -rf metabolismndam
+    git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
+else
+    echo "Metabolism repo already set."
+fi
+
+# STEPS related
+export OMP_NUM_THREADS=1
 
 echo "setup completed"
