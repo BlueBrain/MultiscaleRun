@@ -1,0 +1,12 @@
+Target Cell L5tpcaChc
+{
+  a150773
+  a131313
+}
+
+Target Compartment AllComps_L5tpcaChc
+{
+  L5tpcaChc
+}
+
+
