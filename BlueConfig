@@ -17,8 +17,8 @@ Run Default
 
     TargetFile user.target
 
-    OutputRoot output
-    CircuitTarget select
+    OutputRoot RESULTS
+    CircuitTarget L5mc2MCTPCA
     #CircuitTarget column
     #CircuitTarget mc1_Column
     RunMode RR
@@ -63,7 +63,7 @@ Projection GlioVascular
 #Connection Neuronal
 {
     Source src_cells
-    Destination select
+    Destination L5mc2MCTPCA
     SpontMinis 0.5
     Weight 1
 }
@@ -71,7 +71,7 @@ Projection GlioVascular
 
 #Connection Glia_attach
 {
-    Source select
+    Source L5mc2MCTPCA
     Destination astrocytes:Astrocytes
 }
 
@@ -118,7 +118,7 @@ StimulusInject ThresholdIntoExc
 
 Report voltage
 {
-        Target select
+        Target L5mc2MCTPCA
           Type compartment
       ReportOn v
           Unit mV
@@ -158,7 +158,7 @@ Report rcai_compart
 
 Report NaCurrCompSum
 {
-    Target AllComps_select
+    Target AllComps_l5s1
     Type Summation
     ReportOn ina
     Unit nA
@@ -170,7 +170,7 @@ Report NaCurrCompSum
 
 Report NaConcAllCmps
 {
-    Target select
+    Target L5mc2MCTPCA
     Type compartment
     ReportOn nai
     Unit mM
@@ -182,7 +182,7 @@ Report NaConcAllCmps
 
 Report ATPConcAllCmps
 {
-    Target select
+    Target L5mc2MCTPCA
     Type compartment
     ReportOn atpi
     Unit mM

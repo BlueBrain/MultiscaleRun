@@ -63,7 +63,10 @@ then
     rm -rf metabolismndam
     git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
 else
-    echo "Metabolism repo already set."
+    echo "Metabolism repo already set, just updating it."
+    pushd metabolismndam
+    git pull
+    popd
 fi
 
 # STEPS related

@@ -14,7 +14,8 @@ The `multiscale_run_STEPS3.py` (STEPS3 compatible only) & `multiscale_run_STEPS4
 
 ## Environment Setup
 
-1. [Set Spack up on BlueBrain5](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/setup_bb5.md). Do not rely on `module load spack` and instead set it up in your `$HOME` folder as instructed.
+1. [Set Spack up on BlueBrain5](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/setup_bb5.md). Do not rely on `module load spack` and instead set it up in your `$HOME` folder as instructed (main steps here, but follow the spack README for more):
+    * `git clone -c feature.manyFiles=true https://github.com/BlueBrain/spack.git` (`HOME` dir)
     * Add these lines in your `.bashrc`:
         ```
         . $HOME/spack/share/spack/setup-env.sh
@@ -22,9 +23,10 @@ The `multiscale_run_STEPS3.py` (STEPS3 compatible only) & `multiscale_run_STEPS4
         export SPACK_USER_CACHE_PATH=$HOME/spack_install
         ```
     * There is no need for `module load spack`
-2. `salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 00:30:00 --cpus-per-task=2 --constraint=clx`
-3. `source set_env.sh`
-4. `exit`
+2. `source .bashrc`
+3. `salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 00:30:00 --cpus-per-task=2 --constraint=clx`
+4. `source set_env.sh`
+5. `exit`
 
 ## Run Simulation
 

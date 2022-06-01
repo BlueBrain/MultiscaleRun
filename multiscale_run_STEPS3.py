@@ -57,8 +57,8 @@ which_run = int(os.getenv('which_run'))
 #################################################
 
 # ndam : neurodamus
-dt_nrn2dt_steps: int = 4 # steps-ndam coupling
-dt_nrn2dt_jl: int = 4 # jl-ndam coupling
+dt_nrn2dt_steps: int = 5 # steps-ndam coupling
+dt_nrn2dt_jl: int = 5 # jl-ndam coupling
 
 class Geom:
     meshfile = mesh_file_
@@ -267,15 +267,15 @@ wrong_gids_testing_file = path_to_results + f"dis_wrong_gid_errors_{timestr}.txt
 err_solver_output = path_to_results + f"dis_solver_errors_{timestr}.txt"
 #####
 #voltages_per_gid_f = "./metabolismndam/in_data/voltages_per_gid.txt"
-target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/hex0.txt") # hex0 gids
-exc_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/hex0exc.txt")
-inh_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/hex0inh.txt")
-target_gids_L1 = np.loadtxt("./metabolismndam/sim/gids_sets/hex0l1.txt")
-target_gids_L2 = np.loadtxt("./metabolismndam/sim/gids_sets/hex0l2.txt")
-target_gids_L3 = np.loadtxt("./metabolismndam/sim/gids_sets/hex0l3.txt")
-target_gids_L4 = np.loadtxt("./metabolismndam/sim/gids_sets/hex0l4.txt")
-target_gids_L5 = np.loadtxt("./metabolismndam/sim/gids_sets/hex0l5.txt")
-target_gids_L6 = np.loadtxt("./metabolismndam/sim/gids_sets/hex0l6.txt")
+target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0.txt") # hex0 gids
+exc_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_exc_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0exc.txt")
+inh_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_inh_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0inh.txt")
+target_gids_L1 = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_L1_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l1.txt")
+target_gids_L2 = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_L2_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l2.txt")
+target_gids_L3 = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_L3_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l3.txt")
+target_gids_L4 = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_L4_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l4.txt")
+target_gids_L5 = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_L5_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l5.txt")
+target_gids_L6 = np.loadtxt("./metabolismndam/sim/gids_sets/mc2_L6_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l6.txt")
 
 ########################################################################
 #with open(voltages_per_gid_f,'r') as infile:
@@ -914,7 +914,7 @@ def main():
                     if i ==5:
                         print("metab solver attempt 10")
                     try:
-                        sol = de.solve(prob_metabo, de.Rodas4P(),autodiff=False ,reltol=1e-6,abstol=1e-6,maxiters=1e4,save_everystep=False) #de.Rodas4P
+                        sol = de.solve(prob_metabo, de.Rodas4P() ,reltol=1e-6,abstol=1e-6,maxiters=1e4,save_everystep=False) #de.Rodas4P ,autodiff=False (deprecated ?)
                         #sol = de.solve(prob_metabo, de.Rosenbrock23(),autodiff=False ,reltol=1e-8,abstol=1e-8,maxiters=1e4,save_everystep=False) #de.Rodas4P
 
                         #sol = de.solve(prob_metabo, de.Tsit5(),reltol=1e-4,abstol=1e-4,maxiters=1e4,save_everystep=False)
