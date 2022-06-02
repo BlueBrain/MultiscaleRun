@@ -18,7 +18,7 @@ Run Default
     TargetFile user.target
 
     OutputRoot RESULTS
-    CircuitTarget mc2c
+    CircuitTarget L5tpcaChc
     #CircuitTarget column
     #CircuitTarget mc1_Column
     RunMode RR
