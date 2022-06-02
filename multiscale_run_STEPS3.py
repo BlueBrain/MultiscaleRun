@@ -49,8 +49,8 @@ which_mesh = os.getenv('which_mesh')
 # Here, we are using STEPS API 1.
 mesh_file_ = f'./steps_meshes/{which_mesh}/{which_mesh}.msh'
 
-# dual:2, triple:3, quad:4
-which_run = int(os.getenv('which_run'))
+dualrun_env = int(os.getenv('dualrun'))
+triplerun_env = int(os.getenv('triplerun'))
 
 #################################################
 # Model Specification
@@ -359,7 +359,7 @@ def main():
     COULOMB = 6.24e18
     CA = COULOMB/AVOGADRO*CONC_FACTOR*DT_s
 
-    if which_run == 3:
+    if triplerun_env:
         dictAddOp = MPI.Op.Create(addDict, commute=True)
         dictJoinOp = MPI.Op.Create(joinDict, commute=True)
 
@@ -418,11 +418,12 @@ def main():
     with mt.timer.region('init_sims'):
         logging.info("Initializing simulations...")
         ndamus.sim_init()
-        steps_sim, tet2host = init_solver(model, tmgeom)
-        steps_sim.reset()
-        # there are 0.001 M/mM
-        steps_sim.setCompSpecConc(Geom.compname, Na.name, 1e-21 * Na.conc_0 * CONC_FACTOR)
-        tetVol = np.array([tmgeom.getTetVol(x) for x in range(ntets)], dtype=float)
+        if dualrun_env:
+            steps_sim, tet2host = init_solver(model, tmgeom)
+            steps_sim.reset()
+            # there are 0.001 M/mM
+            steps_sim.setCompSpecConc(Geom.compname, Na.name, 0.001 * Na.conc_0 * CONC_FACTOR)
+            tetVol = np.array([tmgeom.getTetVol(x) for x in range(ntets)], dtype=float)
 
     log_stage("===============================================")
     log_stage("Running both STEPS and Neuron simultaneously...")
@@ -458,7 +459,7 @@ def main():
         with mt.timer.region('neuron_cum'):
             ndamus.solve(t)
 
-        if steps % dt_nrn2dt_steps == 0:
+        if steps % dt_nrn2dt_steps == 0 and dualrun_env:
             with mt.timer.region('steps_cum'):
                 steps_sim.run(t / 1000)  # ms to sec
 
@@ -479,7 +480,7 @@ def main():
                     f.write(" ".join(("%e" % x for x in tetConcs)))
         
 
-        if (steps % dt_nrn2dt_jl == 0) and (which_run == 3):
+        if (steps % dt_nrn2dt_jl == 0) and triplerun_env:
             collected_num_releases_glutamate = {}
             collected_num_releases_gaba = {}
 
