@@ -68,8 +68,7 @@ Target Cell mc2c
 
 Target Compartment AllComps_mc2c
 {
-    mc2_Column
-
+  mc2_Column
 }
 
 Target Cell L5tpcaChc
