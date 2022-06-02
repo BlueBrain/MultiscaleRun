@@ -7,9 +7,6 @@ output/
 core.*
 *.log
 python-venv/
-container_STEPS*.txt
 x86_64/
-metabolismndam
-bluepy_prep4circuit/.ipynb_checkpoints
-.ipynb_checkpoints
-
+metabolismndam/
+.ipynb_checkpoints/
