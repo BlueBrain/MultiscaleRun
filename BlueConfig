@@ -15,15 +15,15 @@ Run Default
     METypePath /gpfs/bbp.cscs.ch/project/proj34/sh_ngvm/emodels_dend_highATP
     MEComboInfoFile /gpfs/bbp.cscs.ch/project/proj64/entities/emodels/2017.11.03/mecombo_emodel.tsv
 
-    TargetFile user.target
+    TargetFile /gpfs/bbp.cscs.ch/project/proj34/sh_ngvm/multiscale_run/user.target
 
-    OutputRoot RESULTS
+    OutputRoot /gpfs/bbp.cscs.ch/project/proj34/sh_ngvm/multiscale_run/RESULTS
     CircuitTarget mc2c
     #CircuitTarget column
     #CircuitTarget mc1_Column
     RunMode RR
     RNGMode UpdatedMCell
-    Duration 10
+    Duration 100
     Dt 0.025
 }
 
@@ -63,7 +63,7 @@ Projection GlioVascular
 #Connection Neuronal
 {
     Source src_cells
-    Destination L5tpcaChc
+    Destination mc2c
     SpontMinis 0.5
     Weight 1
 }
@@ -71,7 +71,7 @@ Projection GlioVascular
 
 #Connection Glia_attach
 {
-    Source L5tpcaChc
+    Source mc2c
     Destination astrocytes:Astrocytes
 }
 
@@ -118,14 +118,14 @@ StimulusInject ThresholdIntoExc
 
 Report voltage
 {
-        Target L5tpcaChc
+        Target mc2c
           Type compartment
       ReportOn v
           Unit mV
-        Format Bin
+        Format SONATA
             Dt 0.1
      StartTime 0
-       EndTime 10
+       EndTime 100
 }
 
 Report rcai_soma
@@ -135,10 +135,10 @@ Report rcai_soma
        Scaling None
       ReportOn reportcai_mcd
           Unit nA
-        Format Bin
+        Format SONATA
             Dt 0.1
      StartTime 0
-       EndTime 10
+       EndTime 100
 }
 
 
@@ -150,10 +150,10 @@ Report rcai_compart
        Scaling None
       ReportOn reportcai_mcd
           Unit nA
-        Format Bin
+        Format SONATA
             Dt 0.1
      StartTime 0
-       EndTime 10
+       EndTime 100
 }
 
 Report NaCurrCompSum
@@ -162,33 +162,33 @@ Report NaCurrCompSum
     Type Summation
     ReportOn ina
     Unit nA
-    Format Bin
+    Format SONATA
     Dt 0.1
     StartTime 0
-    EndTime 10
+    EndTime 100
 }
 
 Report NaConcAllCmps
 {
-    Target L5tpcaChc
+    Target mc2c
     Type compartment
     ReportOn nai
     Unit mM
-    Format Bin
+    Format SONATA
     Dt 1
     StartTime 0
-    EndTime 10
+    EndTime 100
 }
 
 Report ATPConcAllCmps
 {
-    Target L5tpcaChc
+    Target mc2c
     Type compartment
     ReportOn atpi
     Unit mM
-    Format Bin
+    Format SONATA
     Dt 1
     StartTime 0
-    EndTime 10
+    EndTime 100
 }
 

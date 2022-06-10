@@ -1,13 +1,13 @@
 #!/bin/bash
 
 #SBATCH --job-name="NGV"
-#SBATCH --nodes=4
+#SBATCH --nodes=8
 #SBATCH --ntasks-per-node=32
 
 #SBATCH --account=proj40
 #SBATCH --partition=prod
 #SBATCH --constraint=cpu
-#SBATCH --time=01:00:00
+#SBATCH --time=24:00:00
 
 #SBATCH --cpus-per-task=2
 #SBATCH --exclusive
