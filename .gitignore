@@ -8,12 +8,5 @@ core.*
 *.log
 python-venv/
 x86_64/
-<<<<<<< HEAD
-metabolismndam
-bluepy_prep4circuit/.ipynb_checkpoints
-.ipynb_checkpoints
-
-=======
 metabolismndam/
 .ipynb_checkpoints/
->>>>>>> fafd2cfbf80cdbc0ad15fb1b2394d9710ee51953
