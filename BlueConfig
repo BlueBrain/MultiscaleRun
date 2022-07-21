@@ -15,9 +15,9 @@ Run Default
     METypePath /gpfs/bbp.cscs.ch/project/proj34/sh_ngvm/emodels_dend_highATP
     MEComboInfoFile /gpfs/bbp.cscs.ch/project/proj64/entities/emodels/2017.11.03/mecombo_emodel.tsv
 
-    TargetFile /gpfs/bbp.cscs.ch/project/proj34/sh_ngvm/multiscale_run/user.target
+    TargetFile ./user.target
 
-    OutputRoot /gpfs/bbp.cscs.ch/project/proj34/sh_ngvm/multiscale_run/RESULTS
+    OutputRoot ./RESULTS
     CircuitTarget mc2c
     #CircuitTarget column
     #CircuitTarget mc1_Column

@@ -20,7 +20,9 @@ VERBATIM
 #include <mpi.h>
 #endif
 #endif
+#ifndef NRN_VERSION_GTEQ_8_2_0
 int nrn_mallinfo(int);
+#endif
 ENDVERBATIM
 
 PARAMETER {

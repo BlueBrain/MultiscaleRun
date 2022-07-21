@@ -7,7 +7,7 @@
 #SBATCH --account=proj40
 #SBATCH --partition=prod
 #SBATCH --constraint=cpu
-#SBATCH --time=24:00:00
+#SBATCH --time=01:00:00
 
 #SBATCH --cpus-per-task=2
 #SBATCH --exclusive
@@ -18,18 +18,10 @@
 source ./set_env.sh 12
 
 # driver script
-#PYDRIVER=multiscale_run_STEPS4.py
-#export which_STEPS=4
-#export which_mesh=cube_mc2c_26904
-#export dualrun=0
-#export triplerun=0
-#echo " *** STEPS${which_STEPS} run *** "
-#time srun dplace x86_64/special -mpi -python ${PYDRIVER}
-
-# driver script
 PYDRIVER=multiscale_run_STEPS3.py
 export which_STEPS=3
 export which_mesh=cube_mc2c_26904
+# Like in C, the integers 0 (false) and 1 (true—in fact any nonzero integer) are used.
 export dualrun=0
 export triplerun=1
 echo " *** STEPS${which_STEPS} run *** "

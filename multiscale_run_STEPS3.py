@@ -1,7 +1,3 @@
-#!/bin/env python
-# inspired from http://steps.sourceforge.net/manual/diffusion.html
-# to run: srun -Aproj40  special -mpi -python dualrun6.py
-
 from __future__ import print_function
 import logging
 import numpy as np
@@ -20,6 +16,7 @@ from neurodamus.utils.logging import log_stage
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 import dualrun.timer.mpi as mt
+import dualrun.sec_mapping.sec_mapping as sec_mapping
 
 # Memory tracking
 import psutil
@@ -31,7 +28,7 @@ import collections
 from contextlib import contextmanager
 import pickle
 import math
-import h5py 
+import h5py
 import csv
 import re
 from neurodamus.connection_manager import SynapseRuleManager
@@ -57,8 +54,8 @@ triplerun_env = int(os.getenv('triplerun'))
 #################################################
 
 # ndam : neurodamus
-dt_nrn2dt_steps: int = 5 # steps-ndam coupling
-dt_nrn2dt_jl: int = 5 # jl-ndam coupling
+dt_nrn2dt_steps: int = 100 # steps-ndam coupling
+dt_nrn2dt_jl: int = 100 # jl-ndam coupling
 
 class Geom:
     meshfile = mesh_file_
@@ -134,7 +131,9 @@ def gen_model():
 
 
 def gen_geom():
-    mesh = meshio.importGmsh(Geom.meshfile, scale=1)[0]
+    # STEPS default length scale is m
+    # NEURON default length scale is um
+    mesh = meshio.importGmsh(Geom.meshfile, scale=1e-6)[0]
     ntets = mesh.countTets()
     comp = stetmesh.TmComp(Geom.compname, mesh, range(ntets))
     comp.addVolsys(Volsys0.name)
@@ -153,88 +152,6 @@ def init_solver(model, geom):
         # gd.printPartitionStat(tet2host)
     return psolver.TetOpSplit(model, geom, rng, psolver.EF_NONE, tet2host), tet2host
 
-
-# returns a list of tet mappings for the neurons
-# each segment mapping is a list of (tetnum, fraction of segment)
-def get_sec_mapping(ndamus, mesh):
-    neurSecmap = []
-
-    micrometer2meter = 1e-6
-    rank = comm.Get_rank()
-
-    # Init bounding box
-    inf: float = 1e15
-    n_bbox_min = np.array([inf, inf, inf], dtype=float)
-    n_bbox_max = np.array([-inf, -inf, -inf], dtype=float)
-
-    cell_manager = ndamus.circuits.base_cell_manager
-
-    for c in cell_manager.cells:
-        # Get local to global coordinates transform
-
-        #print("DIR_LOCAL_NODES: ", dir(cell_manager.local_nodes) )
-        #print("DIR_META: ", dir(cell_manager.local_nodes.meta) )
-        #print("LENGTH META",len(cell_manager.local_nodes._gid_info))
-        #print("DIR_GID: ", cell_manager.local_nodes._gid_info.get(c.gid,"No c.gid found in meta!!!")  )
-
-        # FIXED in latest neurodamus
-        # To test do: export PYTHONPATH=$PWD/dev/neurodamus-py:$PYTHONPATH
-        loc_2_glob_tsf = c.local_to_global_coord_mapping
-
-        secs = [sec for sec in c.CCell.all if hasattr(sec, Na.current_var)]
-        # Our returned struct is #neurons long list of
-        # [(sec1, nparray([pt1, pt2, ...])), (sec2, npa...]
-        secmap = []
-        for sec in secs:
-            npts = sec.n3d()
-
-            if not npts:
-                # logging.warning("Sec %s doesnt have 3d points", sec)
-                continue
-            fractmap = []
-
-            # Store points in section
-            pts = np.empty((npts, 3), dtype=float)
-
-            for i in range(npts):
-                pts[i] = np.array([sec.x3d(i), sec.y3d(i), sec.z3d(i)]) * micrometer2meter
-
-            # Transform to absolute coordinates (copy is necessary to get correct stride)
-            pts_abs_coo = np.array(loc_2_glob_tsf(pts), dtype=float, order='C')
-
-            # Update neuron bounding box
-            n_bbox_min = np.minimum(np.amin(pts_abs_coo, axis=0), n_bbox_min)
-            n_bbox_max = np.maximum(np.amax(pts_abs_coo, axis=0), n_bbox_max)
-
-            # get tet to fraction map, batch processing all points (segments)
-            tet2fraction_map = mesh.intersect(pts_abs_coo)
-
-            # store map for each section
-            secmap.append((sec, tet2fraction_map))
-
-        neurSecmap.append(secmap)
-
-    # Reduce Neuron bbox
-    n_bbox_min_glo = np.empty((3), dtype=float)
-    n_bbox_max_glo = np.empty((3), dtype=float)
-    comm.Reduce([n_bbox_min, 3, MPI.DOUBLE], [n_bbox_min_glo, 3, MPI.DOUBLE], \
-        op=MPI.MIN, root=0)
-    comm.Reduce([n_bbox_max, 3, MPI.DOUBLE], [n_bbox_max_glo, 3, MPI.DOUBLE], \
-        op=MPI.MAX, root=0)
-
-    # Check bounding boxes
-    if rank == 0:
-        s_bbox_min = mesh.getBoundMin()
-        s_bbox_max = mesh.getBoundMax()
-
-        print("bounding box Neuron:", n_bbox_min_glo, n_bbox_max_glo)
-        print("bounding box STEPS:", s_bbox_min, s_bbox_max)
-
-        # Should add tolerance to check bounding box
-        if np.less(n_bbox_min_glo, s_bbox_min).any() or np.greater(n_bbox_max_glo, s_bbox_max).any():
-            logging.warning("STEPS mesh does not overlap with all neurons")
-
-    return neurSecmap
 
 ##############################################
 # Triplerun related
@@ -278,6 +195,7 @@ target_gids_L5 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/m
 target_gids_L6 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L6_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l6.txt")
 
 ########################################################################
+
 #with open(voltages_per_gid_f,'r') as infile:
 #    voltages_l = infile.readlines()
 
@@ -346,7 +264,7 @@ def main():
 
     # Simulate one molecule each 10e9
 
-    # Times are in ms
+    # Times are in ms (for NEURON, because STEPS works with SI)
     DT = ndamus._run_conf['Dt'] #0.025  #ms i.e. = 25 usec which is timstep of ndam
     SIM_END = ndamus._run_conf['Duration'] #500.0 #10.0 #1000.0 #ms
     DT_s = DT * 1e3 * dt_nrn2dt_steps
@@ -402,27 +320,23 @@ def main():
         all_needs = comm.reduce({rank: set([int(i) for i in gid_to_cell.keys()])}, op=dictJoinOp, root=0)
         if rank == 0:
             all_needs.pop(0)
-        
-        outs_r_glu = {}
-        outs_r_gaba = {}
-
-
-    log_stage("Initializing steps model and geom...")
-    model = gen_model()
-    tmgeom, ntets = gen_geom()
-
-    logging.info("Computing segments per tet...")
-    neurSecmap = get_sec_mapping(ndamus, tmgeom)
-
 
     with mt.timer.region('init_sims'):
         logging.info("Initializing simulations...")
+        
         ndamus.sim_init()
         if dualrun_env:
+            log_stage("Initializing steps model and geom...")
+            model = gen_model()
+            tmgeom, ntets = gen_geom()
+
+            logging.info("Computing segments per tet...")
+            neurSecmap = sec_mapping.get_sec_mapping_collective_STEPS3(ndamus, tmgeom, Na.current_var)
+
             steps_sim, tet2host = init_solver(model, tmgeom)
             steps_sim.reset()
             # there are 0.001 M/mM
-            steps_sim.setCompSpecConc(Geom.compname, Na.name, 0.001 * Na.conc_0 * CONC_FACTOR)
+            steps_sim.setCompSpecConc(Geom.compname, Na.name, 1e-3 * Na.conc_0 * CONC_FACTOR)
             tetVol = np.array([tmgeom.getTetVol(x) for x in range(ntets)], dtype=float)
 
     log_stage("===============================================")
@@ -431,25 +345,11 @@ def main():
     if rank == 0 and REPORT_FLAG:
         f = open("tetConcs.txt", "w+")
 
-    def fract(neurSecmap):
-        # compute the currents arising from each segment into each of the tets
-        tet_currents = np.zeros((ntets,), dtype=float)
-        for secmap in neurSecmap:
-            for sec, tet2fraction_map in secmap:
-                for seg, tet2fraction in zip(sec.allseg(), tet2fraction_map):
-                    if tet2fraction:
-                        tet: int
-                        fract: float
-                        for tet, fract in tet2fraction:
-                            # there are 1e8 µm2 in a cm2, final output in mA
-                            tet_currents[tet] += seg.ina * seg.area() * 1e-8 * fract
-        return tet_currents
-
-    index = np.array(range(ntets), dtype=TET_INDEX_DTYPE)
-    tetConcs = np.zeros((ntets,), dtype=float)
-
-    # allreduce comm buffer
-    tet_currents_all = np.zeros((ntets,), dtype=float)
+    if dualrun_env:
+        index = np.array(range(ntets), dtype=TET_INDEX_DTYPE)
+        tetConcs = np.zeros((ntets,), dtype=float)
+        # allreduce comm buffer
+        tet_currents_all = np.zeros((ntets,), dtype=float)
 
     steps = 0
     idxm = 0
@@ -465,7 +365,7 @@ def main():
 
 
             with mt.timer.region('processing'):
-                tet_currents = fract(neurSecmap)
+                tet_currents = sec_mapping.fract_collective(neurSecmap, ntets)
 
                 with mt.timer.region('comm_allred_currents'):
                     comm.Allreduce(tet_currents, tet_currents_all, op=MPI.SUM)
@@ -481,6 +381,9 @@ def main():
         
 
         if (steps % dt_nrn2dt_jl == 0) and triplerun_env:
+            outs_r_glu = {}
+            outs_r_gaba = {}    
+            
             collected_num_releases_glutamate = {}
             collected_num_releases_gaba = {}
 
