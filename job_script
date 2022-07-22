@@ -20,9 +20,9 @@ source ./set_env.sh 12
 # driver script
 PYDRIVER=multiscale_run_STEPS3.py
 export which_STEPS=3
-export which_mesh=cube_mc2c_26904
+export which_mesh=cubeBB
 # Like in C, the integers 0 (false) and 1 (true—in fact any nonzero integer) are used.
-export dualrun=0
+export dualrun=1
 export triplerun=1
 echo " *** STEPS${which_STEPS} run *** "
 time srun dplace x86_64/special -mpi -python ${PYDRIVER}
