@@ -32,7 +32,7 @@ def get_sec_mapping_collective_STEPS3(ndamus, mesh, attr1):
         # To test do: export PYTHONPATH=$PWD/dev/neurodamus-py:$PYTHONPATH
         loc_2_glob_tsf = c.local_to_global_coord_mapping
 
-        secs = [sec for sec in c.CCell.all if hasattr(sec, attr1)]
+        secs = (sec for sec in c.CCell.all if hasattr(sec, attr1))
         # Our returned struct is #neurons long list of
         # [(sec1, nparray([pt1, pt2, ...])), (sec2, npa...]
         secmap = []
@@ -48,10 +48,10 @@ def get_sec_mapping_collective_STEPS3(ndamus, mesh, attr1):
             pts = np.empty((npts, 3), dtype=float)
 
             for i in range(npts):
-                pts[i] = np.array([sec.x3d(i), sec.y3d(i), sec.z3d(i)]) * micrometer2meter
+                pts[i] = np.array([sec.x3d(i), sec.y3d(i), sec.z3d(i)])
 
             # Transform to absolute coordinates (copy is necessary to get correct stride)
-            pts_abs_coo = np.array(loc_2_glob_tsf(pts), dtype=float, order='C')
+            pts_abs_coo = np.array(loc_2_glob_tsf(pts), dtype=float, order='C') * micrometer2meter
 
             # Update neuron bounding box
             n_bbox_min = np.minimum(np.amin(pts_abs_coo, axis=0), n_bbox_min)
@@ -78,8 +78,8 @@ def get_sec_mapping_collective_STEPS3(ndamus, mesh, attr1):
         s_bbox_min = mesh.getBoundMin()
         s_bbox_max = mesh.getBoundMax()
 
-        print("bounding box Neuron:", n_bbox_min_glo, n_bbox_max_glo)
-        print("bounding box STEPS:", s_bbox_min, s_bbox_max)
+        print("bounding box Neuron [um] : ", n_bbox_min_glo/micrometer2meter, n_bbox_max_glo/micrometer2meter)
+        print("bounding box STEPS [um] : ", np.array(s_bbox_min)/micrometer2meter, np.array(s_bbox_max)/micrometer2meter)
 
         # Should add tolerance to check bounding box
         if np.less(n_bbox_min_glo, s_bbox_min).any() or np.greater(n_bbox_max_glo, s_bbox_max).any():
@@ -106,7 +106,7 @@ def get_sec_mapping_collective_STEPS4(ndamus, mesh, attr1):
     for c in cell_manager.cells:
         # Get local to global coordinates transform
         loc_2_glob_tsf = c.local_to_global_coord_mapping
-        secs = [sec for sec in c.CCell.all if hasattr(sec, attr1)]
+        secs = (sec for sec in c.CCell.all if hasattr(sec, attr1))
         for sec in secs:
             npts = sec.n3d()
 
@@ -116,10 +116,10 @@ def get_sec_mapping_collective_STEPS4(ndamus, mesh, attr1):
 
             pts = np.empty((npts, 3), dtype=float)
             for i in range(npts):
-                pts[i] = np.array([sec.x3d(i), sec.y3d(i), sec.z3d(i)]) * micrometer2meter
+                pts[i] = np.array([sec.x3d(i), sec.y3d(i), sec.z3d(i)])
 
             # Transform to absolute coordinates (copy is necessary to get correct stride)
-            pts_abs_coo = np.array(loc_2_glob_tsf(pts), dtype=float, order='C')
+            pts_abs_coo = np.array(loc_2_glob_tsf(pts), dtype=float, order='C') * micrometer2meter
             pts_abs_coo_glo.append(pts_abs_coo)
 
             # Update neuron bounding box
@@ -130,8 +130,8 @@ def get_sec_mapping_collective_STEPS4(ndamus, mesh, attr1):
     s_bbox_min = mesh.getBoundMin(local=True)
     s_bbox_max = mesh.getBoundMax(local=True)
 
-    print(f"{rank} bounding box Neuron:", n_bbox_min, n_bbox_max)
-    print(f"{rank} bounding box STEPS:", s_bbox_min, s_bbox_max)
+    print(f"{rank} bounding box Neuron [um] : ", n_bbox_min/micrometer2meter, n_bbox_max/micrometer2meter)
+    print(f"{rank} bounding box STEPS [um] : ", np.array(s_bbox_min)/micrometer2meter, np.array(s_bbox_max)/micrometer2meter)
 
     # all MPI tasks process all the points/segments (STEPS side - naive approach as a first step)
     # list of lists: External list refers to the task, internal is the list created above
@@ -151,7 +151,7 @@ def get_sec_mapping_collective_STEPS4(ndamus, mesh, attr1):
     # after this point, intersect_struct is exactly the same for each rank
 
     for c in cell_manager.cells:
-        secs = [sec for sec in c.CCell.all if hasattr(sec, attr1)]
+        secs = (sec for sec in c.CCell.all if hasattr(sec, attr1))
         secmap = []
         isec = 0
         for sec in secs:
