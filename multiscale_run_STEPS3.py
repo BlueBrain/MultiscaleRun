@@ -330,6 +330,11 @@ def main():
             model = gen_model()
             tmgeom, ntets = gen_geom()
 
+            # In STEPS4 the global indices are not sequential and they can be over ntets.
+            # This dictionary does a mapping from 0 to ntets. In STEPS3, there is no need,
+            # and this is why we go with the identity map.
+            global_inds = {i:i for i in range(ntets)}
+
             logging.info("Computing segments per tet...")
             neurSecmap = sec_mapping.get_sec_mapping_collective_STEPS3(ndamus, tmgeom, Na.current_var)
 
@@ -365,7 +370,7 @@ def main():
 
 
             with mt.timer.region('processing'):
-                tet_currents = sec_mapping.fract_collective(neurSecmap, ntets)
+                tet_currents = sec_mapping.fract_collective(neurSecmap, ntets, global_inds)
 
                 with mt.timer.region('comm_allred_currents'):
                     comm.Allreduce(tet_currents, tet_currents_all, op=MPI.SUM)

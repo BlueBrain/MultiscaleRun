@@ -176,7 +176,10 @@ def get_sec_mapping_collective_STEPS4(ndamus, mesh, attr1):
     return neurSecmap
 
 # compute the currents arising from each segment into each of the tets
-def fract_collective(neurSecmap, ntets):
+def fract_collective(neurSecmap, ntets, global_inds):
+    '''
+    global_inds : maps the global indices from 0 to ntet-1 (https://github.com/CNS-OIST/HBP_STEPS/issues/890)
+    '''
     tet_currents = np.zeros((ntets,), dtype=float)
     for secmap in neurSecmap:
         for sec, tet2fraction_map in secmap:
@@ -184,5 +187,5 @@ def fract_collective(neurSecmap, ntets):
                 if tet2fraction:
                     for tet, fract in tet2fraction:
                         # there are 1e8 µm2 in a cm2, final output in mA
-                        tet_currents[tet] += seg.ina * seg.area() * 1e-8 * fract
+                        tet_currents[global_inds[tet]] += seg.ina * seg.area() * 1e-8 * fract
     return tet_currents

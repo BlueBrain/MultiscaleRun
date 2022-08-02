@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="NGV"
+#SBATCH --job-name="multiscale_run"
 #SBATCH --nodes=8
 #SBATCH --ntasks-per-node=32
 
