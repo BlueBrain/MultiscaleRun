@@ -24,6 +24,9 @@ if [ $# -eq 0 ]
 then
     rm -rf x86_64
     build_neurodamus.sh mod
+    # WIP : update mod files
+    #ndam_installation_dir=`spack find --paths neurodamus-neocortex+ngv | tail -n 1 | grep -o "/.*"`
+    #cp -n $ndam_installation_dir/share/mod_full/* mod/
 else
     echo "custom special already built."
 fi

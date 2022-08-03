@@ -151,7 +151,7 @@ Report NaConcAllCmps
     EndTime 100
 }
 
-#Report ATPConcAllCmps
+Report ATPConcAllCmps
 {
     Target mc2c
     Type compartment
@@ -162,4 +162,3 @@ Report NaConcAllCmps
     StartTime 0
     EndTime 100
 }
-
