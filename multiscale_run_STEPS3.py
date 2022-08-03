@@ -82,6 +82,7 @@ class K:
     ki_var = 'ki'
     charge = 1 * ELEM_CHARGE
 
+'''
 class ATP:
     name = 'ATP'
     conc_0 = 0.1
@@ -99,6 +100,7 @@ class ADP:
     diffcst = 2e-9
     charge = -2 * ELEM_CHARGE
     adpi_var = 'adpi'
+'''
 
 class Ca:
     name = 'Ca'
@@ -542,8 +544,8 @@ def main():
             ik_density = {}
             cais_mean = {}
 
-            atpi_mean = {}
-            adpi_mean = {}
+            #atpi_mean = {}
+            #adpi_mean = {}
             #cells_areas = {}
             #cells_volumes = {}
 
@@ -554,8 +556,8 @@ def main():
             nais = {}
             cais = {}
             kis = {}
-            atpi = {}
-            adpi = {}
+            #atpi = {}
+            #adpi = {}
 
             for c_gid, nc in gid_to_cell.items():
                 if c_gid not in target_gids:
@@ -566,37 +568,37 @@ def main():
                 counter_seg_Na = {}
                 counter_seg_K = {}
                 counter_seg_Ca = {}
-                counter_seg_ATP = {}
-                counter_seg_ADP = {}
+                #counter_seg_ATP = {}
+                #counter_seg_ADP = {}
 
                 cells_volumes_Na = {}
                 cells_areas_Na = {}
                 cells_volumes_K = {}
                 cells_areas_K = {}
                 cells_volumes_Ca = {}
-                cells_volumes_ATP = {}
-                cells_volumes_ADP = {}
+                #cells_volumes_ATP = {}
+                #cells_volumes_ADP = {}
 
                 #counter_seg.setdefault(c_gid, 0.0)
                 counter_seg_Na.setdefault(c_gid, 0.0)
                 counter_seg_K.setdefault(c_gid, 0.0)
                 counter_seg_Ca.setdefault(c_gid, 0.0)
-                counter_seg_ATP.setdefault(c_gid, 0.0)
-                counter_seg_ADP.setdefault(c_gid, 0.0)
+                #counter_seg_ATP.setdefault(c_gid, 0.0)
+                #counter_seg_ADP.setdefault(c_gid, 0.0)
 
                 cells_volumes_Na.setdefault(c_gid, 0.0)
                 cells_areas_Na.setdefault(c_gid, 0.0)
                 cells_volumes_K.setdefault(c_gid, 0.0)
                 cells_areas_K.setdefault(c_gid, 0.0)
                 cells_volumes_Ca.setdefault(c_gid, 0.0)
-                cells_volumes_ATP.setdefault(c_gid, 0.0)
-                cells_volumes_ADP.setdefault(c_gid, 0.0)
+                #cells_volumes_ATP.setdefault(c_gid, 0.0)
+                #cells_volumes_ADP.setdefault(c_gid, 0.0)
 
                 nais.setdefault(c_gid, 0.0)
                 cais.setdefault(c_gid, 0.0)
                 kis.setdefault(c_gid, 0.0)
-                atpi.setdefault(c_gid, 0.0)
-                adpi.setdefault(c_gid, 0.0)
+                #atpi.setdefault(c_gid, 0.0)
+                #adpi.setdefault(c_gid, 0.0)
 
                 #cells_areas.setdefault(c_gid, 0.0)
                 #cells_volumes.setdefault(c_gid, 0.0)
@@ -604,7 +606,8 @@ def main():
                 current_ina.setdefault(c_gid, 0.0)
                 current_ik.setdefault(c_gid, 0.0)
 
-                secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and (hasattr(sec, ATP.atpi_var)) and (hasattr(sec, ADP.adpi_var)) and hasattr(sec, Ca.current_var)  )]
+                #secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and (hasattr(sec, ATP.atpi_var)) and (hasattr(sec, ADP.adpi_var)) and hasattr(sec, Ca.current_var)  )]
+                secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and hasattr(sec, Ca.current_var)  )]
 
                 if len(secs_all)==0:
                     print("len_secs all: ",len(secs_all))
@@ -622,12 +625,12 @@ def main():
                         current_ik[c_gid] += seg.ik * seg.area() / 100 # nA
                         kis[c_gid] += seg.ki * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
                         cais[c_gid] += seg.cai * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
-                        atpi[c_gid] += seg.atpi * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
-                        adpi[c_gid] += seg.adpi * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
+                        #atpi[c_gid] += seg.atpi * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
+                        #adpi[c_gid] += seg.adpi * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
                 if counter_seg_Na[c_gid] == 0.0:
                     print("counter_seg_Na nai 0")
                     with open(test_counter_seg_file, "a") as param_outputfile:
-                        param_outputfile.write(c_gid)
+                        param_outputfile.write(str(c_gid))
                         param_outputfile.write("\n")
 
                     cells_volumes_Na.pop(c_gid, None)
@@ -637,16 +640,16 @@ def main():
                     current_ik.pop(c_gid, None)
                     kis.pop(c_gid, None)
                     cais.pop(c_gid, None)
-                    atpi.pop(c_gid, None)
-                    adpi.pop(c_gid, None)
+                    #atpi.pop(c_gid, None)
+                    #adpi.pop(c_gid, None)
                     continue
                 nais_mean[c_gid] = nais[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
                 ina_density[c_gid] = current_ina[c_gid] / cells_areas_Na[c_gid] * 100 
                 ik_density[c_gid] = current_ik[c_gid] / cells_areas_Na[c_gid] * 100
                 kis_mean[c_gid]= kis[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM  #/ counter_seg[c_gid]
                 cais_mean[c_gid]= cais[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM  #/ counter_seg[c_gid]
-                atpi_mean[c_gid]= atpi[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
-                adpi_mean[c_gid] = adpi[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
+                #atpi_mean[c_gid]= atpi[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
+                #adpi_mean[c_gid] = adpi[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
                 #del secs_Na
 
     #            log_stage("nais test for nan")
@@ -774,8 +777,9 @@ def main():
                 vm[6] = nais_mean[c_gid]
                 vm[7] = u0[7] - 1.33 * (kis_mean[c_gid] - 140.0 ) # Kout #changed7jan2021
     #            vm[8] = 2.255 # Glc_b
-                vm[27] = 0.5*1.2 + 0.5*atpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-                vm[29] = 0.5*6.3e-3 + 0.5*adpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
+                # TO CHECK (2nd August 2022)
+                #vm[27] = 0.5*1.2 + 0.5*atpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
+                #vm[29] = 0.5*6.3e-3 + 0.5*adpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
 
                 #param = [current_ina[c_gid], 0.06, voltage_mean[c_gid],nais_mean[c_gid],kis_mean[c_gid], current_ik[c_gid], 4.4, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling] 
 
@@ -784,7 +788,9 @@ def main():
     #            param = [current_ina[c_gid], 0.06, voltage_mean[c_gid], nais_mean[c_gid], kis_mean[c_gid], current_ik[c_gid], 4.1, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met[c_gid]] 
                 #!!! 1000* in param is to have current_ina and current_ik units = uA/cm2 same as in Calvetti
 
-                param = [ina_density[c_gid], 0.06, -65.0, nais_mean[c_gid], kis_mean[c_gid], ik_density[c_gid], 4.1, 0.17, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met]
+                #param = [ina_density[c_gid], 0.06, -65.0, nais_mean[c_gid], kis_mean[c_gid], ik_density[c_gid], 4.1, 0.17, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met]
+                # TO CHECK (2nd August 2022) - compared to line above
+                param = [ina_density[c_gid], 0.06, -65.0, nais_mean[c_gid], kis_mean[c_gid], ik_density[c_gid], 4.1, 0.17, vm[27],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met]
                 prob_metabo = de.ODEProblem(metabolism,vm,tspan_m,param)
                 log_stage("solve metabolism")
                 #with timer('julia'):
@@ -865,8 +871,8 @@ def main():
 
                 sol = None
 
-                atpi_weighted_mean = 0.5*1.2 + 0.5*um[(idxm+1,c_gid)][27] #um[(idxm+1,c_gid)][27]
-                adpi_weighted_mean = 0.5*6.3e-3 + 0.5*um[(idxm+1,c_gid)][29]  #um[(idxm+1,c_gid)][29]
+                #atpi_weighted_mean = 0.5*1.2 + 0.5*um[(idxm+1,c_gid)][27] #um[(idxm+1,c_gid)][27]
+                #adpi_weighted_mean = 0.5*6.3e-3 + 0.5*um[(idxm+1,c_gid)][29]  #um[(idxm+1,c_gid)][29]
 
                 nao_weighted_mean = 0.5*140.0 + 0.5*(140.0 - 1.33*(um[(idxm+1,c_gid)][6] - 10.0)) #140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
                 ko_weighted_mean = 0.5*5.0 + 0.5*um[(idxm+1,c_gid)][7] #um[(idxm+1,c_gid)][7] 
@@ -883,7 +889,8 @@ def main():
 
 
                 log_stage("feedback")
-                secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and (hasattr(sec, ATP.atpi_var)) and (hasattr(sec, ADP.adpi_var)) and hasattr(sec, Ca.current_var)  )]
+                #secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and (hasattr(sec, ATP.atpi_var)) and (hasattr(sec, ADP.adpi_var)) and hasattr(sec, Ca.current_var)  )]
+                secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and hasattr(sec, Ca.current_var)  )]
 
                 for sec_elem in secs_all:
                     seg_all = sec_elem.allseg()
@@ -894,8 +901,8 @@ def main():
                         seg.nai = nai_weighted_mean #10
                         seg.ko = ko_weighted_mean #5
                         seg.ki = ki_weighted_mean #140
-                        seg.atpi = atpi_weighted_mean #1.4
-                        seg.adpi = adpi_weighted_mean #0.03
+                        #seg.atpi = atpi_weighted_mean #1.4
+                        #seg.adpi = adpi_weighted_mean #0.03
                 #        seg.v = -65.0
 
     #            secs_v = [sec for sec in nc.CCell.all if (hasattr(sec, "v") )]
@@ -947,4 +954,3 @@ def main():
 if __name__ == "__main__":
     main()
     exit() # needed to avoid hanging
-
