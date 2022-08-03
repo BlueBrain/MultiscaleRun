@@ -123,6 +123,7 @@ VERBATIM
 #include<stdlib.h>
 #include<stdio.h>
 #include<math.h>
+#ifndef NRN_VERSION_GTEQ_8_2_0
 #include "nrnran123.h"
 
 #ifndef CORENEURON_BUILD
@@ -135,6 +136,10 @@ extern int vector_capacity(void* vv);
 
 double nrn_random_pick(void* r);
 void* nrn_random_arg(int argpos);
+#define RANDCAST
+#else
+#define RANDCAST (Rand*)
+#endif
 
 ENDVERBATIM
 
@@ -335,8 +340,8 @@ NET_RECEIVE (weight, weight_AMPA, weight_NMDA, Psurv, nc_type) {
         if (nc_type == 0) {  :// presynaptic netcon
     VERBATIM
             // setup self events for delayed connections to change weights
-            void *vv_delay_times = *((void**)(&_p_delay_times));
-            void *vv_delay_weights = *((void**)(&_p_delay_weights));
+            IvocVect *vv_delay_times = *((IvocVect**)(&_p_delay_times));
+            IvocVect *vv_delay_weights = *((IvocVect**)(&_p_delay_weights));
             if (vv_delay_times && vector_capacity(vv_delay_times)>=1) {
                 double* deltm_el = vector_vec(vv_delay_times);
                 int delay_times_idx;
@@ -354,7 +359,7 @@ NET_RECEIVE (weight, weight_AMPA, weight_NMDA, Psurv, nc_type) {
 
     if (flag == 1) {  :// self event to set next weight at
     VERBATIM
-        void *vv_delay_weights = *((void**)(&_p_delay_weights));
+        IvocVect *vv_delay_weights = *((IvocVect**)(&_p_delay_weights));
         if (vv_delay_weights && vector_capacity(vv_delay_weights)>=next_delay) {
             double* weights_v = vector_vec(vv_delay_weights);
             double next_delay_weight = weights_v[(int)next_delay];
@@ -504,7 +509,7 @@ VERBATIM
         value = nrnran123_dblpick((nrnran123_State*)_p_rng);
     } else if (_p_rng) {
         #ifndef CORENEURON_BUILD
-        value = nrn_random_pick(_p_rng);
+        value = nrn_random_pick(RANDCAST _p_rng);
         #endif
     } else {
         // Note: prior versions used scop_random(1), but since we never use this model without configuring the rng.  Maybe should throw error?
@@ -521,9 +526,12 @@ VERBATIM
 #ifndef CORENEURON_BUILD
         /* first arg is direction (0 save, 1 restore), second is array*/
         /* if first arg is -1, fill xdir with the size of the array */
-        double *xdir, *xval, *hoc_pgetarg();
+        double *xdir, *xval;
+#ifndef NRN_VERSION_GTEQ_8_2_0
+        double *hoc_pgetarg();
         long nrn_get_random_sequence(void* r);
         void nrn_set_random_sequence(void* r, int val);
+#endif
         xdir = hoc_pgetarg(1);
         xval = hoc_pgetarg(2);
         if (_p_rng) {
@@ -543,13 +551,13 @@ VERBATIM
                     xval[0] = (double) seq;
                     xval[1] = (double) which;
                 } else {
-                    xval[0] = (double)nrn_get_random_sequence(_p_rng);
+                    xval[0] = (double)nrn_get_random_sequence(RANDCAST _p_rng);
                 }
             } else {  // restore
                 if( usingR123 ) {
                     nrnran123_setseq( (nrnran123_State*)_p_rng, (uint32_t)xval[0], (char)xval[1] );
                 } else {
-                    nrn_set_random_sequence(_p_rng, (long)(xval[0]));
+                    nrn_set_random_sequence(RANDCAST _p_rng, (long)(xval[0]));
                 }
             }
         }
@@ -565,15 +573,15 @@ FUNCTION toggleVerbose() {
 VERBATIM
 static void bbcore_write(double* x, int* d, int* x_offset, int* d_offset, _threadargsproto_) {
 
-  void *vv_delay_times = *((void**)(&_p_delay_times));
-  void *vv_delay_weights = *((void**)(&_p_delay_weights));
+  IvocVect *vv_delay_times = *((IvocVect**)(&_p_delay_times));
+  IvocVect *vv_delay_weights = *((IvocVect**)(&_p_delay_weights));
 
   if (d) {
     uint32_t* di = ((uint32_t*)d) + *d_offset;
     nrnran123_State** pv = (nrnran123_State**)(&_p_rng);
     nrnran123_getids3(*pv, di, di+1, di+2);
 
-    unsigned char which;
+    char which;
     nrnran123_getseq(*pv, di+3, &which);
     di[4] = (int)which;
     //printf("ProbAMPANMDA_EMS bbcore_write %d %d %d\n", di[0], di[1], di[2]);
@@ -637,11 +645,11 @@ static void bbcore_read(double* x, int* d, int* x_offset, int* d_offset, _thread
     double* x_i = x + *x_offset;
 
     // allocate vectors
-    _p_delay_times = vector_new1(delay_times_sz);
-    _p_delay_weights = vector_new1(delay_weights_sz);
+    _p_delay_times = (double*)vector_new1(delay_times_sz);
+    _p_delay_weights = (double*)vector_new1(delay_weights_sz);
 
-    double* delay_times_el = vector_vec(_p_delay_times);
-    double* delay_weights_el = vector_vec(_p_delay_weights);
+    double* delay_times_el = vector_vec((IvocVect*)_p_delay_times);
+    double* delay_weights_el = vector_vec((IvocVect*)_p_delay_weights);
 
     // copy data
     int x_idx;
