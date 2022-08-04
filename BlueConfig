@@ -24,7 +24,7 @@ Run Default
     #CircuitTarget mc1_Column
     RunMode RR
     RNGMode UpdatedMCell
-    Duration 100
+    Duration 10
     Dt 0.025
 }
 

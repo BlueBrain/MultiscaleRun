@@ -343,6 +343,8 @@ def main():
             # there are 0.001 M/mM
             steps_sim.setCompSpecConc(Geom.compname, Na.name, 1e-3 * Na.conc_0 * CONC_FACTOR)
             tetVol = np.array([tmgeom.getTetVol(x) for x in range(ntets)], dtype=float)
+            if rank == 0:
+                print(f'The total tet mesh volume is : {np.sum(tetVol)}')
 
     log_stage("===============================================")
     log_stage("Running both STEPS and Neuron simultaneously...")
