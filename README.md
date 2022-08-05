@@ -53,7 +53,6 @@ KdShu2007.mod
 K_Pst.mod
 K_Tst.mod
 leak.mod
-list.txt
 naclamp.mod
 nakcc.mod
 nakpump.mod
@@ -80,7 +79,6 @@ The latest mod files can be found in the installation folder of neurodamus, foll
     IonSynapse.mod
     kcc2.mod
     leak.mod
-    list.txt
     naclamp.mod
     nakcc.mod
     nakpump.mod
