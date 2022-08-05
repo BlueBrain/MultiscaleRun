@@ -1,3 +1,5 @@
+echo "! setup !"
+
 module purge
 module load unstable python-dev py-neurodamus py-mpi4py julia
 module load intel gcc hpe-mpi
@@ -19,17 +21,6 @@ else
 fi
 spack load steps@develop+distmesh+petsc
 spack load neurodamus-neocortex+ngv
-
-if [ $# -eq 0 ]
-then
-    rm -rf x86_64
-    build_neurodamus.sh mod
-    # WIP : update mod files
-    #ndam_installation_dir=`spack find --paths neurodamus-neocortex+ngv | tail -n 1 | grep -o "/.*"`
-    #cp -n $ndam_installation_dir/share/mod_full/* mod/
-else
-    echo "custom special already built."
-fi
 
 # same approach as above
 if [ $# -eq 0 ]
@@ -72,7 +63,32 @@ else
     popd
 fi
 
+if [ $# -eq 0 ]
+then
+    echo "building custom special."
+    rm -rf x86_64
+    
+    # legacy mod files for triplerun
+    cp metabolismndam/custom_ndam_2021_02_22_archive202101/mod/* mod/
+
+    # update the legacy ones with mod files from neurodamus-core
+    rm -rf neurodamus-core/
+    git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-core.git
+    cp neurodamus-core/mod/* mod/
+    rm -rf neurodamus-core/
+
+    # additional mod files from common repo
+    rm -rf common/
+    git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:hpc/sim/models/common.git
+    cp -n common/mod/ngv/* mod/
+    rm -rf common/
+
+    build_neurodamus.sh mod
+else
+    echo "custom special already built."
+fi
+
 # STEPS related
 export OMP_NUM_THREADS=1
 
-echo "setup completed"
+echo "! setup completed !"
