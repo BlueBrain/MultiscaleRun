@@ -37,8 +37,6 @@ np.set_printoptions(threshold=10000, linewidth=200)
 
 ELEM_CHARGE = 1.602176634e-19
 
-REPORT_FLAG = False
-
 TET_INDEX_DTYPE = np.uint32
 
 which_mesh = os.getenv('which_mesh')
@@ -142,7 +140,7 @@ def gen_geom():
 
 def init_solver(model, geom):
     rng = srng.create('mt19937', 512)
-    rng.initialize(2903)
+    rng.initialize(int(time.time()%4294967295)) # The max unsigned long
 
     import steps.mpi.solver as psolver
     tet2host = gd.linearPartition(geom, [1, 1, steps.mpi.nhosts])
@@ -345,12 +343,14 @@ def main():
             tetVol = np.array([tmgeom.getTetVol(x) for x in range(ntets)], dtype=float)
             if rank == 0:
                 print(f'The total tet mesh volume is : {np.sum(tetVol)}')
+            CompCount = []
+            specNames = [Na.name]
 
     log_stage("===============================================")
     log_stage("Running both STEPS and Neuron simultaneously...")
 
-    if rank == 0 and REPORT_FLAG:
-        f = open("tetConcs.txt", "w+")
+    if rank == 0:
+        f = open("S3_Moles_Current.dat", "w")
 
     if dualrun_env:
         index = np.array(range(ntets), dtype=TET_INDEX_DTYPE)
@@ -378,13 +378,16 @@ def main():
                     comm.Allreduce(tet_currents, tet_currents_all, op=MPI.SUM)
 
                 # update the tet concentrations according to the currents
-                steps_sim.getBatchTetConcsNP(index, Na.name, tetConcs) # in this method there is an allreduce which I think is unnecessary
+                steps_sim.getBatchTetConcsNP(index, Na.name, tetConcs)
                 # 0.001A/mA 6.24e18 particles/coulomb 1000L/m3
                 tetConcs = tetConcs + tet_currents_all * CA * tetVol
-                tetConcs[tetConcs<0] = 0
                 steps_sim.setBatchTetConcsNP(index, Na.name, tetConcs)
-                if rank == 0 and REPORT_FLAG:
-                    f.write(" ".join(("%e" % x for x in tetConcs)))
+                
+                if rank == 0:
+                    f.write(str(sum(tetConcs * tetVol)) + ',' + str(sum(tet_currents_all)) + '\n')
+                
+                counts = [steps_sim.getCompSpecCount(Geom.compname, spec) for spec in specNames] 
+                CompCount.append([steps * DT,] + counts)
         
 
         if (steps % dt_nrn2dt_jl == 0) and triplerun_env:
@@ -927,8 +930,12 @@ def main():
         
         rss.append(psutil.Process().memory_info().rss / 1024**2) # memory consumption in MB
     
-    if rank == 0 and REPORT_FLAG:
+    if rank == 0:
         f.close()
+
+        with open('S3_CompCount.dat', 'w') as f:
+            for row in CompCount:
+                f.write(','.join(map(str, row)) + '\n')
 
     ndamus.spike2file("out.dat")
 
