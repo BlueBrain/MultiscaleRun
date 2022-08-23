@@ -350,7 +350,7 @@ def main():
     log_stage("Running both STEPS and Neuron simultaneously...")
 
     if rank == 0:
-        f = open("S3_Moles_Current.dat", "w")
+        f_Moles_Current = open("S3_Moles_Current.dat", "w")
 
     if dualrun_env:
         index = np.array(range(ntets), dtype=TET_INDEX_DTYPE)
@@ -384,7 +384,7 @@ def main():
                 steps_sim.setBatchTetConcsNP(index, Na.name, tetConcs)
                 
                 if rank == 0:
-                    f.write(str(sum(tetConcs * tetVol)) + ',' + str(sum(tet_currents_all)) + '\n')
+                    f_Moles_Current.write(str(sum(tetConcs * tetVol)) + ',' + str(sum(tet_currents_all)) + '\n')
                 
                 counts = [steps_sim.getCompSpecCount(Geom.compname, spec) for spec in specNames] 
                 CompCount.append([steps * DT,] + counts)
@@ -931,7 +931,7 @@ def main():
         rss.append(psutil.Process().memory_info().rss / 1024**2) # memory consumption in MB
     
     if rank == 0:
-        f.close()
+        f_Moles_Current.close()
 
         with open('S3_CompCount.dat', 'w') as f:
             for row in CompCount:
