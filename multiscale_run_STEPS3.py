@@ -116,7 +116,7 @@ class Volsys0:
 
 
 #################################################
-# Model Build
+# STEPS Model Build
 #################################################
 
 def gen_model():
@@ -155,7 +155,7 @@ def init_solver(model, geom):
 # Triplerun related
 ##############################################
 
-#for out file names
+# for out file names
 timestr = time.strftime("%Y%m%d%H")
 
 # paths
@@ -275,54 +275,11 @@ def main():
     COULOMB = 6.24e18
     CA = COULOMB/AVOGADRO*CONC_FACTOR*DT_s
 
-    if triplerun_env:
-        dictAddOp = MPI.Op.Create(addDict, commute=True)
-        dictJoinOp = MPI.Op.Create(joinDict, commute=True)
-
-        um = {}
-        with open(u0_file,'r') as u0file:
-            u0fromFile = [float(line.replace(" ","").split("=")[1].split("#")[0].strip()) for line in u0file if ((not line.startswith("#")) and (len(line.replace(" ","")) > 2 )) ]
-        
-        mito_volume_fraction = [0.0459, 0.0522, 0.064, 0.0774, 0.0575, 0.0403]
-        mito_volume_fraction_scaled = []
-        for mvfi in mito_volume_fraction:
-            mito_volume_fraction_scaled.append(mvfi/max(mito_volume_fraction))
-
-        glycogen_au = [128.0, 100.0, 100.0, 90.0, 80.0, 75.0]
-        glycogen_scaled = []
-        for glsi in glycogen_au:
-            glycogen_scaled.append(glsi/max(glycogen_au))
-
-        cells_volumes = {}
-        logging.info("get volumes")
-
-        for i, nc in enumerate(ndamus.circuits.base_cell_manager.cells):
-
-            cells_volumes[int(nc.CCell.gid)] = 0
-
-            secs_all = [sec for sec in nc.CCell.all]
-            if len(secs_all) == 0:
-                print("len_secs_all volumes: ", len(secs_all))
-
-            for j, sec_elem in enumerate(secs_all):
-                seg_all = sec_elem.allseg()
-                for k, seg in enumerate(seg_all):
-                    cells_volumes[int(nc.CCell.gid)] += seg.volume()
-
-            #del secs_all
-
-        gid_to_cell = {}
-        for i, nc in enumerate(ndamus.circuits.base_cell_manager.cells):
-            gid_to_cell[int(nc.CCell.gid)] = nc
-
-        all_needs = comm.reduce({rank: set([int(i) for i in gid_to_cell.keys()])}, op=dictJoinOp, root=0)
-        if rank == 0:
-            all_needs.pop(0)
-
     with mt.timer.region('init_sims'):
         logging.info("Initializing simulations...")
         
         ndamus.sim_init()
+        
         if dualrun_env:
             log_stage("Initializing steps model and geom...")
             model = gen_model()
@@ -346,17 +303,60 @@ def main():
             CompCount = []
             specNames = [Na.name]
 
+            index = np.array(range(ntets), dtype=TET_INDEX_DTYPE)
+            tetConcs = np.zeros((ntets,), dtype=float)
+            # allreduce comm buffer
+            tet_currents_all = np.zeros((ntets,), dtype=float)
+
+            if rank == 0:
+                f_Moles_Current = open("S3_Moles_Current.dat", "w")
+
+        if triplerun_env:
+            dictAddOp = MPI.Op.Create(addDict, commute=True)
+            dictJoinOp = MPI.Op.Create(joinDict, commute=True)
+
+            um = {}
+            with open(u0_file,'r') as u0file:
+                u0fromFile = [float(line.replace(" ","").split("=")[1].split("#")[0].strip()) for line in u0file if ((not line.startswith("#")) and (len(line.replace(" ","")) > 2 )) ]
+            
+            mito_volume_fraction = [0.0459, 0.0522, 0.064, 0.0774, 0.0575, 0.0403]
+            mito_volume_fraction_scaled = []
+            for mvfi in mito_volume_fraction:
+                mito_volume_fraction_scaled.append(mvfi/max(mito_volume_fraction))
+
+            glycogen_au = [128.0, 100.0, 100.0, 90.0, 80.0, 75.0]
+            glycogen_scaled = []
+            for glsi in glycogen_au:
+                glycogen_scaled.append(glsi/max(glycogen_au))
+
+            cells_volumes = {}
+            logging.info("get volumes")
+
+            for i, nc in enumerate(ndamus.circuits.base_cell_manager.cells):
+
+                cells_volumes[int(nc.CCell.gid)] = 0
+
+                secs_all = [sec for sec in nc.CCell.all]
+                if len(secs_all) == 0:
+                    print("len_secs_all volumes: ", len(secs_all))
+
+                for j, sec_elem in enumerate(secs_all):
+                    seg_all = sec_elem.allseg()
+                    for k, seg in enumerate(seg_all):
+                        cells_volumes[int(nc.CCell.gid)] += seg.volume()
+
+                #del secs_all
+
+            gid_to_cell = {}
+            for i, nc in enumerate(ndamus.circuits.base_cell_manager.cells):
+                gid_to_cell[int(nc.CCell.gid)] = nc
+
+            all_needs = comm.reduce({rank: set([int(i) for i in gid_to_cell.keys()])}, op=dictJoinOp, root=0)
+            if rank == 0:
+                all_needs.pop(0)
+
     log_stage("===============================================")
-    log_stage("Running both STEPS and Neuron simultaneously...")
-
-    if rank == 0:
-        f_Moles_Current = open("S3_Moles_Current.dat", "w")
-
-    if dualrun_env:
-        index = np.array(range(ntets), dtype=TET_INDEX_DTYPE)
-        tetConcs = np.zeros((ntets,), dtype=float)
-        # allreduce comm buffer
-        tet_currents_all = np.zeros((ntets,), dtype=float)
+    log_stage("Running the selected solvers ...")
 
     steps = 0
     idxm = 0
@@ -366,10 +366,9 @@ def main():
         with mt.timer.region('neuron_cum'):
             ndamus.solve(t)
 
-        if steps % dt_nrn2dt_steps == 0 and dualrun_env:
+        if (steps % dt_nrn2dt_steps == 0) and dualrun_env:
             with mt.timer.region('steps_cum'):
                 steps_sim.run(t / 1000)  # ms to sec
-
 
             with mt.timer.region('processing'):
                 tet_currents = sec_mapping.fract_collective(neurSecmap, ntets, global_inds)
@@ -389,7 +388,6 @@ def main():
                 counts = [steps_sim.getCompSpecCount(Geom.compname, spec) for spec in specNames] 
                 CompCount.append([steps * DT,] + counts)
         
-
         if (steps % dt_nrn2dt_jl == 0) and triplerun_env:
             outs_r_glu = {}
             outs_r_gaba = {}    
@@ -930,7 +928,7 @@ def main():
         
         rss.append(psutil.Process().memory_info().rss / 1024**2) # memory consumption in MB
     
-    if rank == 0:
+    if rank == 0 and dualrun_env:
         f_Moles_Current.close()
 
         with open('S3_CompCount.dat', 'w') as f:
