@@ -13,6 +13,7 @@ import steps.utilities.geom_decompose as gd
 from neurodamus import Neurodamus
 from neurodamus.core import ProgressBarRank0 as ProgressBar
 from neurodamus.utils.logging import log_stage
+from neurodamus.utils.timeit import timeit
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 import dualrun.timer.mpi as mt
@@ -231,9 +232,7 @@ def joinDict(d1, d2, datatype):
 #################################################
 
 from diffeqpy import de
-logging.info("diffeqpy imported")
 from julia import Main ##https://stackoverflow.com/questions/57441384/trouble-getting-differential-equation-to-solve-via-diffeqpy
-logging.info("main jl imported")
 #from julia import Sundials
 #import jl2py
 #metabolism = jl2py.gen_metabolism_model(julia_code_file)
@@ -243,7 +242,6 @@ def gen_metabolism_model():
         julia_code = f.read()
     metabolism = Main.eval(julia_code)
     return metabolism
-logging.info("metabolism model read from file")
 
 ##############################################
 # Runtime
@@ -254,28 +252,28 @@ def timesteps(end: float, step: float):
 
 
 def main():
-    rank: int = comm.Get_rank()
+    with timeit(name='initialization'):
+        rank: int = comm.Get_rank()
 
-    rss = [] # Memory tracking
+        rss = [] # Memory tracking
 
-    ndamus = Neurodamus("BlueConfig", enable_reports=False, logging_level=None, enable_coord_mapping=True)
+        ndamus = Neurodamus("BlueConfig", enable_reports=False, logging_level=None, enable_coord_mapping=True)
 
-    # Simulate one molecule each 10e9
+        # Simulate one molecule each 10e9
 
-    # Times are in ms (for NEURON, because STEPS works with SI)
-    DT = ndamus._run_conf['Dt'] #0.025  #ms i.e. = 25 usec which is timstep of ndam
-    SIM_END = ndamus._run_conf['Duration'] #500.0 #10.0 #1000.0 #ms
-    DT_s = DT * 1e3 * dt_nrn2dt_steps
-    SIM_END_coupling_interval = DT*dt_nrn2dt_jl
+        # Times are in ms (for NEURON, because STEPS works with SI)
+        DT = ndamus._run_conf['Dt'] #0.025  #ms i.e. = 25 usec which is timstep of ndam
+        SIM_END = ndamus._run_conf['Duration'] #500.0 #10.0 #1000.0 #ms
+        DT_s = DT * 1e3 * dt_nrn2dt_steps
+        SIM_END_coupling_interval = DT*dt_nrn2dt_jl
 
-    # In steps use M/L and apply the SIM_REAL ratio
-    CONC_FACTOR = 1e-9
+        # In steps use M/L and apply the SIM_REAL ratio
+        CONC_FACTOR = 1e-9
 
-    AVOGADRO = 6.02e23
-    COULOMB = 6.24e18
-    CA = COULOMB/AVOGADRO*CONC_FACTOR*DT_s
+        AVOGADRO = 6.02e23
+        COULOMB = 6.24e18
+        CA = COULOMB/AVOGADRO*CONC_FACTOR*DT_s
 
-    with mt.timer.region('init_sims'):
         logging.info("Initializing simulations...")
         
         ndamus.sim_init()
@@ -361,572 +359,579 @@ def main():
     steps = 0
     idxm = 0
     for t in ProgressBar(int(SIM_END / DT))(timesteps(SIM_END, DT)):
-        steps += 1
+        with timeit(name='main_loop'):
 
-        with mt.timer.region('neuron_cum'):
-            ndamus.solve(t)
+            steps += 1
 
-        if (steps % dt_nrn2dt_steps == 0) and dualrun_env:
-            with mt.timer.region('steps_cum'):
-                steps_sim.run(t / 1000)  # ms to sec
+            with timeit(name='neurodamus_solver'):
+                ndamus.solve(t)
 
-            with mt.timer.region('processing'):
-                tet_currents = sec_mapping.fract_collective(neurSecmap, ntets, global_inds)
+            if (steps % dt_nrn2dt_steps == 0) and dualrun_env:
+                with timeit(name='steps_loop'):
+                    
+                    with timeit(name='steps_solver'):
+                        steps_sim.run(t / 1000)  # ms to sec
 
-                with mt.timer.region('comm_allred_currents'):
-                    comm.Allreduce(tet_currents, tet_currents_all, op=MPI.SUM)
+                    with timeit(name='neurodamus_steps_feedback'):
+                        tet_currents = sec_mapping.fract_collective(neurSecmap, ntets, global_inds)
 
-                # update the tet concentrations according to the currents
-                steps_sim.getBatchTetConcsNP(index, Na.name, tetConcs)
-                # 0.001A/mA 6.24e18 particles/coulomb 1000L/m3
-                tetConcs = tetConcs + tet_currents_all * CA * tetVol
-                steps_sim.setBatchTetConcsNP(index, Na.name, tetConcs)
-                
-                if rank == 0:
-                    f_Moles_Current.write(str(sum(tetConcs * tetVol)) + ',' + str(sum(tet_currents_all)) + '\n')
-                
-                counts = [steps_sim.getCompSpecCount(Geom.compname, spec) for spec in specNames] 
-                CompCount.append([steps * DT,] + counts)
-        
-        if (steps % dt_nrn2dt_jl == 0) and triplerun_env:
-            outs_r_glu = {}
-            outs_r_gaba = {}    
+                        comm.Allreduce(tet_currents, tet_currents_all, op=MPI.SUM)
+
+                        # update the tet concentrations according to the currents
+                        steps_sim.getBatchTetConcsNP(index, Na.name, tetConcs)
+                        # 0.001A/mA 6.24e18 particles/coulomb 1000L/m3
+                        tetConcs = tetConcs + tet_currents_all * CA * tetVol
+                        steps_sim.setBatchTetConcsNP(index, Na.name, tetConcs)
+                        
+                        if rank == 0:
+                            f_Moles_Current.write(str(sum(tetConcs * tetVol)) + ',' + str(sum(tet_currents_all)) + '\n')
+                        
+                        counts = [steps_sim.getCompSpecCount(Geom.compname, spec) for spec in specNames] 
+                        CompCount.append([steps * DT,] + counts)
             
-            collected_num_releases_glutamate = {}
-            collected_num_releases_gaba = {}
-
-            synapse_managers = [ manager for manager in ndamus.circuits.base_cell_manager.connection_managers.values() if isinstance(manager, SynapseRuleManager)  ]
-            #print("synapse_managers DONE",len(synapse_managers))
-            for syn_manager in synapse_managers:
-                #print("SYNMAN")
-                for conn in syn_manager.all_connections():
-                    num_releases_glutamate = 0 # 12jan2021
-                    num_releases_gaba = 0 # 12jan2021
-                    if conn.sgid in target_gids: # 12jan2021
-                        collected_num_releases_glutamate.setdefault(conn.sgid, {})
-                        collected_num_releases_gaba.setdefault(conn.sgid, {})
+            if (steps % dt_nrn2dt_jl == 0) and triplerun_env:
+                with timeit(name='metabolism_loop'):
+                    outs_r_glu = {}
+                    outs_r_gaba = {}    
                     
-                        for syn in conn._synapses:
-                            if hasattr(syn, 'A_AMPA_step'):
-                                num_releases_glutamate += syn.release_accumulator
-                                syn.release_accumulator = 0.0
-                            elif hasattr(syn, 'A_GABAA_step'):
-                                num_releases_gaba += syn.release_accumulator
-                                syn.release_accumulator = 0.0
-                        if isinstance(conn.sgid, float) or isinstance(conn.tgid, float):
-                            raise Exception(f"Rank {rank} ids {conn.sgid} {conn.tgid} have floats!")
+                    collected_num_releases_glutamate = {}
+                    collected_num_releases_gaba = {}
 
-                        collected_num_releases_glutamate[conn.sgid][conn.tgid]=num_releases_glutamate
-                        collected_num_releases_gaba[conn.sgid][conn.tgid]=num_releases_gaba
+                    synapse_managers = [ manager for manager in ndamus.circuits.base_cell_manager.connection_managers.values() if isinstance(manager, SynapseRuleManager)  ]
+                    #print("synapse_managers DONE",len(synapse_managers))
+                    for syn_manager in synapse_managers:
+                        #print("SYNMAN")
+                        for conn in syn_manager.all_connections():
+                            num_releases_glutamate = 0 # 12jan2021
+                            num_releases_gaba = 0 # 12jan2021
+                            if conn.sgid in target_gids: # 12jan2021
+                                collected_num_releases_glutamate.setdefault(conn.sgid, {})
+                                collected_num_releases_gaba.setdefault(conn.sgid, {})
+                            
+                                for syn in conn._synapses:
+                                    if hasattr(syn, 'A_AMPA_step'):
+                                        num_releases_glutamate += syn.release_accumulator
+                                        syn.release_accumulator = 0.0
+                                    elif hasattr(syn, 'A_GABAA_step'):
+                                        num_releases_gaba += syn.release_accumulator
+                                        syn.release_accumulator = 0.0
+                                if isinstance(conn.sgid, float) or isinstance(conn.tgid, float):
+                                    raise Exception(f"Rank {rank} ids {conn.sgid} {conn.tgid} have floats!")
+
+                                collected_num_releases_glutamate[conn.sgid][conn.tgid]=num_releases_glutamate
+                                collected_num_releases_gaba[conn.sgid][conn.tgid]=num_releases_gaba
+                                
+                        #del conn
+                        #del syn
+                        #del num_releases_glutamate # 26jan2021
+                        #del num_releases_gaba # 26jan2021
+
+                    ##################### METABOLISM RUN NOW!
+                    comm.Barrier()
+                    sum_t = {}
+                    for s in collected_num_releases_glutamate:
+                        for t in collected_num_releases_glutamate[s]:
+                            sum_t.setdefault(t, 0.0)
+                            sum_t[t] += collected_num_releases_glutamate[s][t]
+                    #if idxm % 10 == 0:
+                    with open(ins_glut_file_output, 'a') as f:
+                        for t in sum_t:
+                            f.write(f"{idxm}\t{rank}\t{t}\t{sum_t[t]}\n")
+                    #del sum_t
+
+                    comm.Barrier()
+
+                    sum_t = {}
+                    for s in collected_num_releases_gaba:
+                        for t in collected_num_releases_gaba[s]:
+                            sum_t.setdefault(t, 0.0)
+                            sum_t[t] += collected_num_releases_gaba[s][t]
+
+                    #if idxm % 10 == 0:
+                    with open(ins_gaba_file_output, 'a') as f:
+                        for t in sum_t:
+                            f.write(f"{idxm}\t{rank}\t{t}\t{sum_t[t]}\n")
+                    #del sum_t
+
+
+                    logging.info("barrier before start all_events")       
+                    comm.Barrier()
+                                
+                    logging.info("start all_events glu")
+                    all_events_glu = comm.reduce(collected_num_releases_glutamate, op=dictAddOp, root=0)
+                    logging.info("start on rank 0 Glu")
+                    if rank == 0:
+                        for r, needs in all_needs.items():
+                            events = {s: all_events_glu[s]  for s in needs if s in all_events_glu}
+                            comm.send(events, dest=r)
+                        received_events_glu = {s: all_events_glu[s] for s in gid_to_cell if s in all_events_glu}
+                    else:
+                        received_events_glu = comm.recv(source=0)
+                    comm.Barrier()
+
+                    if rank == 0:  
+                        all_outs_r_glu = {}
+                        for sgid, tv in all_events_glu.items():
+                            for tgid, v in tv.items():
+                                all_outs_r_glu[sgid] = all_outs_r_glu.get(sgid, 0.0) + v
+                        #if idxm % 10 == 0:
+                        with open(outs_glut_file_output, 'a') as f:
+                            for sgid, v in all_outs_r_glu.items():
+                                f.write(f"{idxm}\t{sgid}\t{v}\n")
+                        #del all_outs_r_glu
+                    #del all_events_glu
+
+                    for s, tv in received_events_glu.items():
+                        collected_num_releases_glutamate.setdefault(s, {})
+                        for t, v in tv.items():
+                            if t in gid_to_cell:
+                                continue
+                            collected_num_releases_glutamate[s][t] = v
+                    comm.Barrier()
+                    #del received_events_glu
+
+                    for sgid, tv in collected_num_releases_glutamate.items():
+                        for tgid, v in tv.items():
+                            outs_r_glu[sgid] = outs_r_glu.get(sgid, 0.0) + v
+                    comm.Barrier()
+                    #del collected_num_releases_glutamate # 23jan2021
+
+
+                    all_events_gaba = comm.reduce(collected_num_releases_gaba, op=dictAddOp, root=0)
+                    logging.info("start on rank 0 GABA")
+                    if rank == 0:
+                        for r, needs in all_needs.items():
+                            events = {s: all_events_gaba[s]  for s in needs if s in all_events_gaba}
+                            comm.send(events, dest=r)
+
+                        received_events_gaba = {s: all_events_gaba[s] for s in gid_to_cell if s in all_events_gaba}
+                    else:
+                        received_events_gaba = comm.recv(source=0)
+                    comm.Barrier()
+
+                    if rank == 0:  
+                        all_outs_r_gaba = {}
+                        for sgid, tv in all_events_gaba.items():
+                            for tgid, v in tv.items():
+                                all_outs_r_gaba[sgid] = all_outs_r_gaba.get(sgid, 0.0) + v
+                        #if idxm % 10 == 0:
+                        with open(outs_gaba_file_output, 'a') as f:
+                            for sgid, v in all_outs_r_gaba.items():
+                                f.write(f"{idxm}\t{sgid}\t{v}\n")
+                        #del all_outs_r_gaba
+                    #del all_events_gaba
+
+                    for s, tv in received_events_gaba.items():
+                        collected_num_releases_gaba.setdefault(s, {})
+                        for t, v in tv.items():
+                            if t in gid_to_cell:
+                                continue
+                            collected_num_releases_gaba[s][t] = v
+                    comm.Barrier()
+                    #del received_events_gaba
+
+                    for sgid, tv in collected_num_releases_gaba.items():
+                        for tgid, v in tv.items():
+                            outs_r_gaba[sgid] = outs_r_gaba.get(sgid, 0.0) + v
+                    comm.Barrier()
+                    #del collected_num_releases_gaba # 23jan2021
+
+                    comm.Barrier()
+
+
+                    #logging.info("get ions from ndam")
+
+                    nais_mean = {}
+                    ina_density = {}
+                    kis_mean = {}
+                    ik_density = {}
+                    cais_mean = {}
+
+                    atpi_mean = {}
+                    adpi_mean = {}
+                    #cells_areas = {}
+                    #cells_volumes = {}
+
+                    current_ina = {}
+                    current_ik = {}
+                    #current_ica = {}
+
+                    nais = {}
+                    cais = {}
+                    kis = {}
+                    atpi = {}
+                    adpi = {}
+
+                    with timeit(name='neurodamus_metabolism_feedback'):
+                        for c_gid, nc in gid_to_cell.items():
+                            if c_gid not in target_gids:
+                                print("gid_not_in_list")
+                                continue
+
+                            #counter_seg = {}
+                            counter_seg_Na = {}
+                            counter_seg_K = {}
+                            counter_seg_Ca = {}
+                            counter_seg_ATP = {}
+                            counter_seg_ADP = {}
+
+                            cells_volumes_Na = {}
+                            cells_areas_Na = {}
+                            cells_volumes_K = {}
+                            cells_areas_K = {}
+                            cells_volumes_Ca = {}
+                            cells_volumes_ATP = {}
+                            cells_volumes_ADP = {}
+
+                            #counter_seg.setdefault(c_gid, 0.0)
+                            counter_seg_Na.setdefault(c_gid, 0.0)
+                            counter_seg_K.setdefault(c_gid, 0.0)
+                            counter_seg_Ca.setdefault(c_gid, 0.0)
+                            counter_seg_ATP.setdefault(c_gid, 0.0)
+                            counter_seg_ADP.setdefault(c_gid, 0.0)
+
+                            cells_volumes_Na.setdefault(c_gid, 0.0)
+                            cells_areas_Na.setdefault(c_gid, 0.0)
+                            cells_volumes_K.setdefault(c_gid, 0.0)
+                            cells_areas_K.setdefault(c_gid, 0.0)
+                            cells_volumes_Ca.setdefault(c_gid, 0.0)
+                            cells_volumes_ATP.setdefault(c_gid, 0.0)
+                            cells_volumes_ADP.setdefault(c_gid, 0.0)
+
+                            nais.setdefault(c_gid, 0.0)
+                            cais.setdefault(c_gid, 0.0)
+                            kis.setdefault(c_gid, 0.0)
+                            atpi.setdefault(c_gid, 0.0)
+                            adpi.setdefault(c_gid, 0.0)
+
+                            #cells_areas.setdefault(c_gid, 0.0)
+                            #cells_volumes.setdefault(c_gid, 0.0)
+
+                            current_ina.setdefault(c_gid, 0.0)
+                            current_ik.setdefault(c_gid, 0.0)
+
+                            secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and (hasattr(sec, ATP.atpi_var)) and (hasattr(sec, ADP.adpi_var)) and hasattr(sec, Ca.current_var)  )]
+
+                            if len(secs_all)==0:
+                                print("len_secs all: ",len(secs_all))
+                            for sec_elem in secs_all:
+                                seg_all = sec_elem.allseg()
+                                for seg in seg_all:
+                                #for seg in sec_elem:
+                                    #In order to loop through only the middle segment in the soma (as neuron does)
+                #                    if ((isinstance(seg.nai, int)) or (isinstance(seg.nai, float))):
+                                    counter_seg_Na[c_gid] += 1.0
+                                    nais[c_gid] += seg.nai * 1e-3 * AVOGADRO * (seg.volume() * 1e-15) # number of molecules
+                                    cells_volumes_Na[c_gid] += seg.volume()
+                                    cells_areas_Na[c_gid] += seg.area()
+                                    current_ina[c_gid] += seg.ina * seg.area() / 100 # nA
+                                    current_ik[c_gid] += seg.ik * seg.area() / 100 # nA
+                                    kis[c_gid] += seg.ki * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
+                                    cais[c_gid] += seg.cai * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
+                                    atpi[c_gid] += seg.atpi * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
+                                    adpi[c_gid] += seg.adpi * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
+                            if counter_seg_Na[c_gid] == 0.0:
+                                print("counter_seg_Na nai 0")
+                                with open(test_counter_seg_file, "a") as param_outputfile:
+                                    param_outputfile.write(str(c_gid))
+                                    param_outputfile.write("\n")
+
+                                cells_volumes_Na.pop(c_gid, None)
+                                nais.pop(c_gid, None)
+                                cells_areas_Na.pop(c_gid, None)
+                                current_ina.pop(c_gid, None)
+                                current_ik.pop(c_gid, None)
+                                kis.pop(c_gid, None)
+                                cais.pop(c_gid, None)
+                                atpi.pop(c_gid, None)
+                                adpi.pop(c_gid, None)
+                                continue
+                            nais_mean[c_gid] = nais[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
+                            ina_density[c_gid] = current_ina[c_gid] / cells_areas_Na[c_gid] * 100 
+                            ik_density[c_gid] = current_ik[c_gid] / cells_areas_Na[c_gid] * 100
+                            kis_mean[c_gid]= kis[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM  #/ counter_seg[c_gid]
+                            cais_mean[c_gid]= cais[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM  #/ counter_seg[c_gid]
+                            atpi_mean[c_gid]= atpi[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
+                            adpi_mean[c_gid] = adpi[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
+                            #del secs_Na
+
+                #            log_stage("nais test for nan")
+                #            if (np.isnan(nais_mean[c_gid]) or math.isnan(nais_mean[c_gid]) or  (not isinstance(nais_mean[c_gid], float))):
+                #                if rank == 0:
+                #                    print("nai_nan_found at idxm:",idxm)
+                #                    print("c_gid:",c_gid)
+                #                    print("value:",nais_mean[c_gid])
+                #                    print("rank:",rank)
+                #                raise Exception("param_nan nais")
                         
-                #del conn
-                #del syn
-                #del num_releases_glutamate # 26jan2021
-                #del num_releases_gaba # 26jan2021
+                    comm.Barrier()
+                    #del cells_volumes_Na
+                    #del cells_areas_Na
+                    #del cells_volumes_K
+                    #del cells_areas_K
+                    #del cells_volumes_Ca
+                    #del cells_volumes_ATP
+                    #del cells_volumes_ADP
 
-            ##################### METABOLISM RUN NOW!
-            comm.Barrier()
-            sum_t = {}
-            for s in collected_num_releases_glutamate:
-                for t in collected_num_releases_glutamate[s]:
-                    sum_t.setdefault(t, 0.0)
-                    sum_t[t] += collected_num_releases_glutamate[s][t]
-            #if idxm % 10 == 0:
-            with open(ins_glut_file_output, 'a') as f:
-                for t in sum_t:
-                    f.write(f"{idxm}\t{rank}\t{t}\t{sum_t[t]}\n")
-            #del sum_t
-
-            comm.Barrier()
-
-            sum_t = {}
-            for s in collected_num_releases_gaba:
-                for t in collected_num_releases_gaba[s]:
-                    sum_t.setdefault(t, 0.0)
-                    sum_t[t] += collected_num_releases_gaba[s][t]
-
-            #if idxm % 10 == 0:
-            with open(ins_gaba_file_output, 'a') as f:
-                for t in sum_t:
-                    f.write(f"{idxm}\t{rank}\t{t}\t{sum_t[t]}\n")
-            #del sum_t
+                    #del counter_seg_Na
+                    #del counter_seg_K
+                    #del counter_seg_Ca
+                    #del counter_seg_ATP
+                    #del counter_seg_ADP
 
 
-            logging.info("barrier before start all_events")       
-            comm.Barrier()
+
+                    error_solver = None
+                    failed_cells = []
+
+                    #outs_r_to_met = {}
+                    for c_gid, nc in gid_to_cell.items():
+                        if c_gid not in target_gids:
+                            continue
+            
+                        if c_gid in exc_target_gids:
+                            outs_r_to_met = 4000.0 * outs_r_glu.get(c_gid,0.0) * 1e3 / ( AVOGADRO * cells_volumes[c_gid] * 1e-15 ) / SIM_END_coupling_interval  #mM/ms
+                            glutamatergic_gaba_scaling = 0.1
+
+
+                            if c_gid in target_gids_L1:
+                                GLY_a = glycogen_scaled[0]*5.0
+                                mito_scale = mito_volume_fraction_scaled[0]
+
+                            elif c_gid in target_gids_L2:
+                                GLY_a = glycogen_scaled[1]*5.0
+                                mito_scale = mito_volume_fraction_scaled[1]
+
+                            elif c_gid in target_gids_L3:
+                                GLY_a = glycogen_scaled[2]*5.0
+                                mito_scale = mito_volume_fraction_scaled[2]
+
+                            elif c_gid in target_gids_L4:
+                                GLY_a = glycogen_scaled[3]*5.0
+                                mito_scale = mito_volume_fraction_scaled[3]
+
+                            elif c_gid in target_gids_L5:
+                                GLY_a = glycogen_scaled[4]*5.0
+                                mito_scale = mito_volume_fraction_scaled[4]
+
+                            elif c_gid in target_gids_L6:
+                                GLY_a = glycogen_scaled[5]*5.0
+                                mito_scale = mito_volume_fraction_scaled[5]
+
+                        elif c_gid in inh_target_gids:
+                            outs_r_to_met = 4000.0 * outs_r_gaba.get(c_gid,0.0) * 1e3 / ( AVOGADRO * cells_volumes[c_gid] * 1e-15 ) / SIM_END_coupling_interval  #mM/ms
+
+                            glutamatergic_gaba_scaling = 1.0
+
+                            if c_gid in target_gids_L1:
+                                GLY_a = glycogen_scaled[0]*5.0
+                                mito_scale = mito_volume_fraction_scaled[0]
+
+                            elif c_gid in target_gids_L2:
+                                GLY_a = glycogen_scaled[1]*5.0
+                                mito_scale = mito_volume_fraction_scaled[1]
+
+                            elif c_gid in target_gids_L3:
+                                GLY_a = glycogen_scaled[2]*5.0
+                                mito_scale = mito_volume_fraction_scaled[2]
+
+                            elif c_gid in target_gids_L4:
+                                GLY_a = glycogen_scaled[3]*5.0
+                                mito_scale = mito_volume_fraction_scaled[3]
+
+                            elif c_gid in target_gids_L5:
+                                GLY_a = glycogen_scaled[4]*5.0
+                                mito_scale = mito_volume_fraction_scaled[4]
+
+                            elif c_gid in target_gids_L6:
+                                GLY_a = glycogen_scaled[5]*5.0
+                                mito_scale = mito_volume_fraction_scaled[5]
+
+                        else:
+                            with open(wrong_gids_testing_file, "a") as f:
+                                f.write(f"{rank}\t{c_gid}\n")
+
+            #            del outs_r_glu
+            #            del outs_r_gaba
+
+
+                        #VNeu0 = voltages_per_gids[c_gid] #voltage_mean[c_gid] #changed7jan2021
+                        m0 =  0.1*(-65.0 + 30.0)/(1.0-np.exp(-0.1*(-65.0 + 30.0))) / (  0.1*(-65.0 + 30.0)/(1.0-np.exp(-0.1*(-65.0 + 30.0)))    +     4.0*np.exp(-(-65.0 + 55.0)/18.0) )  # (alpha_m + beta_m)
                         
-            logging.info("start all_events glu")
-            all_events_glu = comm.reduce(collected_num_releases_glutamate, op=dictAddOp, root=0)
-            logging.info("start on rank 0 Glu")
-            if rank == 0:
-                for r, needs in all_needs.items():
-                    events = {s: all_events_glu[s]  for s in needs if s in all_events_glu}
-                    comm.send(events, dest=r)
-                received_events_glu = {s: all_events_glu[s] for s in gid_to_cell if s in all_events_glu}
-            else:
-                received_events_glu = comm.recv(source=0)
-            comm.Barrier()
-
-            if rank == 0:  
-                all_outs_r_glu = {}
-                for sgid, tv in all_events_glu.items():
-                    for tgid, v in tv.items():
-                        all_outs_r_glu[sgid] = all_outs_r_glu.get(sgid, 0.0) + v
-                #if idxm % 10 == 0:
-                with open(outs_glut_file_output, 'a') as f:
-                    for sgid, v in all_outs_r_glu.items():
-                        f.write(f"{idxm}\t{sgid}\t{v}\n")
-                #del all_outs_r_glu
-            #del all_events_glu
-
-            for s, tv in received_events_glu.items():
-                collected_num_releases_glutamate.setdefault(s, {})
-                for t, v in tv.items():
-                    if t in gid_to_cell:
-                        continue
-                    collected_num_releases_glutamate[s][t] = v
-            comm.Barrier()
-            #del received_events_glu
-
-            for sgid, tv in collected_num_releases_glutamate.items():
-                for tgid, v in tv.items():
-                    outs_r_glu[sgid] = outs_r_glu.get(sgid, 0.0) + v
-            comm.Barrier()
-            #del collected_num_releases_glutamate # 23jan2021
-
-
-            all_events_gaba = comm.reduce(collected_num_releases_gaba, op=dictAddOp, root=0)
-            logging.info("start on rank 0 GABA")
-            if rank == 0:
-                for r, needs in all_needs.items():
-                    events = {s: all_events_gaba[s]  for s in needs if s in all_events_gaba}
-                    comm.send(events, dest=r)
-
-                received_events_gaba = {s: all_events_gaba[s] for s in gid_to_cell if s in all_events_gaba}
-            else:
-                received_events_gaba = comm.recv(source=0)
-            comm.Barrier()
-
-            if rank == 0:  
-                all_outs_r_gaba = {}
-                for sgid, tv in all_events_gaba.items():
-                    for tgid, v in tv.items():
-                        all_outs_r_gaba[sgid] = all_outs_r_gaba.get(sgid, 0.0) + v
-                #if idxm % 10 == 0:
-                with open(outs_gaba_file_output, 'a') as f:
-                    for sgid, v in all_outs_r_gaba.items():
-                        f.write(f"{idxm}\t{sgid}\t{v}\n")
-                #del all_outs_r_gaba
-            #del all_events_gaba
-
-            for s, tv in received_events_gaba.items():
-                collected_num_releases_gaba.setdefault(s, {})
-                for t, v in tv.items():
-                    if t in gid_to_cell:
-                        continue
-                    collected_num_releases_gaba[s][t] = v
-            comm.Barrier()
-            #del received_events_gaba
-
-            for sgid, tv in collected_num_releases_gaba.items():
-                for tgid, v in tv.items():
-                    outs_r_gaba[sgid] = outs_r_gaba.get(sgid, 0.0) + v
-            comm.Barrier()
-            #del collected_num_releases_gaba # 23jan2021
-
-            comm.Barrier()
-
-
-            #logging.info("get ions from ndam")
-
-            nais_mean = {}
-            ina_density = {}
-            kis_mean = {}
-            ik_density = {}
-            cais_mean = {}
-
-            atpi_mean = {}
-            adpi_mean = {}
-            #cells_areas = {}
-            #cells_volumes = {}
-
-            current_ina = {}
-            current_ik = {}
-            #current_ica = {}
-
-            nais = {}
-            cais = {}
-            kis = {}
-            atpi = {}
-            adpi = {}
-
-            for c_gid, nc in gid_to_cell.items():
-                if c_gid not in target_gids:
-                    print("gid_not_in_list")
-                    continue
-
-                #counter_seg = {}
-                counter_seg_Na = {}
-                counter_seg_K = {}
-                counter_seg_Ca = {}
-                counter_seg_ATP = {}
-                counter_seg_ADP = {}
-
-                cells_volumes_Na = {}
-                cells_areas_Na = {}
-                cells_volumes_K = {}
-                cells_areas_K = {}
-                cells_volumes_Ca = {}
-                cells_volumes_ATP = {}
-                cells_volumes_ADP = {}
-
-                #counter_seg.setdefault(c_gid, 0.0)
-                counter_seg_Na.setdefault(c_gid, 0.0)
-                counter_seg_K.setdefault(c_gid, 0.0)
-                counter_seg_Ca.setdefault(c_gid, 0.0)
-                counter_seg_ATP.setdefault(c_gid, 0.0)
-                counter_seg_ADP.setdefault(c_gid, 0.0)
-
-                cells_volumes_Na.setdefault(c_gid, 0.0)
-                cells_areas_Na.setdefault(c_gid, 0.0)
-                cells_volumes_K.setdefault(c_gid, 0.0)
-                cells_areas_K.setdefault(c_gid, 0.0)
-                cells_volumes_Ca.setdefault(c_gid, 0.0)
-                cells_volumes_ATP.setdefault(c_gid, 0.0)
-                cells_volumes_ADP.setdefault(c_gid, 0.0)
-
-                nais.setdefault(c_gid, 0.0)
-                cais.setdefault(c_gid, 0.0)
-                kis.setdefault(c_gid, 0.0)
-                atpi.setdefault(c_gid, 0.0)
-                adpi.setdefault(c_gid, 0.0)
-
-                #cells_areas.setdefault(c_gid, 0.0)
-                #cells_volumes.setdefault(c_gid, 0.0)
-
-                current_ina.setdefault(c_gid, 0.0)
-                current_ik.setdefault(c_gid, 0.0)
-
-                secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and (hasattr(sec, ATP.atpi_var)) and (hasattr(sec, ADP.adpi_var)) and hasattr(sec, Ca.current_var)  )]
-
-                if len(secs_all)==0:
-                    print("len_secs all: ",len(secs_all))
-                for sec_elem in secs_all:
-                    seg_all = sec_elem.allseg()
-                    for seg in seg_all:
-                    #for seg in sec_elem:
-                        #In order to loop through only the middle segment in the soma (as neuron does)
-    #                    if ((isinstance(seg.nai, int)) or (isinstance(seg.nai, float))):
-                        counter_seg_Na[c_gid] += 1.0
-                        nais[c_gid] += seg.nai * 1e-3 * AVOGADRO * (seg.volume() * 1e-15) # number of molecules
-                        cells_volumes_Na[c_gid] += seg.volume()
-                        cells_areas_Na[c_gid] += seg.area()
-                        current_ina[c_gid] += seg.ina * seg.area() / 100 # nA
-                        current_ik[c_gid] += seg.ik * seg.area() / 100 # nA
-                        kis[c_gid] += seg.ki * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
-                        cais[c_gid] += seg.cai * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
-                        atpi[c_gid] += seg.atpi * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
-                        adpi[c_gid] += seg.adpi * 1e-3 * AVOGADRO * (seg.volume() * 1e-15)
-                if counter_seg_Na[c_gid] == 0.0:
-                    print("counter_seg_Na nai 0")
-                    with open(test_counter_seg_file, "a") as param_outputfile:
-                        param_outputfile.write(str(c_gid))
-                        param_outputfile.write("\n")
-
-                    cells_volumes_Na.pop(c_gid, None)
-                    nais.pop(c_gid, None)
-                    cells_areas_Na.pop(c_gid, None)
-                    current_ina.pop(c_gid, None)
-                    current_ik.pop(c_gid, None)
-                    kis.pop(c_gid, None)
-                    cais.pop(c_gid, None)
-                    atpi.pop(c_gid, None)
-                    adpi.pop(c_gid, None)
-                    continue
-                nais_mean[c_gid] = nais[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
-                ina_density[c_gid] = current_ina[c_gid] / cells_areas_Na[c_gid] * 100 
-                ik_density[c_gid] = current_ik[c_gid] / cells_areas_Na[c_gid] * 100
-                kis_mean[c_gid]= kis[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM  #/ counter_seg[c_gid]
-                cais_mean[c_gid]= cais[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM  #/ counter_seg[c_gid]
-                atpi_mean[c_gid]= atpi[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
-                adpi_mean[c_gid] = adpi[c_gid] * 1e3 / ( AVOGADRO * cells_volumes_Na[c_gid] * 1e-15 ) #mM #/ counter_seg[c_gid]
-                #del secs_Na
-
-    #            log_stage("nais test for nan")
-    #            if (np.isnan(nais_mean[c_gid]) or math.isnan(nais_mean[c_gid]) or  (not isinstance(nais_mean[c_gid], float))):
-    #                if rank == 0:
-    #                    print("nai_nan_found at idxm:",idxm)
-    #                    print("c_gid:",c_gid)
-    #                    print("value:",nais_mean[c_gid])
-    #                    print("rank:",rank)
-    #                raise Exception("param_nan nais")
-                
-            comm.Barrier()
-            #del cells_volumes_Na
-            #del cells_areas_Na
-            #del cells_volumes_K
-            #del cells_areas_K
-            #del cells_volumes_Ca
-            #del cells_volumes_ATP
-            #del cells_volumes_ADP
-
-            #del counter_seg_Na
-            #del counter_seg_K
-            #del counter_seg_Ca
-            #del counter_seg_ATP
-            #del counter_seg_ADP
-
-
-
-            error_solver = None
-            failed_cells = []
-
-            #outs_r_to_met = {}
-            for c_gid, nc in gid_to_cell.items():
-                if c_gid not in target_gids:
-                    continue
-    
-                if c_gid in exc_target_gids:
-                    outs_r_to_met = 4000.0 * outs_r_glu.get(c_gid,0.0) * 1e3 / ( AVOGADRO * cells_volumes[c_gid] * 1e-15 ) / SIM_END_coupling_interval  #mM/ms
-                    glutamatergic_gaba_scaling = 0.1
-
-
-                    if c_gid in target_gids_L1:
-                        GLY_a = glycogen_scaled[0]*5.0
-                        mito_scale = mito_volume_fraction_scaled[0]
-
-                    elif c_gid in target_gids_L2:
-                        GLY_a = glycogen_scaled[1]*5.0
-                        mito_scale = mito_volume_fraction_scaled[1]
-
-                    elif c_gid in target_gids_L3:
-                        GLY_a = glycogen_scaled[2]*5.0
-                        mito_scale = mito_volume_fraction_scaled[2]
-
-                    elif c_gid in target_gids_L4:
-                        GLY_a = glycogen_scaled[3]*5.0
-                        mito_scale = mito_volume_fraction_scaled[3]
-
-                    elif c_gid in target_gids_L5:
-                        GLY_a = glycogen_scaled[4]*5.0
-                        mito_scale = mito_volume_fraction_scaled[4]
-
-                    elif c_gid in target_gids_L6:
-                        GLY_a = glycogen_scaled[5]*5.0
-                        mito_scale = mito_volume_fraction_scaled[5]
-
-                elif c_gid in inh_target_gids:
-                    outs_r_to_met = 4000.0 * outs_r_gaba.get(c_gid,0.0) * 1e3 / ( AVOGADRO * cells_volumes[c_gid] * 1e-15 ) / SIM_END_coupling_interval  #mM/ms
-
-                    glutamatergic_gaba_scaling = 1.0
-
-                    if c_gid in target_gids_L1:
-                        GLY_a = glycogen_scaled[0]*5.0
-                        mito_scale = mito_volume_fraction_scaled[0]
-
-                    elif c_gid in target_gids_L2:
-                        GLY_a = glycogen_scaled[1]*5.0
-                        mito_scale = mito_volume_fraction_scaled[1]
-
-                    elif c_gid in target_gids_L3:
-                        GLY_a = glycogen_scaled[2]*5.0
-                        mito_scale = mito_volume_fraction_scaled[2]
-
-                    elif c_gid in target_gids_L4:
-                        GLY_a = glycogen_scaled[3]*5.0
-                        mito_scale = mito_volume_fraction_scaled[3]
-
-                    elif c_gid in target_gids_L5:
-                        GLY_a = glycogen_scaled[4]*5.0
-                        mito_scale = mito_volume_fraction_scaled[4]
-
-                    elif c_gid in target_gids_L6:
-                        GLY_a = glycogen_scaled[5]*5.0
-                        mito_scale = mito_volume_fraction_scaled[5]
-
-                else:
-                    with open(wrong_gids_testing_file, "a") as f:
-                        f.write(f"{rank}\t{c_gid}\n")
-
-    #            del outs_r_glu
-    #            del outs_r_gaba
-
-
-                #VNeu0 = voltages_per_gids[c_gid] #voltage_mean[c_gid] #changed7jan2021
-                m0 =  0.1*(-65.0 + 30.0)/(1.0-np.exp(-0.1*(-65.0 + 30.0))) / (  0.1*(-65.0 + 30.0)/(1.0-np.exp(-0.1*(-65.0 + 30.0)))    +     4.0*np.exp(-(-65.0 + 55.0)/18.0) )  # (alpha_m + beta_m)
-                
-                u0 = [-65.0,m0] + u0fromFile
-                #u0 = [VNeu0,m0,h0,n0,Conc_Cl_out,Conc_Cl_in, Na0in,K0out,Glc_b,Lac_b,O2_b,Q0,Glc_ecs,Lac_ecs,O2_ecs,O2_n,O2_a,Glc_n,Glc_a,Lac_n,Lac_a,Pyr_n,Pyr_a,PCr_n,PCr_a,Cr_n,Cr_a,ATP_n,ATP_a,ADP_n,ADP_a,NADH_n,NADH_a,NAD_n,NAD_a,ksi0,ksi0]
-
-    #            if rank == 0:
-    #                print("u0: ",len(u0))
-    #                print("u027: ",u0[27])
-                
-                metabolism = gen_metabolism_model()  
-
-                tspan_m = (1e-3*float(idxm)*SIM_END_coupling_interval,1e-3*(float(idxm)+1.0)*SIM_END_coupling_interval)  #tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0)) 
-                um[(0,c_gid)] = u0
-
-                vm=um[(idxm,c_gid)]
-
-                #vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
-                #vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
-
-                #comm.Barrier()
-
-                vm[6] = nais_mean[c_gid]
-                vm[7] = u0[7] - 1.33 * (kis_mean[c_gid] - 140.0 ) # Kout #changed7jan2021
-    #            vm[8] = 2.255 # Glc_b
-                vm[27] = 0.5*1.2 + 0.5*atpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-                vm[29] = 0.5*6.3e-3 + 0.5*adpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-
-                #param = [current_ina[c_gid], 0.06, voltage_mean[c_gid],nais_mean[c_gid],kis_mean[c_gid], current_ik[c_gid], 4.4, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling] 
-
-                #comm.Barrier()
-
-    #            param = [current_ina[c_gid], 0.06, voltage_mean[c_gid], nais_mean[c_gid], kis_mean[c_gid], current_ik[c_gid], 4.1, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met[c_gid]] 
-                #!!! 1000* in param is to have current_ina and current_ik units = uA/cm2 same as in Calvetti
-
-                param = [ina_density[c_gid], 0.06, -65.0, nais_mean[c_gid], kis_mean[c_gid], ik_density[c_gid], 4.1, 0.17, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met]
-                prob_metabo = de.ODEProblem(metabolism,vm,tspan_m,param)
-                log_stage("solve metabolism")
-                #with timer('julia'):
-                #if idxm % 10 == 0:
-                with open(param_out_file, "a") as param_outputfile:
-                    out_data = [c_gid]
-                    out_data.append(rank)
-                    out_data.append(idxm)
-                    out_data.extend(param)
-                    #out_data.append(current_ina[c_gid])
-                    #out_data.append(outs_r[idxm].get(c_gid, 0.0))
-                    out_data.append(cells_volumes[c_gid])
-                    #out_data.append(cells_areas[c_gid])
-                    param_outputfile.write("\t".join([str(p) for p in out_data]))
-                    param_outputfile.write("\n")
-                    out_data = None
-
-                if ((any([np.isnan(p) for p in param])) or  (any([math.isnan(p) for p in param])) or (not (isinstance(sum(param), float)) )):
-                    print("param_nan_found at idxm: ",idxm)
-                    failed_cells.append(c_gid)
-                    #gid_to_cell.pop(c_gid) 
-
-                    continue
-
-                else:
-                    
-                    log_stage("solve metabolism")
-
-
-
-            #  sol = de.solve(prob_metabo, de.Rodas5(),reltol=1e-8,abstol=1e-8,save_everystep=False )
-                sol = None
-                error_solver = None
-
-                for i in range(5):
-                    if i ==5:
-                        print("metab solver attempt 10")
-                    try:
-                        sol = de.solve(prob_metabo, de.Rodas4P() ,reltol=1e-6,abstol=1e-6,maxiters=1e4,save_everystep=False) #de.Rodas4P ,autodiff=False (deprecated ?)
-                        #sol = de.solve(prob_metabo, de.Rosenbrock23(),autodiff=False ,reltol=1e-8,abstol=1e-8,maxiters=1e4,save_everystep=False) #de.Rodas4P
-
-                        #sol = de.solve(prob_metabo, de.Tsit5(),reltol=1e-4,abstol=1e-4,maxiters=1e4,save_everystep=False)
-                        #sol = de.solve(prob_metabo, de.AutoTsit5(de.Rosenbrock23()),reltol=1e-4,abstol=1e-6,maxiters=1e4,save_everystep=False)
-                        #sol = de.solve(prob_metabo, de.Tsit5(),reltol=1e-6,abstol=1e-6,maxiters=1e4,save_everystep=False)
-
-                        #with open(f"/gpfs/bbp.cscs.ch/project/proj34/scratch/polina/solver_good_{timestr}.txt", "a") as f:
-                        #    f.write(f"{rank}\t{c_gid}\n")    
-
-                        if sol.retcode != "Success":
-                            print(f"sol.retcode: {sol.retcode}")
-                        #else:
-                        #    print(f"success sol.retcode: {sol.retcode}")
-
-
-                        break
-                    except Exception as e:
-                        with open(err_solver_output, "a") as f:
-                            f.write(f"{rank}\t{c_gid}\n")
-                        error_solver = e
-                        failed_cells.append(c_gid)
-                if sol is None:
-                    raise error_solver
-
-                um[(idxm+1,c_gid)] = sol.u[-1]
-
-
-                #um[(idxm+1,c_gid)] = sol.u[-1]
-    #            logging.info("um_to_output")
-    #            if idxm % 10 == 0:
-                with open(um_out_file, "a") as test_outputfile:
-                    um_out_data = [c_gid]
-                    um_out_data.append(rank)
-                    um_out_data.append(idxm)
-                    um_out_data.extend(sol.u[-1])
-                    test_outputfile.write("\t".join([str(p) for p in um_out_data]))
-                    test_outputfile.write("\n")
-                    um_out_data = None
-
-                sol = None
-
-                atpi_weighted_mean = 0.5*1.2 + 0.5*um[(idxm+1,c_gid)][27] #um[(idxm+1,c_gid)][27]
-                adpi_weighted_mean = 0.5*6.3e-3 + 0.5*um[(idxm+1,c_gid)][29]  #um[(idxm+1,c_gid)][29]
-
-                nao_weighted_mean = 0.5*140.0 + 0.5*(140.0 - 1.33*(um[(idxm+1,c_gid)][6] - 10.0)) #140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
-                ko_weighted_mean = 0.5*5.0 + 0.5*um[(idxm+1,c_gid)][7] #um[(idxm+1,c_gid)][7] 
-                nai_weighted_mean = 0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #um[(idxm+1,c_gid)][6]
-                ki_weighted_mean = 0.5*140.0 + 0.5*param[4] #14jan2021
-                #feedback loop to constrain ndamus by metabolism output
-
-    #            print("size_of_um: ",getsizeof(um)," bytes ","idxm: ",idxm,"rank: ",rank) # accumulates with idxm, but shouldn't
-                um[(idxm,c_gid)] = None
-                
-                #del vm
-                #del param
-
-
-
-                log_stage("feedback")
-                secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and (hasattr(sec, ATP.atpi_var)) and (hasattr(sec, ADP.adpi_var)) and hasattr(sec, Ca.current_var)  )]
-
-                for sec_elem in secs_all:
-                    seg_all = sec_elem.allseg()
-                    for seg in seg_all:
-                    #for sec_elem in secs_Na:
-                    #    for seg in sec_elem:
-                        seg.nao = nao_weighted_mean #140
-                        seg.nai = nai_weighted_mean #10
-                        seg.ko = ko_weighted_mean #5
-                        seg.ki = ki_weighted_mean #140
-                        seg.atpi = atpi_weighted_mean #1.4
-                        seg.adpi = adpi_weighted_mean #0.03
-                #        seg.v = -65.0
-
-    #            secs_v = [sec for sec in nc.CCell.all if (hasattr(sec, "v") )]
-    #            for sec_elem in secs_v:
-    #                seg_all = sec_elem.allseg()
-    #                for seg in seg_all:
-    #                #for sec_elem in secs_v:
-    #                #for seg in sec_elem:
-    #                    seg.v = -65.0
-    #            #del secs_v
-
-            #del secs_all
-            comm.Barrier()
-
-            #print("size_of_um: ",getsizeof(um)," bytes ","idxm: ",idxm,"rank: ",rank) # accumulates with idxm, but shouldn't
-    #        process = psutil.Process(os.getpid())
-    #        print("memory_info_rss: ",process.memory_info().rss / 1073741824 ," Gbytes ","idxm: ",idxm,"rank: ",rank) #in bytes
-
-    #        logging.info("pop_failed_cells")
-            #if error_solver is not None:
-            #    raise error_solver
-            for i in failed_cells:
-                print("failed_cells:",i,"at idxm: ",idxm)
-                gid_to_cell.pop(i)
-
-            idxm += 1
-        
-        rss.append(psutil.Process().memory_info().rss / 1024**2) # memory consumption in MB
+                        u0 = [-65.0,m0] + u0fromFile
+                        #u0 = [VNeu0,m0,h0,n0,Conc_Cl_out,Conc_Cl_in, Na0in,K0out,Glc_b,Lac_b,O2_b,Q0,Glc_ecs,Lac_ecs,O2_ecs,O2_n,O2_a,Glc_n,Glc_a,Lac_n,Lac_a,Pyr_n,Pyr_a,PCr_n,PCr_a,Cr_n,Cr_a,ATP_n,ATP_a,ADP_n,ADP_a,NADH_n,NADH_a,NAD_n,NAD_a,ksi0,ksi0]
+
+            #            if rank == 0:
+            #                print("u0: ",len(u0))
+            #                print("u027: ",u0[27])
+                        
+                        metabolism = gen_metabolism_model()  
+
+                        tspan_m = (1e-3*float(idxm)*SIM_END_coupling_interval,1e-3*(float(idxm)+1.0)*SIM_END_coupling_interval)  #tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0)) 
+                        um[(0,c_gid)] = u0
+
+                        vm=um[(idxm,c_gid)]
+
+                        #vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
+                        #vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
+
+                        #comm.Barrier()
+
+                        vm[6] = nais_mean[c_gid]
+                        vm[7] = u0[7] - 1.33 * (kis_mean[c_gid] - 140.0 ) # Kout #changed7jan2021
+            #            vm[8] = 2.255 # Glc_b
+                        vm[27] = 0.5*1.2 + 0.5*atpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
+                        vm[29] = 0.5*6.3e-3 + 0.5*adpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
+
+                        #param = [current_ina[c_gid], 0.06, voltage_mean[c_gid],nais_mean[c_gid],kis_mean[c_gid], current_ik[c_gid], 4.4, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling] 
+
+                        #comm.Barrier()
+
+            #            param = [current_ina[c_gid], 0.06, voltage_mean[c_gid], nais_mean[c_gid], kis_mean[c_gid], current_ik[c_gid], 4.1, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met[c_gid]] 
+                        #!!! 1000* in param is to have current_ina and current_ik units = uA/cm2 same as in Calvetti
+
+                        param = [ina_density[c_gid], 0.06, -65.0, nais_mean[c_gid], kis_mean[c_gid], ik_density[c_gid], 4.1, 0.17, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met]
+                        prob_metabo = de.ODEProblem(metabolism,vm,tspan_m,param)
+                        log_stage("solve metabolism")
+                        #with timer('julia'):
+                        #if idxm % 10 == 0:
+                        with open(param_out_file, "a") as param_outputfile:
+                            out_data = [c_gid]
+                            out_data.append(rank)
+                            out_data.append(idxm)
+                            out_data.extend(param)
+                            #out_data.append(current_ina[c_gid])
+                            #out_data.append(outs_r[idxm].get(c_gid, 0.0))
+                            out_data.append(cells_volumes[c_gid])
+                            #out_data.append(cells_areas[c_gid])
+                            param_outputfile.write("\t".join([str(p) for p in out_data]))
+                            param_outputfile.write("\n")
+                            out_data = None
+
+                        if ((any([np.isnan(p) for p in param])) or  (any([math.isnan(p) for p in param])) or (not (isinstance(sum(param), float)) )):
+                            print("param_nan_found at idxm: ",idxm)
+                            failed_cells.append(c_gid)
+                            #gid_to_cell.pop(c_gid) 
+
+                            continue
+
+                        else:
+                            
+                            log_stage("solve metabolism")
+
+
+
+                    #  sol = de.solve(prob_metabo, de.Rodas5(),reltol=1e-8,abstol=1e-8,save_everystep=False )
+                        sol = None
+                        error_solver = None
+
+                        for i in range(5):
+                            if i ==5:
+                                print("metab solver attempt 10")
+                            try:
+                                with timeit(name='metabolism_solver'):
+                                    sol = de.solve(prob_metabo, de.Rodas4P() ,reltol=1e-6,abstol=1e-6,maxiters=1e4,save_everystep=False) #de.Rodas4P ,autodiff=False (deprecated ?)
+                                    #sol = de.solve(prob_metabo, de.Rosenbrock23(),autodiff=False ,reltol=1e-8,abstol=1e-8,maxiters=1e4,save_everystep=False) #de.Rodas4P
+
+                                    #sol = de.solve(prob_metabo, de.Tsit5(),reltol=1e-4,abstol=1e-4,maxiters=1e4,save_everystep=False)
+                                    #sol = de.solve(prob_metabo, de.AutoTsit5(de.Rosenbrock23()),reltol=1e-4,abstol=1e-6,maxiters=1e4,save_everystep=False)
+                                    #sol = de.solve(prob_metabo, de.Tsit5(),reltol=1e-6,abstol=1e-6,maxiters=1e4,save_everystep=False)
+
+                                    #with open(f"/gpfs/bbp.cscs.ch/project/proj34/scratch/polina/solver_good_{timestr}.txt", "a") as f:
+                                    #    f.write(f"{rank}\t{c_gid}\n")    
+
+                                    if sol.retcode != "Success":
+                                        print(f"sol.retcode: {sol.retcode}")
+                                    #else:
+                                    #    print(f"success sol.retcode: {sol.retcode}")
+
+
+                                break
+                            except Exception as e:
+                                with open(err_solver_output, "a") as f:
+                                    f.write(f"{rank}\t{c_gid}\n")
+                                error_solver = e
+                                failed_cells.append(c_gid)
+                        if sol is None:
+                            raise error_solver
+
+                        um[(idxm+1,c_gid)] = sol.u[-1]
+
+
+                        #um[(idxm+1,c_gid)] = sol.u[-1]
+            #            logging.info("um_to_output")
+            #            if idxm % 10 == 0:
+                        with open(um_out_file, "a") as test_outputfile:
+                            um_out_data = [c_gid]
+                            um_out_data.append(rank)
+                            um_out_data.append(idxm)
+                            um_out_data.extend(sol.u[-1])
+                            test_outputfile.write("\t".join([str(p) for p in um_out_data]))
+                            test_outputfile.write("\n")
+                            um_out_data = None
+
+                        sol = None
+
+                        atpi_weighted_mean = 0.5*1.2 + 0.5*um[(idxm+1,c_gid)][27] #um[(idxm+1,c_gid)][27]
+                        adpi_weighted_mean = 0.5*6.3e-3 + 0.5*um[(idxm+1,c_gid)][29]  #um[(idxm+1,c_gid)][29]
+
+                        nao_weighted_mean = 0.5*140.0 + 0.5*(140.0 - 1.33*(um[(idxm+1,c_gid)][6] - 10.0)) #140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
+                        ko_weighted_mean = 0.5*5.0 + 0.5*um[(idxm+1,c_gid)][7] #um[(idxm+1,c_gid)][7] 
+                        nai_weighted_mean = 0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #um[(idxm+1,c_gid)][6]
+                        ki_weighted_mean = 0.5*140.0 + 0.5*param[4] #14jan2021
+                        #feedback loop to constrain ndamus by metabolism output
+
+            #            print("size_of_um: ",getsizeof(um)," bytes ","idxm: ",idxm,"rank: ",rank) # accumulates with idxm, but shouldn't
+                        um[(idxm,c_gid)] = None
+                        
+                        #del vm
+                        #del param
+
+
+
+                        with timeit(name='neurodamus_metabolism_feedback'):
+                            log_stage("feedback")
+                            secs_all = [sec for sec in nc.CCell.all if (hasattr(sec, Na.current_var) and (hasattr(sec, K.current_var)) and (hasattr(sec, ATP.atpi_var)) and (hasattr(sec, ADP.adpi_var)) and hasattr(sec, Ca.current_var)  )]
+
+                            for sec_elem in secs_all:
+                                seg_all = sec_elem.allseg()
+                                for seg in seg_all:
+                                #for sec_elem in secs_Na:
+                                #    for seg in sec_elem:
+                                    seg.nao = nao_weighted_mean #140
+                                    seg.nai = nai_weighted_mean #10
+                                    seg.ko = ko_weighted_mean #5
+                                    seg.ki = ki_weighted_mean #140
+                                    seg.atpi = atpi_weighted_mean #1.4
+                                    seg.adpi = adpi_weighted_mean #0.03
+                            #        seg.v = -65.0
+
+                #            secs_v = [sec for sec in nc.CCell.all if (hasattr(sec, "v") )]
+                #            for sec_elem in secs_v:
+                #                seg_all = sec_elem.allseg()
+                #                for seg in seg_all:
+                #                #for sec_elem in secs_v:
+                #                #for seg in sec_elem:
+                #                    seg.v = -65.0
+                #            #del secs_v
+
+                    #del secs_all
+                    comm.Barrier()
+
+                    #print("size_of_um: ",getsizeof(um)," bytes ","idxm: ",idxm,"rank: ",rank) # accumulates with idxm, but shouldn't
+            #        process = psutil.Process(os.getpid())
+            #        print("memory_info_rss: ",process.memory_info().rss / 1073741824 ," Gbytes ","idxm: ",idxm,"rank: ",rank) #in bytes
+
+            #        logging.info("pop_failed_cells")
+                    #if error_solver is not None:
+                    #    raise error_solver
+                    for i in failed_cells:
+                        print("failed_cells:",i,"at idxm: ",idxm)
+                        gid_to_cell.pop(i)
+
+                    idxm += 1
+            
+            rss.append(psutil.Process().memory_info().rss / 1024**2) # memory consumption in MB
     
     if rank == 0 and dualrun_env:
         f_Moles_Current.close()
@@ -937,19 +942,13 @@ def main():
 
     ndamus.spike2file("out.dat")
 
-    mt.timer.print()
-
-    #logging.info(textwrap.dedent("""\
-    #    Simulation finished. Timings:
-	#   - Neuron: {neuron_cum:g}
-	#   - curr2conc: {curr2conc:g}
-	#   - setBatchTetConcs: {setBatchTetConcs:g}
-	#   - Julia: {julia:g}""".format_map(_timings)))
-
     rss = np.mean(rss)
     avg_rss = comm.allreduce(rss, MPI.SUM) / smpi.nhosts
     if rank == 0:
         print(f"average (across ranks) memory consumption [MB]: {avg_rss}")
+
+    mt.timer.print()
+
 
 if __name__ == "__main__":
     main()
