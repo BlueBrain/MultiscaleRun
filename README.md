@@ -18,7 +18,7 @@ The `multiscale_run_STEPS3.py` (STEPS3 compatible only) script executes the vari
         ```
     * There is no need for `module load spack`
 1. `source .bashrc`
-1. `salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 00:30:00 --cpus-per-task=2 --constraint=clx`
+1. `salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 --constraint=clx`
 1. `source set_env.sh`
 1. `exit`
 
