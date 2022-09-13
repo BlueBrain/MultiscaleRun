@@ -1,0 +1,1201 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--Created by yFiles for HTML 2.5.0.1-->
+<graphml xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml.html/2.0/ygraphml.xsd " xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:demostyle2="http://www.yworks.com/yFilesHTML/demos/FlatDemoStyle/2.0" xmlns:demostyle="http://www.yworks.com/yFilesHTML/demos/FlatDemoStyle/1.0" xmlns:icon-style="http://www.yworks.com/yed-live/icon-style/1.0" xmlns:bpmn="http://www.yworks.com/xml/yfiles-bpmn/2.0" xmlns:demotablestyle="http://www.yworks.com/yFilesHTML/demos/FlatDemoTableStyle/1.0" xmlns:uml="http://www.yworks.com/yFilesHTML/demos/UMLDemoStyle/1.0" xmlns:GraphvizNodeStyle="http://www.yworks.com/yFilesHTML/graphviz-node-style/1.0" xmlns:VuejsNodeStyle="http://www.yworks.com/demos/yfiles-vuejs-node-style/1.0" xmlns:explorer-style="http://www.yworks.com/data-explorer/1.0" xmlns:y="http://www.yworks.com/xml/yfiles-common/3.0" xmlns:x="http://www.yworks.com/xml/yfiles-common/markup/3.0" xmlns:yjs="http://www.yworks.com/xml/yfiles-for-html/2.0/xaml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<key id="d0" for="node" attr.type="int" attr.name="zOrder" y:attr.uri="http://www.yworks.com/xml/yfiles-z-order/1.0/zOrder"/>
+	<key id="d1" for="node" attr.type="boolean" attr.name="Expanded" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/folding/Expanded">
+		<default>true</default>
+	</key>
+	<key id="d2" for="node" attr.type="string" attr.name="url"/>
+	<key id="d3" for="node" attr.type="string" attr.name="description"/>
+	<key id="d4" for="node" attr.name="NodeLabels" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/NodeLabels"/>
+	<key id="d5" for="node" attr.name="NodeGeometry" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/NodeGeometry"/>
+	<key id="d6" for="all" attr.name="UserTags" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/UserTags"/>
+	<key id="d7" for="node" attr.name="NodeStyle" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/NodeStyle"/>
+	<key id="d8" for="node" attr.name="NodeViewState" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/folding/1.1/NodeViewState"/>
+	<key id="d9" for="edge" attr.type="string" attr.name="url"/>
+	<key id="d10" for="edge" attr.type="string" attr.name="description"/>
+	<key id="d11" for="edge" attr.name="EdgeLabels" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/EdgeLabels"/>
+	<key id="d12" for="edge" attr.name="EdgeGeometry" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/EdgeGeometry"/>
+	<key id="d13" for="edge" attr.name="EdgeStyle" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/EdgeStyle"/>
+	<key id="d14" for="edge" attr.name="EdgeViewState" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/folding/1.1/EdgeViewState"/>
+	<key id="d15" for="port" attr.name="PortLabels" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/PortLabels"/>
+	<key id="d16" for="port" attr.name="PortLocationParameter" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/PortLocationParameter">
+		<default>
+			<x:Static Member="y:FreeNodePortLocationModel.NodeCenterAnchored"/>
+		</default>
+	</key>
+	<key id="d17" for="port" attr.name="PortStyle" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/PortStyle">
+		<default>
+			<x:Static Member="y:VoidPortStyle.Instance"/>
+		</default>
+	</key>
+	<key id="d18" for="port" attr.name="PortViewState" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/folding/1.1/PortViewState"/>
+	<key id="d19" attr.name="SharedData" y:attr.uri="http://www.yworks.com/xml/yfiles-common/2.0/SharedData"/>
+	<data key="d19">
+		<y:SharedData>
+			<y:GroupNodeLabelModel x:Key="1"/>
+			<yjs:DefaultLabelStyle x:Key="2" verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="{y:GraphMLReference 4}"/>
+			<y:GroupNodeLabelModelParameter x:Key="3" Model="{y:GraphMLReference 1}"/>
+			<yjs:SolidColorFill x:Key="4" color="#FFEEEEEE"/>
+			<yjs:Font x:Key="5" fontSize="12" fontFamily="'Arial'"/>
+			<yjs:SolidColorFill x:Key="6" color="#FF2B0322"/>
+			<yjs:SolidColorFill x:Key="7" color="#FF2B0322"/>
+			<yjs:SolidColorFill x:Key="8" color="White"/>
+			<yjs:SolidColorFill x:Key="9" color="#FF890B6E"/>
+			<yjs:Stroke x:Key="10" fill="#FF2B0322" lineCap="SQUARE" thickness="2"/>
+			<yjs:DefaultLabelStyle x:Key="11" verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="{y:GraphMLReference 4}"/>
+			<yjs:Arrow x:Key="12" stroke="#FF000000" fill="#FF000000"/>
+			<yjs:SolidColorFill x:Key="13" color="#FF0B7189"/>
+			<yjs:SolidColorFill x:Key="14" color="#FF0B7189"/>
+			<yjs:Stroke x:Key="15" fill="#FF0B7189" lineCap="SQUARE" thickness="2"/>
+			<yjs:Stroke x:Key="16" fill="#FF000000" thickness="0.75"/>
+			<bpmn:BpmnEdgeStyle x:Key="17"/>
+			<y:GroupNodeLabelModel x:Key="18"/>
+			<yjs:SolidColorFill x:Key="19" color="#FFEEEEEE"/>
+			<bpmn:BpmnEdgeStyle x:Key="20"/>
+			<yjs:SolidColorFill x:Key="21" color="#FF282B03"/>
+			<yjs:SolidColorFill x:Key="22" color="#FF282B03"/>
+			<yjs:SolidColorFill x:Key="23" color="#FF82890B"/>
+			<yjs:Stroke x:Key="24" fill="#FF282B03" lineCap="SQUARE" thickness="2"/>
+			<y:FreeNodePortLocationModelParameter x:Key="25" Ratio="0,0.5"/>
+			<y:GroupNodeLabelModel x:Key="26"/>
+			<yjs:SolidColorFill x:Key="27" color="#FFEEEEEE"/>
+			<yjs:SolidColorFill x:Key="28" color="#FF2B0803"/>
+			<yjs:SolidColorFill x:Key="29" color="#FF2B0803"/>
+			<yjs:SolidColorFill x:Key="30" color="#FF891A0B"/>
+			<yjs:Stroke x:Key="31" fill="#FF2B0803" lineCap="SQUARE" thickness="2"/>
+			<bpmn:BpmnEdgeStyle x:Key="32"/>
+		</y:SharedData>
+	</data>
+	<graph id="G" edgedefault="directed">
+		<data key="d6">
+			<y:Json>{"version":"2.0.0","theme":{"name":"light","version":"1.0.0"},"layout":"layout-bpmn","config":{"p_layoutOrientation":"LEFT_TO_RIGHT","p_scope":"SELECTED_ELEMENTS","p_laneInsets":10,"p_nodeToNodeDistance":10,"p_minimumEdgeLength":21,"p_compactMessageFlowLayering":false,"p_startNodesFirst":false},"bridge-style":"GAP"}</y:Json>
+		</data>
+		<node id="n0">
+			<data key="d0">0</data>
+			<data key="d4">
+				<x:List>
+					<y:Label Style="{y:GraphMLReference 2}">
+						<y:Label.Text>STEPS</y:Label.Text>
+						<y:Label.LayoutParameter>
+							<y:GroupNodeLabelModelParameter Model="{y:GraphMLReference 1}"/>
+						</y:Label.LayoutParameter>
+					</y:Label>
+				</x:List>
+			</data>
+			<data key="d5">
+				<y:RectD X="355.5" Y="-287" Width="118" Height="169"/>
+			</data>
+			<data key="d7">
+				<yjs:GroupNodeStyle tabWidth="65" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 6}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 7}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 9}" stroke="{y:GraphMLReference 10}"/>
+			</data>
+			<data key="d8">
+				<y:ViewState>
+					<y:FolderNodeState x:Key="c|view" Layout="311.25,-111.625,118,118">
+						<y:FolderNodeState.Labels>
+							<y:Label LayoutParameter="{y:GraphMLReference 3}" Style="{y:GraphMLReference 2}">
+								<y:Label.Text>STEPS</y:Label.Text>
+							</y:Label>
+						</y:FolderNodeState.Labels>
+					</y:FolderNodeState>
+				</y:ViewState>
+			</data>
+			<graph id="n0:" edgedefault="directed">
+				<node id="n0::n0">
+					<data key="d0">2</data>
+					<data key="d4">
+						<x:List>
+							<y:Label LayoutParameter="{y:GraphMLReference 3}" Style="{y:GraphMLReference 11}">
+								<y:Label.Text><![CDATA[Extracellular space]]></y:Label.Text>
+							</y:Label>
+						</x:List>
+					</data>
+					<data key="d5">
+						<y:RectD X="362.5" Y="-260" Width="104" Height="135"/>
+					</data>
+					<data key="d7">
+						<yjs:GroupNodeStyle tabWidth="127" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 6}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 7}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 9}" stroke="{y:GraphMLReference 10}"/>
+					</data>
+					<data key="d8">
+						<y:ViewState>
+							<y:FolderNodeState x:Key="c|view" Layout="326.25,-96.625,118,118">
+								<y:FolderNodeState.Labels>
+									<y:Label LayoutParameter="{y:GraphMLReference 3}" Style="{y:GraphMLReference 11}">
+										<y:Label.Text>STEPS</y:Label.Text>
+									</y:Label>
+								</y:FolderNodeState.Labels>
+								<y:FolderNodeState.Style>
+									<yjs:GroupNodeStyle tabWidth="65" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 6}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 7}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 9}" stroke="{y:GraphMLReference 10}"/>
+								</y:FolderNodeState.Style>
+							</y:FolderNodeState>
+						</y:ViewState>
+					</data>
+					<graph id="n0::n0:" edgedefault="directed">
+						<node id="n0::n0::n0">
+							<data key="d0">0</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text>concentrations</y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="369.5" Y="-233" Width="90" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:GraphMLReference ResourceKey="25"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p5">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,1"/>
+								</data>
+							</port>
+							<port name="p6">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p7">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p8">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p9">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p10">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p11">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p12">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p13">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,1"/>
+								</data>
+							</port>
+							<port name="p14">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p15">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+						</node>
+						<node id="n0::n0::n1">
+							<data key="d0">1</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text>reaction/diffusions</y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="369.5" Y="-172" Width="90" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,0"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p5">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p6">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p7">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p8">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p9">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p10">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,0"/>
+								</data>
+							</port>
+							<port name="p11">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p12">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+						</node>
+						<edge id="n0::n0::e0" source="n0::n0::n0" target="n0::n0::n1" sourceport="p15" targetport="p12">
+							<data key="d13">
+								<yjs:PolylineEdgeStyle stroke="{y:GraphMLReference 16}" targetArrow="{y:GraphMLReference 12}" sourceArrow="{y:GraphMLReference 12}"/>
+							</data>
+						</edge>
+					</graph>
+				</node>
+			</graph>
+		</node>
+		<node id="n1">
+			<data key="d0">1</data>
+			<data key="d4">
+				<x:List>
+					<y:Label>
+						<y:Label.Text>Neurodamus</y:Label.Text>
+						<y:Label.LayoutParameter>
+							<y:GroupNodeLabelModelParameter Model="{y:GraphMLReference 1}"/>
+						</y:Label.LayoutParameter>
+						<y:Label.Style>
+							<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="{y:GraphMLReference 4}"/>
+						</y:Label.Style>
+					</y:Label>
+				</x:List>
+			</data>
+			<data key="d5">
+				<y:RectD X="98" Y="-376" Width="251" Height="376"/>
+			</data>
+			<data key="d7">
+				<yjs:GroupNodeStyle tabWidth="94" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 13}" iconOffset="2" hitTransparentContentArea="true" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 14}" stroke="{y:GraphMLReference 15}"/>
+			</data>
+			<graph id="n1:" edgedefault="directed">
+				<node id="n1::n0">
+					<data key="d0">1</data>
+					<data key="d4">
+						<x:List>
+							<y:Label>
+								<y:Label.Text>Neurons</y:Label.Text>
+								<y:Label.LayoutParameter>
+									<y:GroupNodeLabelModelParameter Model="{y:GraphMLReference 18}" PlaceOnTab="false"/>
+								</y:Label.LayoutParameter>
+								<y:Label.Style>
+									<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="{y:GraphMLReference 19}"/>
+								</y:Label.Style>
+							</y:Label>
+						</x:List>
+					</data>
+					<data key="d5">
+						<y:RectD X="105" Y="-349" Width="237" Height="204"/>
+					</data>
+					<data key="d7">
+						<yjs:GroupNodeStyle tabWidth="94" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 13}" iconOffset="2" hitTransparentContentArea="true" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 14}" stroke="{y:GraphMLReference 15}"/>
+					</data>
+					<graph id="n1::n0:" edgedefault="directed">
+						<node id="n1::n0::n0">
+							<data key="d0">4</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text>firing</y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="159.96875" Y="-314" Width="40.0625" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.25,1"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+						</node>
+						<node id="n1::n0::n1">
+							<data key="d0">5</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text>concentrations</y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="135" Y="-192" Width="90" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.25,0"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,1"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p5">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p6">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p7">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p8">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p9">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p10">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p11">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+						</node>
+						<node id="n1::n0::n2">
+							<data key="d0">6</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text>currents</y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="155.03125" Y="-253" Width="49.9375" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p5">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,0"/>
+								</data>
+							</port>
+							<port name="p6">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.019253910950661868,0.5"/>
+								</data>
+							</port>
+							<port name="p7">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,1"/>
+								</data>
+							</port>
+							<port name="p8">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p9">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p10">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p11">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.75"/>
+								</data>
+							</port>
+							<port name="p12">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p13">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p14">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.25"/>
+								</data>
+							</port>
+							<port name="p15">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.25"/>
+								</data>
+							</port>
+							<port name="p16">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p17">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+						</node>
+						<node id="n1::n0::n3">
+							<data key="d0">7</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text><![CDATA[custom ATP dependent mod files]]></y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="245" Y="-322" Width="90" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,1"/>
+								</data>
+							</port>
+							<port name="p5">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,0"/>
+								</data>
+							</port>
+							<port name="p6">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p7">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p8">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p9">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p10">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p11">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+						</node>
+						<edge id="n1::n0::e0" source="n1::n0::n1" target="n1::n0::n3" sourceport="p10" targetport="p10">
+							<data key="d12">
+								<x:List>
+									<y:Bend Location="290,-172"/>
+								</x:List>
+							</data>
+							<data key="d13">
+								<yjs:PolylineEdgeStyle stroke="{y:GraphMLReference 16}" smoothingLength="20" targetArrow="{y:GraphMLReference 12}" sourceArrow="{y:GraphMLReference 12}"/>
+							</data>
+						</edge>
+						<edge id="n1::n0::e1" source="n1::n0::n2" target="n1::n0::n3" sourceport="p15" targetport="p11">
+							<data key="d12">
+								<x:List>
+									<y:Bend Location="224.96875,-243"/>
+									<y:Bend Location="224.96875,-302"/>
+								</x:List>
+							</data>
+							<data key="d13">
+								<y:GraphMLReference ResourceKey="17"/>
+							</data>
+						</edge>
+						<edge id="n1::n0::e2" source="n1::n0::n1" target="n1::n0::n2" sourceport="p11" targetport="p16">
+							<data key="d13">
+								<y:GraphMLReference ResourceKey="17"/>
+							</data>
+						</edge>
+						<edge id="n1::n0::e3" source="n1::n0::n0" target="n1::n0::n2" sourceport="p4" targetport="p17">
+							<data key="d13">
+								<y:GraphMLReference ResourceKey="17"/>
+							</data>
+						</edge>
+					</graph>
+				</node>
+				<node id="n1::n1">
+					<data key="d0">2</data>
+					<data key="d4">
+						<x:List>
+							<y:Label>
+								<y:Label.Text>Astrocytes</y:Label.Text>
+								<y:Label.LayoutParameter>
+									<y:GroupNodeLabelModelParameter Model="{y:GraphMLReference 18}"/>
+								</y:Label.LayoutParameter>
+								<y:Label.Style>
+									<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="{y:GraphMLReference 19}"/>
+								</y:Label.Style>
+							</y:Label>
+						</x:List>
+					</data>
+					<data key="d5">
+						<y:RectD X="105" Y="-102" Width="127" Height="95"/>
+					</data>
+					<data key="d7">
+						<yjs:GroupNodeStyle tabWidth="82" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 13}" iconOffset="2" hitTransparentContentArea="true" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 14}" stroke="{y:GraphMLReference 15}"/>
+					</data>
+					<graph id="n1::n1:" edgedefault="directed">
+						<node id="n1::n1::n0">
+							<data key="d0">0</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text><![CDATA[vessel radii]]></y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="135" Y="-54" Width="90" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.75,0"/>
+								</data>
+							</port>
+							<port name="p5">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p6">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+						</node>
+					</graph>
+				</node>
+				<edge id="n1::e0" source="n1::n0::n2" target="n1::n1::n0" sourceport="p9" targetport="p5">
+					<data key="d12">
+						<x:List>
+							<y:Bend Location="115,-233"/>
+							<y:Bend Location="115,-34"/>
+						</x:List>
+					</data>
+					<data key="d13">
+						<y:GraphMLReference ResourceKey="20"/>
+					</data>
+				</edge>
+				<edge id="n1::e1" source="n1::n0::n1" target="n1::n1::n0" sourceport="p7" targetport="p6">
+					<data key="d13">
+						<y:GraphMLReference ResourceKey="20"/>
+					</data>
+				</edge>
+			</graph>
+			<port name="p0">
+				<data key="d16">
+					<y:FreeNodePortLocationModelParameter Ratio="0,0.21010638297872342"/>
+				</data>
+			</port>
+		</node>
+		<node id="n2">
+			<data key="d0">2</data>
+			<data key="d4">
+				<x:List>
+					<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+						<y:Label.Text>BlueConfig</y:Label.Text>
+						<y:Label.Style>
+							<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+						</y:Label.Style>
+					</y:Label>
+				</x:List>
+			</data>
+			<data key="d5">
+				<y:RectD X="0" Y="-317" Width="93" Height="40"/>
+			</data>
+			<data key="d7">
+				<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+			</data>
+			<port name="p0">
+				<data key="d16">
+					<y:FreeNodePortLocationModelParameter Ratio="0.5,0.9761904761904762"/>
+				</data>
+			</port>
+			<port name="p1">
+				<data key="d16">
+					<y:FreeNodePortLocationModelParameter Ratio="0.5,0.9761904761904762"/>
+				</data>
+			</port>
+			<port name="p2">
+				<data key="d16">
+					<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+				</data>
+			</port>
+			<port name="p3">
+				<data key="d16">
+					<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+				</data>
+			</port>
+			<port name="p4">
+				<data key="d16">
+					<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+				</data>
+			</port>
+			<port name="p5">
+				<data key="d16">
+					<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+				</data>
+			</port>
+			<port name="p6">
+				<data key="d16">
+					<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+				</data>
+			</port>
+		</node>
+		<node id="n3">
+			<data key="d0">3</data>
+			<data key="d4">
+				<x:List>
+					<y:Label>
+						<y:Label.Text>Julia</y:Label.Text>
+						<y:Label.LayoutParameter>
+							<y:GroupNodeLabelModelParameter Model="{y:GraphMLReference 26}"/>
+						</y:Label.LayoutParameter>
+						<y:Label.Style>
+							<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="{y:GraphMLReference 27}"/>
+						</y:Label.Style>
+					</y:Label>
+				</x:List>
+			</data>
+			<data key="d5">
+				<y:RectD X="480" Y="-356" Width="118" Height="356"/>
+			</data>
+			<data key="d7">
+				<yjs:GroupNodeStyle tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 21}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 22}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 23}" stroke="{y:GraphMLReference 24}"/>
+			</data>
+			<data key="d8">
+				<y:ViewState>
+					<y:FolderNodeState x:Key="c|view" Layout="376,-118,104,84">
+						<y:FolderNodeState.Style>
+							<yjs:GroupNodeStyle tabWidth="127" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 21}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 22}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 23}" stroke="{y:GraphMLReference 24}"/>
+						</y:FolderNodeState.Style>
+					</y:FolderNodeState>
+				</y:ViewState>
+			</data>
+			<graph id="n3:" edgedefault="directed">
+				<node id="n3::n0">
+					<data key="d0">4</data>
+					<data key="d4">
+						<x:List>
+							<y:Label>
+								<y:Label.Text>Metabolism</y:Label.Text>
+								<y:Label.LayoutParameter>
+									<y:GroupNodeLabelModelParameter PlaceOnTab="false">
+										<y:GroupNodeLabelModelParameter.Model>
+											<y:GroupNodeLabelModel/>
+										</y:GroupNodeLabelModelParameter.Model>
+									</y:GroupNodeLabelModelParameter>
+								</y:Label.LayoutParameter>
+								<y:Label.Style>
+									<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="#FFEEEEEE"/>
+								</y:Label.Style>
+							</y:Label>
+						</x:List>
+					</data>
+					<data key="d5">
+						<y:RectD X="487" Y="-329" Width="104" Height="322"/>
+					</data>
+					<data key="d7">
+						<yjs:GroupNodeStyle tabWidth="127" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 21}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 22}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 23}" stroke="{y:GraphMLReference 24}"/>
+					</data>
+					<data key="d8">
+						<y:ViewState>
+							<y:FolderNodeState x:Key="c|view" Layout="391,-103,104,84"/>
+						</y:ViewState>
+					</data>
+					<graph id="n3::n0:" edgedefault="directed">
+						<node id="n3::n0::n0">
+							<data key="d0">3</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text><![CDATA[ATP balance]]></y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="494" Y="-238" Width="90" Height="50"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p5">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p6">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p7">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+						</node>
+						<node id="n3::n0::n1">
+							<data key="d0">4</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text><![CDATA[bloodflow concentrations]]></y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="494" Y="-54" Width="90" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:GraphMLReference ResourceKey="25"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,1"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p5">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p6">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0.5,0"/>
+								</data>
+							</port>
+						</node>
+						<edge id="n3::n0::e0" source="n3::n0::n1" target="n3::n0::n0" sourceport="p6" targetport="p4">
+							<data key="d13">
+								<y:GraphMLReference ResourceKey="32"/>
+							</data>
+						</edge>
+					</graph>
+				</node>
+			</graph>
+		</node>
+		<node id="n4">
+			<data key="d0">4</data>
+			<data key="d4">
+				<x:List>
+					<y:Label>
+						<y:Label.Text>Python</y:Label.Text>
+						<y:Label.LayoutParameter>
+							<y:GroupNodeLabelModelParameter Model="{y:GraphMLReference 26}"/>
+						</y:Label.LayoutParameter>
+						<y:Label.Style>
+							<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="{y:GraphMLReference 27}"/>
+						</y:Label.Style>
+					</y:Label>
+				</x:List>
+			</data>
+			<data key="d5">
+				<y:RectD X="354" Y="-108" Width="121" Height="108"/>
+			</data>
+			<data key="d7">
+				<yjs:GroupNodeStyle tabWidth="63" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 28}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 29}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 30}" stroke="{y:GraphMLReference 31}"/>
+			</data>
+			<data key="d8">
+				<y:ViewState>
+					<y:FolderNodeState x:Key="c|view" Layout="391,-103,104,84"/>
+				</y:ViewState>
+			</data>
+			<graph id="n4:" edgedefault="directed">
+				<node id="n4::n0">
+					<data key="d0">5</data>
+					<data key="d4">
+						<x:List>
+							<y:Label>
+								<y:Label.Text>Bloodflow</y:Label.Text>
+								<y:Label.LayoutParameter>
+									<y:GroupNodeLabelModelParameter Model="{y:GraphMLReference 26}"/>
+								</y:Label.LayoutParameter>
+								<y:Label.Style>
+									<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="CHARACTER_ELLIPSIS" font="{y:GraphMLReference 5}" textFill="{y:GraphMLReference 27}"/>
+								</y:Label.Style>
+							</y:Label>
+						</x:List>
+					</data>
+					<data key="d5">
+						<y:RectD X="361" Y="-81" Width="107" Height="74"/>
+					</data>
+					<data key="d7">
+						<yjs:GroupNodeStyle tabWidth="78" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 28}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 29}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 30}" stroke="{y:GraphMLReference 31}"/>
+					</data>
+					<data key="d8">
+						<y:ViewState>
+							<y:FolderNodeState x:Key="c|view" Layout="406,-88,104,84">
+								<y:FolderNodeState.Style>
+									<yjs:GroupNodeStyle tabWidth="63" tabHeight="20" tabInset="3" iconForegroundFill="{y:GraphMLReference 28}" iconOffset="2" hitTransparentContentArea="true" tabBackgroundFill="{y:GraphMLReference 29}" contentAreaFill="{y:GraphMLReference 8}" tabFill="{y:GraphMLReference 30}" stroke="{y:GraphMLReference 31}"/>
+								</y:FolderNodeState.Style>
+							</y:FolderNodeState>
+						</y:ViewState>
+					</data>
+					<graph id="n4::n0:" edgedefault="directed">
+						<node id="n4::n0::n0">
+							<data key="d0">0</data>
+							<data key="d4">
+								<x:List>
+									<y:Label LayoutParameter="{x:Static y:InteriorStretchLabelModel.Center}">
+										<y:Label.Text><![CDATA[flow of blood]]></y:Label.Text>
+										<y:Label.Style>
+											<yjs:DefaultLabelStyle verticalTextAlignment="CENTER" horizontalTextAlignment="CENTER" wrapping="WORD" clipText="false" font="{y:GraphMLReference 5}" textFill="BLACK"/>
+										</y:Label.Style>
+									</y:Label>
+								</x:List>
+							</data>
+							<data key="d5">
+								<y:RectD X="368" Y="-54" Width="93" Height="40"/>
+							</data>
+							<data key="d7">
+								<bpmn:ActivityNodeStyle minimumSize="40,40"/>
+							</data>
+							<port name="p0">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p1">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p2">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+							<port name="p3">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="0,0.5"/>
+								</data>
+							</port>
+							<port name="p4">
+								<data key="d16">
+									<y:FreeNodePortLocationModelParameter Ratio="1,0.5"/>
+								</data>
+							</port>
+						</node>
+					</graph>
+				</node>
+			</graph>
+		</node>
+		<edge id="e0" source="n1::n1::n0" target="n4::n0::n0" sourceport="p1" targetport="p3">
+			<data key="d13">
+				<y:GraphMLReference ResourceKey="32"/>
+			</data>
+		</edge>
+		<edge id="e1" source="n4::n0::n0" target="n3::n0::n1" sourceport="p4" targetport="p5">
+			<data key="d13">
+				<y:GraphMLReference ResourceKey="32"/>
+			</data>
+		</edge>
+		<edge id="e2" source="n3::n0::n0" target="n1::n0::n3" sourceport="p5" targetport="p1">
+			<data key="d12">
+				<x:List>
+					<y:Bend Location="539,-302"/>
+				</x:List>
+			</data>
+			<data key="d13">
+				<y:GraphMLReference ResourceKey="32"/>
+			</data>
+		</edge>
+		<edge id="e3" source="n1::n0::n2" target="n0::n0::n1" sourceport="p11" targetport="p6">
+			<data key="d12">
+				<x:List>
+					<y:Bend Location="235,-223"/>
+					<y:Bend Location="235,-152"/>
+				</x:List>
+			</data>
+			<data key="d13">
+				<y:GraphMLReference ResourceKey="20"/>
+			</data>
+		</edge>
+		<edge id="e4" source="n0::n0::n0" target="n3::n0::n0" sourceport="p8" targetport="p7">
+			<data key="d13">
+				<y:GraphMLReference ResourceKey="20"/>
+			</data>
+		</edge>
+		<edge id="e5" source="n2" target="n1" sourceport="p6" targetport="p0">
+			<data key="d13">
+				<y:GraphMLReference ResourceKey="20"/>
+			</data>
+		</edge>
+	</graph>
+</graphml>
