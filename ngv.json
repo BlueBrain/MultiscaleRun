@@ -1,0 +1,72 @@
+{
+    "run": {
+        "tstop": 1000.0,
+        "dt": 0.025
+    },
+    "network": "/gpfs/bbp.cscs.ch/project/proj62/Circuits/O1/20190912_spines/sonata/circuit_config.json",
+    "node_sets_file": "./user.target",
+    "node_set": "mc2c_CI",
+    "output": {
+        "output_dir": "./RESULTS"
+    },
+    "inputs": {
+        "ThresholdIntoExc": {
+            "node_set": "src_cells",
+            "input_type": "current_clamp",
+            "module": "noise",
+            "mean_percent": 200.0,
+            "variance": 0.001,
+            "delay": 0.0,
+            "duration": 30000.0
+        },
+        "pInj": {
+            "node_set": "mc2c_CI",
+            "input_type": "current_clamp",
+            "module": "pulse",
+            "amp_start": 20.0,
+            "amp_end": 20.0,
+            "frequency": 10.0,
+            "width": 5.0,
+            "delay": 1.0,
+            "duration": 3000.0
+        }
+    },
+    "reports": {
+        "voltage": {
+            "cells": "mc2c_CI",
+            "type": "compartment",
+            "variable_name": "v",
+            "unit": "mV",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0
+        },
+        "NaCurrCompSum": {
+            "cells": "mc2c_CI",
+            "type": "summation",
+            "variable_name": "ina",
+            "unit": "nA",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0
+        },
+        "NaConcAllCmps": {
+            "cells": "mc2c_CI",
+            "type": "compartment",
+            "variable_name": "nai",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0
+        },
+        "ATPConcAllCmps": {
+            "cells": "mc2c_CI",
+            "type": "compartment",
+            "variable_name": "atpi",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0
+        }
+    }
+}

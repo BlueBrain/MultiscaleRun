@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name="multiscale_run"
-#SBATCH --nodes=8
+#SBATCH --nodes=1
 #SBATCH --ntasks-per-node=32
 
 #SBATCH --account=proj40

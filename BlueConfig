@@ -19,12 +19,12 @@ Run Default
     TargetFile ./user.target
 
     OutputRoot ./RESULTS
-    CircuitTarget mc2c
+    CircuitTarget mc2c_CI
     #CircuitTarget column
     #CircuitTarget mc1_Column
     RunMode RR
     RNGMode UpdatedMCell
-    Duration 5
+    Duration 1000
     Dt 0.025
 }
 
@@ -110,57 +110,57 @@ StimulusInject ThresholdIntoExc
         Target  src_cells
 }
 
-#restore this
-#StimulusInject pInj
+StimulusInject pInj
 {
   Stimulus   pulse1
-    Target   pre
+    Target   mc2c_CI
 }
 
 Report voltage
 {
-        Target mc2c
+        Target mc2c_CI
           Type compartment
       ReportOn v
           Unit mV
         Format SONATA
-            Dt 0.1
+            Dt 1.0
      StartTime 0
-       EndTime 100
+       EndTime 2000
 }
 
 Report NaCurrCompSum
 {
-    Target AllComps_L5tpcaChc
+    Target mc2c_CI
     Type Summation
     ReportOn ina
     Unit nA
     Format SONATA
-    Dt 0.1
+    Dt 1.0
     StartTime 0
-    EndTime 100
+    EndTime 2000
 }
 
 Report NaConcAllCmps
 {
-    Target mc2c
+    Target mc2c_CI
     Type compartment
     ReportOn nai
     Unit mM
     Format SONATA
-    Dt 1
+    Dt 1.0
     StartTime 0
-    EndTime 100
+    EndTime 2000
 }
 
 Report ATPConcAllCmps
 {
-    Target mc2c
+    # Normal values between 2.2 and 1.0
+    Target mc2c_CI
     Type compartment
     ReportOn atpi
     Unit mM
     Format SONATA
-    Dt 1
+    Dt 1.0
     StartTime 0
-    EndTime 100
+    EndTime 2000
 }

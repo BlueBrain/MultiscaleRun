@@ -54,7 +54,7 @@ triplerun_env = int(os.getenv('triplerun'))
 
 # ndam : neurodamus
 dt_nrn2dt_steps: int = 100 # steps-ndam coupling
-dt_nrn2dt_jl: int = 100 # jl-ndam coupling
+dt_nrn2dt_jl: int = 2000 # metabolism (julia)-ndam coupling (2000 is a meaningful value according to Polina)
 
 class Geom:
     meshfile = mesh_file_
@@ -166,7 +166,7 @@ path_to_metab_jl = "./metabolismndam/sim/metabolism_unit_models/"
 #files
 
 julia_code_file = path_to_metab_jl + "julia_gen_18feb2021.jl" 
-u0_file = path_to_metab_jl + "u0forNdam/u0_Calv_ATP1p2_Nai10.txt"
+u0_file = path_to_metab_jl + "u0forNdam/u0_Calv_ATP2p2_Nai10.txt"
 
 ins_glut_file_output = path_to_results + f"dis_ins_r_glut_{timestr}.txt"
 ins_gaba_file_output = path_to_results + f"dis_ins_r_gaba_{timestr}.txt"
@@ -264,7 +264,6 @@ def main():
         # Times are in ms (for NEURON, because STEPS works with SI)
         DT = ndamus._run_conf['Dt'] #0.025  #ms i.e. = 25 usec which is timstep of ndam
         SIM_END = ndamus._run_conf['Duration'] #500.0 #10.0 #1000.0 #ms
-        DT_s = DT * 1e3 * dt_nrn2dt_steps
         SIM_END_coupling_interval = DT*dt_nrn2dt_jl
 
         # In steps use M/L and apply the SIM_REAL ratio
@@ -272,7 +271,8 @@ def main():
 
         AVOGADRO = 6.02e23
         COULOMB = 6.24e18
-        CA = COULOMB/AVOGADRO*CONC_FACTOR*DT_s
+        FACTOR_STEPS = DT * 1e3 * dt_nrn2dt_steps
+        CA = COULOMB/AVOGADRO*CONC_FACTOR*FACTOR_STEPS
 
         logging.info("Initializing simulations...")
         
@@ -317,12 +317,12 @@ def main():
             with open(u0_file,'r') as u0file:
                 u0fromFile = [float(line.replace(" ","").split("=")[1].split("#")[0].strip()) for line in u0file if ((not line.startswith("#")) and (len(line.replace(" ","")) > 2 )) ]
             
-            mito_volume_fraction = [0.0459, 0.0522, 0.064, 0.0774, 0.0575, 0.0403]
+            mito_volume_fraction = [0.0459, 0.0522, 0.064, 0.0774, 0.0575, 0.0403] # 6 Layers of the circuit
             mito_volume_fraction_scaled = []
             for mvfi in mito_volume_fraction:
                 mito_volume_fraction_scaled.append(mvfi/max(mito_volume_fraction))
 
-            glycogen_au = [128.0, 100.0, 100.0, 90.0, 80.0, 75.0]
+            glycogen_au = [128.0, 100.0, 100.0, 90.0, 80.0, 75.0] # 6 Layers of the circuit
             glycogen_scaled = []
             for glsi in glycogen_au:
                 glycogen_scaled.append(glsi/max(glycogen_au))
@@ -765,7 +765,7 @@ def main():
             #                print("u0: ",len(u0))
             #                print("u027: ",u0[27])
                         
-                        metabolism = gen_metabolism_model()  
+                        metabolism = gen_metabolism_model() # TODO: move outside or not ? 
 
                         tspan_m = (1e-3*float(idxm)*SIM_END_coupling_interval,1e-3*(float(idxm)+1.0)*SIM_END_coupling_interval)  #tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0)) 
                         um[(0,c_gid)] = u0
@@ -778,10 +778,13 @@ def main():
                         #comm.Barrier()
 
                         vm[6] = nais_mean[c_gid]
-                        vm[7] = u0[7] - 1.33 * (kis_mean[c_gid] - 140.0 ) # Kout #changed7jan2021
+                        vm[7] = u0[7] - 1.33 * (kis_mean[c_gid] - 140.0 ) # Kout #changed7jan2021 # TODO: STEPS feedback
             #            vm[8] = 2.255 # Glc_b
-                        vm[27] = 0.5*1.2 + 0.5*atpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
+                        # 2.2 should coincide with the BC METypePath field & with u0_file
+                        vm[27] = 0.5*2.2 + 0.5*atpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
                         vm[29] = 0.5*6.3e-3 + 0.5*adpi_mean[c_gid] #commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
+
+                        # TODO : Here goes the coupling with Blood flow solver
 
                         #param = [current_ina[c_gid], 0.06, voltage_mean[c_gid],nais_mean[c_gid],kis_mean[c_gid], current_ik[c_gid], 4.4, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling] 
 
@@ -871,7 +874,7 @@ def main():
                             um_out_data = None
 
                         sol = None
-
+                        # u stands for Julia ODE var and m stands for metabolism
                         atpi_weighted_mean = 0.5*1.2 + 0.5*um[(idxm+1,c_gid)][27] #um[(idxm+1,c_gid)][27]
                         adpi_weighted_mean = 0.5*6.3e-3 + 0.5*um[(idxm+1,c_gid)][29]  #um[(idxm+1,c_gid)][29]
 
@@ -898,6 +901,7 @@ def main():
                                 for seg in seg_all:
                                 #for sec_elem in secs_Na:
                                 #    for seg in sec_elem:
+                                    # nao stands for extracellular (outside) & nai inside
                                     seg.nao = nao_weighted_mean #140
                                     seg.nai = nai_weighted_mean #10
                                     seg.ko = ko_weighted_mean #5
