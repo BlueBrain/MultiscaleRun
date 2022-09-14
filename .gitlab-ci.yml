@@ -2,6 +2,7 @@ include:
   - project: hpc/gitlab-pipelines
     file: 
       - spack-build-components.gitlab-ci.yml
+      - bbp-gitlab-access.yml
 
 default:
   tags: [bb5_map]
