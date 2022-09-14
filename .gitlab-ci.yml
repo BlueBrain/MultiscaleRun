@@ -3,6 +3,7 @@ include:
     file: 
       - spack-build-components.gitlab-ci.yml
       - bbp-gitlab-access.yml
+    ref: '$GITLAB_PIPELINES_BRANCH'
 
 default:
   tags: [bb5_map]
