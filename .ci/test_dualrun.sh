@@ -8,6 +8,10 @@ module purge
 module load unstable git python-dev py-neurodamus py-mpi4py
 module load intel gcc hpe-mpi
 
+# SSH denies key $BBPCIHPCDEPLOY_GERRIT_PRIVATE_KEY because file too permissive
+install -m 400 "$BBPCIHPCDEPLOY_GERRIT_PRIVATE_KEY" "$PWD/.hpc-key"
+export GIT_SSH_COMMAND="ssh -i $PWD/.hpc-key -o IdentitiesOnly=yes"
+
 echo "Cloning Metabolism repo."
 rm -rf metabolismndam
 git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
