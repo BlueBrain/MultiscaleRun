@@ -23,7 +23,7 @@ pip install psutil
 
 echo "Cloning Metabolism repo."
 rm -rf metabolismndam
-git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch:molsys/metabolismndam.git
 
 echo "[start] building custom special."
 rm -rf x86_64
