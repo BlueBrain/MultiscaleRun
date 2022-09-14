@@ -8,6 +8,12 @@ module purge
 module load unstable git python-dev py-neurodamus py-mpi4py
 module load intel gcc hpe-mpi
 
+echo "Cloning Metabolism repo."
+rm -rf metabolismndam
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch:molsys/metabolismndam.git
+
+exit 0
+
 echo "*******************************************************************************"
 echo "STEPS_INSTALLED_HASH=${STEPS_INSTALLED_HASH}"
 echo "NEURODAMUS_NEOCORTEX_INSTALLED_HASH=${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}"
@@ -20,12 +26,6 @@ rm -rf ./python-venv
 python -m venv ./python-venv
 source ./python-venv/bin/activate
 pip install psutil
-
-echo "Cloning Metabolism repo."
-rm -rf metabolismndam
-git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch:molsys/metabolismndam.git
-
-exit 0
 
 echo "[start] building custom special."
 rm -rf x86_64

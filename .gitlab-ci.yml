@@ -12,7 +12,7 @@ variables:
   NEURODAMUS_NEOCORTEX_BRANCH:
     value: main
 
-spack_setup:
+.spack_setup:
   extends: .spack_setup_ccache
 
 .build:
@@ -42,5 +42,4 @@ dualrun_test:
     bb5_ntasks: 16
     bb5_cpus_per_task: 1
   script:
-    - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_dualrun.sh
