@@ -18,8 +18,8 @@
 source ./set_env.sh 12
 
 # driver script
-PYDRIVER=multiscale_run_STEPS3.py
 export which_STEPS=3
+PYDRIVER=multiscale_run_STEPS${which_STEPS}.py
 export which_mesh=mc2c
 export which_BlueConfig=BlueConfig
 # Like in C, the integers 0 (false) and 1 (true—in fact any nonzero integer) are used.
