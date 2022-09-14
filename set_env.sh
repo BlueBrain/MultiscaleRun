@@ -1,7 +1,7 @@
 echo "! setup !"
 
 module purge
-module load unstable python-dev py-neurodamus py-mpi4py julia
+module load unstable git python-dev py-neurodamus py-mpi4py julia
 module load intel gcc hpe-mpi
 
 # If no args provided, then the script purges any previous installation

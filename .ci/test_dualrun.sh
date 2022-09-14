@@ -16,6 +16,7 @@ echo "Just loading already installed versions of steps & neurodamus."
 spack load /${STEPS_INSTALLED_HASH}
 spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
 
+echo "Setting up Python env."
 rm -rf ./python-venv
 python -m venv ./python-venv
 source ./python-venv/bin/activate
@@ -25,7 +26,7 @@ echo "Cloning Metabolism repo."
 rm -rf metabolismndam
 git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
 
-echo "[start] building custom special."
+echo "[...] building custom special."
 rm -rf x86_64
 
 # legacy mod files for triplerun
@@ -44,7 +45,7 @@ cp -n common/mod/ngv/* mod/
 rm -rf common/
 
 build_neurodamus.sh mod
-echo "[finish] building custom special."
+echo "[completed] building custom special."
 
 # STEPS related
 export OMP_NUM_THREADS=1
@@ -61,7 +62,7 @@ export triplerun=0
 echo "*******************************************************************************"
 echo " *** STEPS${which_STEPS} run *** "
 echo "*******************************************************************************"
-srun --overlap -n 16 dplace special -mpi -python ${PYDRIVER}
+srun --overlap -n 16 dplace x86_64/special -mpi -python ${PYDRIVER}
 
 echo "*******************************************************************************"
 echo " *** pytest *** "
