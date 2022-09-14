@@ -25,6 +25,8 @@ echo "Cloning Metabolism repo."
 rm -rf metabolismndam
 git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch:molsys/metabolismndam.git
 
+exit 0
+
 echo "[start] building custom special."
 rm -rf x86_64
 
