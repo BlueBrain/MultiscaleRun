@@ -23,7 +23,7 @@ pip install psutil
 
 echo "Cloning Metabolism repo."
 rm -rf metabolismndam
-git clone --quiet -b main --single-branch https://bbpgitlab.epfl.ch/molsys/metabolismndam.git
+git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
 
 echo "[start] building custom special."
 rm -rf x86_64
@@ -33,13 +33,13 @@ cp metabolismndam/custom_ndam_2021_02_22_archive202101/mod/* mod/
 
 # update the legacy ones with mod files from neurodamus-core
 rm -rf neurodamus-core/
-git clone --quiet -b main --single-branch https://bbpgitlab.epfl.ch/hpc/sim/neurodamus-core.git
+git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-core.git
 cp neurodamus-core/mod/* mod/
 rm -rf neurodamus-core/
 
 # additional mod files from common repo
 rm -rf common/
-git clone --quiet -b main --single-branch https://bbpgitlab.epfl.ch/hpc/sim/models/common.git
+git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:hpc/sim/models/common.git
 cp -n common/mod/ngv/* mod/
 rm -rf common/
 
