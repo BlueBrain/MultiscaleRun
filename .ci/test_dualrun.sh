@@ -12,7 +12,7 @@ echo "Cloning repos."
 #rm -rf metabolismndam
 #git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
 
-git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-core.git
+git clone --quiet -b main --single-branch https://bbpgitlab.epfl.ch/hpc/sim/neurodamus-core.git
 
 #git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/models/common.git
 
