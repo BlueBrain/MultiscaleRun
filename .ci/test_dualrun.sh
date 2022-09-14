@@ -8,13 +8,13 @@ module purge
 module load unstable git python-dev py-neurodamus py-mpi4py
 module load intel gcc hpe-mpi
 
-echo "Cloning Metabolism repo."
-rm -rf metabolismndam
-git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
+echo "Cloning repos."
+#rm -rf metabolismndam
+#git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
 
-git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/neurodamus-core.git
+git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-core.git
 
-git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/models/common.git
+#git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/models/common.git
 
 exit 0
 
