@@ -5,7 +5,7 @@ set -e
 echo "! setup !"
 
 module purge
-module load unstable python-dev py-neurodamus py-mpi4py
+module load unstable git python-dev py-neurodamus py-mpi4py
 module load intel gcc hpe-mpi
 
 echo "*******************************************************************************"
