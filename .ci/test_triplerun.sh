@@ -9,7 +9,6 @@ module load unstable git python-dev py-neurodamus py-mpi4py
 module load intel gcc hpe-mpi
 
 echo "JULIA"
-ls ~/.julia
 
 rm -rf ~/.julia
 julia -e 'using Pkg; Pkg.add("IJulia")'
