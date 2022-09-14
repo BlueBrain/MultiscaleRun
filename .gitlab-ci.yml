@@ -41,4 +41,5 @@ dualrun_test:
     bb5_ntasks: 16
     bb5_cpus_per_task: 1
   script:
+    - !reference [.bbp_gitlab_access]
     - .ci/test_dualrun.sh
