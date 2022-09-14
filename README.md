@@ -94,3 +94,15 @@ The up-to-date/latest mod files can be found as well in the installation folder 
     NaTs2_t_ionic.mod
     ```
     These mod files should be eventually added in neurodamus+ngv related mod folder.
+
+## Convert BlueConfig to SONATA compatible json file
+
+Currently, there is a [merge request in bluepy-configfile repo](https://bbpgitlab.epfl.ch/nse/bluepy-configfile/-/merge_requests/11) that implements this converter.
+
+1. Prepare your python virtual environment.
+1. Clone the [bluepy-configfile repo](https://bbpgitlab.epfl.ch/nse/bluepy-configfile). If the above-mentioned MR is merged then proceed to the next step, if not just checkout to the relevant branch, i.e. `jblanco/convert_blueconfig`.
+1. Go to the repo and do `pip install .`.
+1. In the BlueConfig (BC) of interest comment out the `RunMode` field, the `Circuit GLIA` section, the `Projection NeuroGlia` section, and the the `Projection GlioVascular` section.
+1. Go to the multiscale_run repo and run `blueconfig convert-to-sonata ngv.json ./BlueConfig`.
+1. In the `ngv.json`, change the `network` field to point to the correct `circuit_config.json` file.
+1. Now the `ngv.json` can be used from the jupyter notebook for the visualizations.

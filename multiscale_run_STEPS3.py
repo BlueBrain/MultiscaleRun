@@ -48,6 +48,8 @@ mesh_file_ = f'./steps_meshes/{which_mesh}/{which_mesh}.msh'
 dualrun_env = int(os.getenv('dualrun'))
 triplerun_env = int(os.getenv('triplerun'))
 
+which_BlueConfig = os.getenv('which_BlueConfig')
+
 #################################################
 # Model Specification
 #################################################
@@ -257,7 +259,7 @@ def main():
 
         rss = [] # Memory tracking
 
-        ndamus = Neurodamus("BlueConfig", enable_reports=False, logging_level=None, enable_coord_mapping=True)
+        ndamus = Neurodamus(which_BlueConfig, enable_reports=False, logging_level=None, enable_coord_mapping=True)
 
         # Simulate one molecule each 10e9
 
