@@ -157,93 +157,93 @@ def init_solver(model, geom):
 ##############################################
 # Triplerun related
 ##############################################
+if triplerun_env:
+    # for out file names
+    timestr = time.strftime("%Y%m%d%H")
 
-# for out file names
-timestr = time.strftime("%Y%m%d%H")
+    # paths
+    path_to_results = "./RESULTS/"
+    path_to_metab_jl = "./metabolismndam/sim/metabolism_unit_models/"
 
-# paths
-path_to_results = "./RESULTS/"
-path_to_metab_jl = "./metabolismndam/sim/metabolism_unit_models/"
+    #files
 
-#files
+    julia_code_file = path_to_metab_jl + "julia_gen_18feb2021.jl" 
+    u0_file = path_to_metab_jl + "u0forNdam/u0_Calv_ATP2p2_Nai10.txt"
 
-julia_code_file = path_to_metab_jl + "julia_gen_18feb2021.jl" 
-u0_file = path_to_metab_jl + "u0forNdam/u0_Calv_ATP2p2_Nai10.txt"
+    ins_glut_file_output = path_to_results + f"dis_ins_r_glut_{timestr}.txt"
+    ins_gaba_file_output = path_to_results + f"dis_ins_r_gaba_{timestr}.txt"
+    outs_glut_file_output = path_to_results + f"dis_outs_r_glut_{timestr}.txt"
+    outs_gaba_file_output = path_to_results + f"dis_outs_r_gaba_{timestr}.txt"
 
-ins_glut_file_output = path_to_results + f"dis_ins_r_glut_{timestr}.txt"
-ins_gaba_file_output = path_to_results + f"dis_ins_r_gaba_{timestr}.txt"
-outs_glut_file_output = path_to_results + f"dis_outs_r_glut_{timestr}.txt"
-outs_gaba_file_output = path_to_results + f"dis_outs_r_gaba_{timestr}.txt"
-
-param_out_file = path_to_results + f"dis_param_{timestr}.txt"
-um_out_file = path_to_results + f"dis_um_{timestr}.txt"
+    param_out_file = path_to_results + f"dis_param_{timestr}.txt"
+    um_out_file = path_to_results + f"dis_um_{timestr}.txt"
 
 
-#####
-test_counter_seg_file = path_to_results + f"dis_test_counter_seg0_{timestr}.txt"
-wrong_gids_testing_file = path_to_results + f"dis_wrong_gid_errors_{timestr}.txt"
-err_solver_output = path_to_results + f"dis_solver_errors_{timestr}.txt"
-#####
-#voltages_per_gid_f = "./metabolismndam/in_data/voltages_per_gid.txt"
-target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0.txt") # hex0 gids
-exc_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_exc_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0exc.txt")
-inh_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_inh_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0inh.txt")
-target_gids_L1 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L1_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l1.txt")
-target_gids_L2 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L2_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l2.txt")
-target_gids_L3 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L3_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l3.txt")
-target_gids_L4 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L4_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l4.txt")
-target_gids_L5 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L5_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l5.txt")
-target_gids_L6 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L6_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l6.txt")
+    #####
+    test_counter_seg_file = path_to_results + f"dis_test_counter_seg0_{timestr}.txt"
+    wrong_gids_testing_file = path_to_results + f"dis_wrong_gid_errors_{timestr}.txt"
+    err_solver_output = path_to_results + f"dis_solver_errors_{timestr}.txt"
+    #####
+    #voltages_per_gid_f = "./metabolismndam/in_data/voltages_per_gid.txt"
+    target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0.txt") # hex0 gids
+    exc_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_exc_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0exc.txt")
+    inh_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_inh_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0inh.txt")
+    target_gids_L1 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L1_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l1.txt")
+    target_gids_L2 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L2_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l2.txt")
+    target_gids_L3 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L3_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l3.txt")
+    target_gids_L4 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L4_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l4.txt")
+    target_gids_L5 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L5_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l5.txt")
+    target_gids_L6 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L6_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l6.txt")
 
-########################################################################
+    ########################################################################
 
-#with open(voltages_per_gid_f,'r') as infile:
-#    voltages_l = infile.readlines()
+    #with open(voltages_per_gid_f,'r') as infile:
+    #    voltages_l = infile.readlines()
 
-#voltages_per_gids = {}
-#for line in voltages_l:
-#    idx,v = line.split("\t")
-#    voltages_per_gids[int(idx)] = float(v)
+    #voltages_per_gids = {}
+    #for line in voltages_l:
+    #    idx,v = line.split("\t")
+    #    voltages_per_gids[int(idx)] = float(v)
 
-########################################################################
+    ########################################################################
 
-# MPI summation for dict
-# https://stackoverflow.com/questions/31388465/summing-python-objects-with-mpis-allreduce 
+    # MPI summation for dict
+    # https://stackoverflow.com/questions/31388465/summing-python-objects-with-mpis-allreduce 
 
-def addCounter(counter1, counter2, datatype):
-    for item in counter2:
-        if item in counter1:
-            counter1[item] += counter2[item]
-        else:
-            counter1[item] = counter2[item]
-    return counter1
+    def addCounter(counter1, counter2, datatype):
+        for item in counter2:
+            if item in counter1:
+                counter1[item] += counter2[item]
+            else:
+                counter1[item] = counter2[item]
+        return counter1
 
-def addDict(d1, d2, datatype):  # d1 and d2 are from different ranks
-    for s in d2:
-        d1.setdefault(s, {})
-        for t in d2[s]:
-            d1[s][t] = d2[s][t] #10jan2021 #d1[s].get(t, 0.0) + d2[s][t]
-    return d1
+    def addDict(d1, d2, datatype):  # d1 and d2 are from different ranks
+        for s in d2:
+            d1.setdefault(s, {})
+            for t in d2[s]:
+                d1[s][t] = d2[s][t] #10jan2021 #d1[s].get(t, 0.0) + d2[s][t]
+        return d1
 
-def joinDict(d1, d2, datatype):
-    d1.update(d2)
-    return d1
+    def joinDict(d1, d2, datatype):
+        d1.update(d2)
+        return d1
 
-#################################################
-# METABOLISM Model Build
-#################################################
+    #################################################
+    # METABOLISM Model Build
+    #################################################
 
-from diffeqpy import de
-from julia import Main ##https://stackoverflow.com/questions/57441384/trouble-getting-differential-equation-to-solve-via-diffeqpy
-#from julia import Sundials
-#import jl2py
-#metabolism = jl2py.gen_metabolism_model(julia_code_file)
-def gen_metabolism_model():
-    '''import jl metabolism diff eq system code to py'''
-    with open(julia_code_file, "r") as f:
-        julia_code = f.read()
-    metabolism = Main.eval(julia_code)
-    return metabolism
+    from diffeqpy import de
+    from julia import Main ##https://stackoverflow.com/questions/57441384/trouble-getting-differential-equation-to-solve-via-diffeqpy
+    #from julia import Sundials
+    #import jl2py
+    #metabolism = jl2py.gen_metabolism_model(julia_code_file)
+    def gen_metabolism_model():
+        '''import jl metabolism diff eq system code to py'''
+        with open(julia_code_file, "r") as f:
+            julia_code = f.read()
+        metabolism = Main.eval(julia_code)
+        return metabolism
 
 ##############################################
 # Runtime
