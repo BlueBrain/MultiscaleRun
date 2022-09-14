@@ -10,7 +10,7 @@ module load intel gcc hpe-mpi
 
 echo "Cloning Metabolism repo."
 rm -rf metabolismndam
-git clone --depth 1 https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
 
 exit 0
 
