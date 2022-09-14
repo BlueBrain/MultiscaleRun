@@ -12,8 +12,6 @@ variables:
   NEURODAMUS_NEOCORTEX_BRANCH:
     value: main
 
-.spack_setup:
-  extends: .spack_setup_ccache
 
 .build:
   extends: [.spack_build]
