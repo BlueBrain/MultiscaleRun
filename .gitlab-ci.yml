@@ -43,10 +43,16 @@ neurodamus_setup:
 
 dualrun_test:
   extends: [.allocation]
+  artifacts:
+    when: always
+    paths: 
+      - RESULTS/*
+    expire_in: 4 weeks
   stage: test
   needs:
     - steps_setup
     - neurodamus_setup
+  timeout: 1 hour
   variables:
     bb5_duration: "01:00:00"
     bb5_ntasks: 16
@@ -65,6 +71,7 @@ triplerun_test:
   needs:
     - steps_setup
     - neurodamus_setup
+  timeout: 2 hours
   variables:
     bb5_duration: "02:00:00"
     bb5_ntasks: 32

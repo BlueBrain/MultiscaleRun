@@ -33,6 +33,8 @@ python -m venv ./python-venv
 source ./python-venv/bin/activate
 
 pip install psutil
+pip install h5py
+pip install bluepysnap
 
 echo "[...] building custom special."
 rm -rf x86_64
@@ -69,6 +71,19 @@ echo "**************************************************************************
 echo " *** STEPS${which_STEPS} run *** "
 echo "*******************************************************************************"
 srun --overlap -n $bb5_ntasks dplace x86_64/special -mpi -python ${PYDRIVER}
+
+echo "*******************************************************************************"
+echo " *** Jupyter notebook *** "
+echo "*******************************************************************************"
+module load py-notebook
+
+# execute the jupyter notebook and save the output as html file
+jupyter-nbconvert \
+--execute \
+--to html \
+--no-input \
+--output-dir='./RESULTS' \
+notebook.ipynb
 
 echo "*******************************************************************************"
 echo " *** pytest *** "
