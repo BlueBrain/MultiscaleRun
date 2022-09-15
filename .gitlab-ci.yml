@@ -62,6 +62,11 @@ dualrun_test:
     - .ci/test_dualrun.sh
 
 triplerun_test:
+  artifacts:
+    when: always
+    paths: 
+      - RESULTS/*
+    expire_in: 4 weeks
   stage: test
 #  needs:
 #    - bbp_repos_access
