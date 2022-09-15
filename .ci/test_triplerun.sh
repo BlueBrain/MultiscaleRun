@@ -19,6 +19,8 @@ echo "common"
 rm -rf common/
 git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/models/common.git
 
+exit 0
+
 echo "*******************************************************************************"
 echo "STEPS_INSTALLED_HASH=${STEPS_INSTALLED_HASH}"
 echo "NEURODAMUS_NEOCORTEX_INSTALLED_HASH=${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}"
