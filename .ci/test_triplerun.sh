@@ -48,6 +48,7 @@ pip install julia
 pip install diffeqpy
 pip install pympler
 pip install h5py
+pip install bluepysnap
 
 echo "[...] building custom special."
 rm -rf x86_64

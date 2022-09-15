@@ -309,7 +309,7 @@ def main():
             tet_currents_all = np.zeros((ntets,), dtype=float)
 
             if rank == 0:
-                f_Moles_Current = open("S3_Moles_Current.dat", "w")
+                f_Moles_Current = open("./RESULTS/S3_Moles_Current.dat", "w")
 
         if triplerun_env:
             dictAddOp = MPI.Op.Create(addDict, commute=True)
@@ -942,7 +942,7 @@ def main():
     if rank == 0 and dualrun_env:
         f_Moles_Current.close()
 
-        with open('S3_CompCount.dat', 'w') as f:
+        with open('./RESULTS/S3_CompCount.dat', 'w') as f:
             for row in CompCount:
                 f.write(','.join(map(str, row)) + '\n')
 

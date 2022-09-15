@@ -48,6 +48,7 @@ then
     pip install diffeqpy
     pip install pympler
     pip install h5py
+    pip install bluepysnap
 else
     source ./python-venv/bin/activate
 fi

@@ -2,16 +2,16 @@ import numpy as np
 
 '''
 def test_CompCount():
-    S3 = np.loadtxt('S3_CompCount.dat', dtype=np.float, delimiter=',')
-    S4 = np.loadtxt('S4_CompCount.dat', dtype=np.float, delimiter=',')
+    S3 = np.loadtxt('./RESULTS/S3_CompCount.dat', dtype=np.float, delimiter=',')
+    S4 = np.loadtxt('./RESULTS/S4_CompCount.dat', dtype=np.float, delimiter=',')
 
     assert np.allclose(S3, S4)
     assert np.allclose(S4, S3)
 '''
 
 def test_Moles_Current():
-    S3 = np.loadtxt('S3_Moles_Current.dat', dtype=np.float, delimiter=',')
-    #S4 = np.loadtxt('S4_Moles_Current.dat', dtype=np.float, delimiter=',')
+    S3 = np.loadtxt('./RESULTS/S3_Moles_Current.dat', dtype=np.float, delimiter=',')
+    #S4 = np.loadtxt('./RESULTS/S4_Moles_Current.dat', dtype=np.float, delimiter=',')
 
     #assert np.allclose(S3, S4)
     #assert np.allclose(S4, S3)
