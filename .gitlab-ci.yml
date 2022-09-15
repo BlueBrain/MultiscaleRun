@@ -49,7 +49,7 @@ dualrun_test:
     - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_dualrun.sh
 
-.triplerun_test:
+triplerun_test:
   stage: test
   needs:
     - steps_setup
@@ -63,3 +63,7 @@ dualrun_test:
   script:
     - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_triplerun.sh
+  artifacts:
+    paths:
+      - RESULTS/*
+    expire_in: 4 weeks
