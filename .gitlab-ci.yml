@@ -1,7 +1,6 @@
 include:
   - project: hpc/gitlab-pipelines
-    file: 
-      - spack-build-components.gitlab-ci.yml
+    file: spack-build-components.gitlab-ci.yml
 
 default:
   tags: [bb5_map]
@@ -50,6 +49,10 @@ dualrun_test:
     - .ci/test_dualrun.sh
 
 triplerun_test:
+  artifacts:
+    when: always
+    paths: RESULTS/*
+    expire_in: 4 weeks
   stage: test
   needs:
     - steps_setup
@@ -63,7 +66,3 @@ triplerun_test:
   script:
     - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_triplerun.sh
-  artifacts:
-    paths:
-      - RESULTS/*
-    expire_in: 4 weeks
