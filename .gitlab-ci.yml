@@ -2,7 +2,6 @@ include:
   - project: hpc/gitlab-pipelines
     file: 
       - spack-build-components.gitlab-ci.yml
-      - bbp-gitlab-access.yml
 
 default:
   tags: [bb5_map]
@@ -13,12 +12,8 @@ variables:
   NEURODAMUS_NEOCORTEX_BRANCH:
     value: main
 
-#spack_setup:
-#  extends: .spack_setup_ccache
-
-#bbp_repos_access:
-#  stage: .pre
-#  extends: .bbp_gitlab_access
+spack_setup:
+  extends: .spack_setup_ccache
 
 .build:
   extends: [.spack_build]
@@ -27,13 +22,13 @@ variables:
     bb5_cpus_per_task: 8 # ninja -j {this}
     bb5_memory: 76G # ~16*384/80
 
-.steps_setup:
+steps_setup:
   extends: [.build]
   variables:
     SPACK_PACKAGE: steps
     SPACK_PACKAGE_SPEC: +distmesh+petsc
 
-.neurodamus_setup:
+neurodamus_setup:
   extends: [.build]
   variables:
     SPACK_PACKAGE: neurodamus-neocortex
@@ -41,10 +36,9 @@ variables:
 
 dualrun_test:
   stage: test
-#  needs:
-#    - bbp_repos_access
-#    - steps_setup
-#    - neurodamus_setup
+  needs:
+    - steps_setup
+    - neurodamus_setup
   variables:
     bb5_exclusive: "full"
     bb5_duration: "01:00:00"
@@ -52,13 +46,7 @@ dualrun_test:
     bb5_ntasks: 16
     bb5_cpus_per_task: 1
   script:
-#    - . ${SPACK_ROOT}/share/spack/setup-env.sh
-    - export XDG_CONFIG_HOME=${CI_BUILDS_DIR}/J${CI_JOB_ID}_local_config
-    - echo "Configuring git to use CI_JOB_TOKEN to access git@bbpgitlab.epfl.ch (${XDG_CONFIG_HOME})"
-    - mkdir -p "${XDG_CONFIG_HOME}/git"
-    - echo -e "[url \"https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/\"]\n  insteadOf = git@bbpgitlab.epfl.ch:" > "${XDG_CONFIG_HOME}/git/config"
-    - echo -e "[url \"https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/\"]\n  insteadOf = ssh://git@bbpgitlab.epfl.ch/" >> "${XDG_CONFIG_HOME}/git/config"
-    - cat "${XDG_CONFIG_HOME}/git/config"
+    - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_dualrun.sh
 
 triplerun_test:
@@ -68,10 +56,9 @@ triplerun_test:
       - RESULTS/*
     expire_in: 4 weeks
   stage: test
-#  needs:
-#    - bbp_repos_access
-#    - steps_setup
-#    - neurodamus_setup
+  needs:
+    - steps_setup
+    - neurodamus_setup
   variables:
     bb5_exclusive: "full"
     bb5_duration: "02:00:00"
@@ -79,11 +66,5 @@ triplerun_test:
     bb5_ntasks: 32
     bb5_cpus_per_task: 1
   script:
-#    - . ${SPACK_ROOT}/share/spack/setup-env.sh
-    - export XDG_CONFIG_HOME=${CI_BUILDS_DIR}/J${CI_JOB_ID}_local_config
-    - echo "Configuring git to use CI_JOB_TOKEN to access git@bbpgitlab.epfl.ch (${XDG_CONFIG_HOME})"
-    - mkdir -p "${XDG_CONFIG_HOME}/git"
-    - echo -e "[url \"https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/\"]\n  insteadOf = git@bbpgitlab.epfl.ch:" > "${XDG_CONFIG_HOME}/git/config"
-    - echo -e "[url \"https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/\"]\n  insteadOf = ssh://git@bbpgitlab.epfl.ch/" >> "${XDG_CONFIG_HOME}/git/config"
-    - cat "${XDG_CONFIG_HOME}/git/config"
+    - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_triplerun.sh
