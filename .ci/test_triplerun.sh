@@ -82,7 +82,7 @@ export triplerun=1
 echo "*******************************************************************************"
 echo " *** STEPS${which_STEPS} run *** "
 echo "*******************************************************************************"
-srun --overlap -n 32 dplace x86_64/special -mpi -python ${PYDRIVER}
+srun --overlap -n $bb5_ntasks dplace x86_64/special -mpi -python ${PYDRIVER}
 
 echo "*******************************************************************************"
 echo " *** Jupyter notebook *** "
