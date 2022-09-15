@@ -43,8 +43,8 @@ dualrun_test:
   stage: test
   needs:
     - bbp_repos_access
-    - steps_setup
-    - neurodamus_setup
+#    - steps_setup
+#    - neurodamus_setup
   variables:
     bb5_exclusive: "full"
     bb5_duration: "01:00:00"
@@ -64,8 +64,8 @@ triplerun_test:
   stage: test
   needs:
     - bbp_repos_access
-    - steps_setup
-    - neurodamus_setup
+#    - steps_setup
+#    - neurodamus_setup
   variables:
     bb5_exclusive: "full"
     bb5_duration: "02:00:00"
