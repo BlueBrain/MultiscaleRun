@@ -34,22 +34,28 @@ neurodamus_setup:
     SPACK_PACKAGE: neurodamus-neocortex
     SPACK_PACKAGE_SPEC: +ngv
 
+.allocation:
+  variables:
+    bb5_exclusive: "full"
+    bb5_constraint: cpu
+    bb5_memory: 0
+    bb5_cpus_per_task: 2
+
 dualrun_test:
+  extends: [.allocation]
   stage: test
   needs:
     - steps_setup
     - neurodamus_setup
   variables:
-    bb5_exclusive: "full"
     bb5_duration: "01:00:00"
-    bb5_constraint: cpu
     bb5_ntasks: 16
-    bb5_cpus_per_task: 1
   script:
     - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_dualrun.sh
 
 triplerun_test:
+  extends: [.allocation]
   artifacts:
     when: always
     paths: 
@@ -60,11 +66,8 @@ triplerun_test:
     - steps_setup
     - neurodamus_setup
   variables:
-    bb5_exclusive: "full"
     bb5_duration: "02:00:00"
-    bb5_constraint: cpu
     bb5_ntasks: 32
-    bb5_cpus_per_task: 1
   script:
     - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_triplerun.sh
