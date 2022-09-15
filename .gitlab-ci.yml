@@ -1,6 +1,8 @@
 include:
   - project: hpc/gitlab-pipelines
-    file: spack-build-components.gitlab-ci.yml
+    file: 
+      - spack-build-components.gitlab-ci.yml
+      - bbp-gitlab-access.yml
 
 default:
   tags: [bb5_map]
@@ -13,6 +15,9 @@ variables:
 
 spack_setup:
   extends: .spack_setup_ccache
+
+bbp_repos_access:
+  extends: .bbp_gitlab_access
 
 .build:
   extends: [.spack_build]
@@ -36,6 +41,7 @@ neurodamus_setup:
 dualrun_test:
   stage: test
   needs:
+    - bbp_repos_access
     - steps_setup
     - neurodamus_setup
   variables:
@@ -56,6 +62,7 @@ triplerun_test:
     expire_in: 4 weeks
   stage: test
   needs:
+    - bbp_repos_access
     - steps_setup
     - neurodamus_setup
   variables:
