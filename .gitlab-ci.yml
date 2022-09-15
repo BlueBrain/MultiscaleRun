@@ -17,6 +17,7 @@ spack_setup:
   extends: .spack_setup_ccache
 
 bbp_repos_access:
+  stage: .pre
   extends: .bbp_gitlab_access
 
 .build:
