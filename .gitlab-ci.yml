@@ -68,7 +68,8 @@ triplerun_test:
       - RESULTS/*
     expire_in: 4 weeks
   stage: test
-#  needs:
+  needs:
+    - dualrun_test
 #    - bbp_repos_access
 #    - steps_setup
 #    - neurodamus_setup
