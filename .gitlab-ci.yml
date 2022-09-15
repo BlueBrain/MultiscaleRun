@@ -52,7 +52,7 @@ dualrun_test:
     bb5_ntasks: 16
     bb5_cpus_per_task: 1
   script:
-    - . ${SPACK_ROOT}/share/spack/setup-env.sh
+#    - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_dualrun.sh
 
 triplerun_test:
@@ -73,5 +73,5 @@ triplerun_test:
     bb5_ntasks: 32
     bb5_cpus_per_task: 1
   script:
-    - . ${SPACK_ROOT}/share/spack/setup-env.sh
+#    - . ${SPACK_ROOT}/share/spack/setup-env.sh
     - .ci/test_triplerun.sh
