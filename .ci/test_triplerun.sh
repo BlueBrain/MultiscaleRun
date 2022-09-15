@@ -8,6 +8,17 @@ module purge
 module load unstable git python-dev py-neurodamus py-mpi4py julia
 module load intel gcc hpe-mpi
 
+echo "Cloning various repos."
+echo "metabolismndam"
+rm -rf metabolismndam/
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
+echo "neurodamus-core"
+rm -rf neurodamus-core/
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/neurodamus-core.git
+echo "common"
+rm -rf common/
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/models/common.git
+
 echo "*******************************************************************************"
 echo "STEPS_INSTALLED_HASH=${STEPS_INSTALLED_HASH}"
 echo "NEURODAMUS_NEOCORTEX_INSTALLED_HASH=${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}"
@@ -37,10 +48,6 @@ pip install diffeqpy
 pip install pympler
 pip install h5py
 
-echo "Cloning Metabolism repo."
-rm -rf metabolismndam
-git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
-
 echo "[...] building custom special."
 rm -rf x86_64
 
@@ -48,14 +55,10 @@ rm -rf x86_64
 cp metabolismndam/custom_ndam_2021_02_22_archive202101/mod/* mod/
 
 # update the legacy ones with mod files from neurodamus-core
-rm -rf neurodamus-core/
-git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/neurodamus-core.git
 cp neurodamus-core/mod/* mod/
 rm -rf neurodamus-core/
 
 # additional mod files from common repo
-rm -rf common/
-git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/models/common.git
 cp -n common/mod/ngv/* mod/
 rm -rf common/
 
