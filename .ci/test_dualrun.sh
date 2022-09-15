@@ -11,7 +11,13 @@ module load intel gcc hpe-mpi
 echo "Cloning various repos."
 echo "metabolismndam"
 rm -rf metabolismndam/
-git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
+echo "neurodamus-core"
+rm -rf neurodamus-core/
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/neurodamus-core.git
+echo "common"
+rm -rf common/
+git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/hpc/sim/models/common.git
 
 exit 0
 
