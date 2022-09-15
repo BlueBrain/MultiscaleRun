@@ -51,7 +51,8 @@ dualrun_test:
 triplerun_test:
   artifacts:
     when: always
-    paths: RESULTS/*
+    paths: 
+      - RESULTS/*
     expire_in: 4 weeks
   stage: test
   needs:
