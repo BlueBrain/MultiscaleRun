@@ -11,7 +11,7 @@ module load intel gcc hpe-mpi
 echo "Cloning various repos."
 echo "metabolismndam"
 rm -rf metabolismndam/
-git clone --quiet -b main --single-branch https://bbpgitlab.epfl.ch/molsys/metabolismndam.git
+git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
 
 exit 0
 
