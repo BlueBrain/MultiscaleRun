@@ -20,6 +20,7 @@ echo "Setting up Python env."
 rm -rf ./python-venv
 python -m venv ./python-venv
 source ./python-venv/bin/activate
+
 pip install psutil
 
 echo "Cloning Metabolism repo."
