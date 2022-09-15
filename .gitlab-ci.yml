@@ -16,9 +16,9 @@ variables:
 #spack_setup:
 #  extends: .spack_setup_ccache
 
-bbp_repos_access:
-  stage: .pre
-  extends: .bbp_gitlab_access
+#bbp_repos_access:
+#  stage: .pre
+#  extends: .bbp_gitlab_access
 
 .build:
   extends: [.spack_build]
@@ -40,6 +40,7 @@ bbp_repos_access:
     SPACK_PACKAGE_SPEC: +ngv
 
 dualrun_test:
+  extends: .bbp_gitlab_access
   stage: test
   needs:
     - bbp_repos_access
@@ -56,6 +57,7 @@ dualrun_test:
     - .ci/test_dualrun.sh
 
 triplerun_test:
+  extends: .bbp_gitlab_access
   artifacts:
     when: always
     paths: 
