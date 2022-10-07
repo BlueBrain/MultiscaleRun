@@ -32,7 +32,7 @@ neurodamus_setup:
   extends: [.build]
   variables:
     SPACK_PACKAGE: neurodamus-neocortex
-    SPACK_PACKAGE_SPEC: +ngv
+    SPACK_PACKAGE_SPEC: +ngv+metabolism
 
 .allocation:
   variables:

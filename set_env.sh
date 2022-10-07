@@ -11,16 +11,17 @@ then
     # Default behavior without args -> ./set_env.sh
     echo "Remove first any installed version of steps & neurodamus."
     spack uninstall --all -y steps@develop+distmesh+petsc
-    spack uninstall --all -y neurodamus-neocortex+ngv
+    spack uninstall --all -y neurodamus-neocortex@develop+ngv+metabolism
 
     spack install steps@develop+distmesh+petsc
-    spack install neurodamus-neocortex+ngv
+    spack install neurodamus-neocortex@develop+ngv+metabolism
 else
     # ./set_env.sh {random arg}
     echo "Just loading already installed versions of steps & neurodamus."
 fi
 spack load steps@develop+distmesh+petsc
-spack load neurodamus-neocortex+ngv
+# package that gives us the special
+spack load neurodamus-neocortex@develop+ngv+metabolism
 
 # same approach as above
 if [ $# -eq 0 ]
@@ -62,31 +63,6 @@ else
     pushd metabolismndam
     git pull
     popd
-fi
-
-if [ $# -eq 0 ]
-then
-    echo "building custom special."
-    rm -rf x86_64
-    
-    # legacy mod files for triplerun
-    cp metabolismndam/custom_ndam_2021_02_22_archive202101/mod/* mod/
-
-    # update the legacy ones with mod files from neurodamus-core
-    rm -rf neurodamus-core/
-    git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-core.git
-    cp neurodamus-core/mod/* mod/
-    rm -rf neurodamus-core/
-
-    # additional mod files from common repo
-    rm -rf common/
-    git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:hpc/sim/models/common.git
-    cp -n common/mod/ngv/* mod/
-    rm -rf common/
-
-    build_neurodamus.sh mod
-else
-    echo "custom special already built."
 fi
 
 # STEPS related

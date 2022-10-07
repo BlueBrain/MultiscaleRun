@@ -29,71 +29,20 @@ The `multiscale_run_STEPS3.py` (STEPS3 compatible only) script executes the vari
 
 ## Custom special
 
-The custom special is generated from a mixture of up-to-date mod files (clone corresponding repos and copy mod files in **mod folder**) and legacy/outdated ones.
-
-All the mod files found in [neurodamus-core](https://bbpgitlab.epfl.ch/hpc/sim/neurodamus-core/-/tree/main/mod) & [common](https://bbpgitlab.epfl.ch/hpc/sim/models/common/-/tree/main/mod/ngv) are cloned-copied in the **mod folder**, and therefore they are always up-to-date.
-
-## List of legacy/outdated mod files
-
-How to generate the list of legacy/outdated mod files:
-
-1. `cp metabolismndam/custom_ndam_2021_02_22_archive202101/mod/* mod/`
-1. ```for f in `ls -1 neurodamus-core/mod`; do rm mod/$f; done;```, i.e. remove from **mod folder** all the mod files that are already in **neurodamus-core** (up-to-date mod files).
-
-The curated list is:
+The special is being built in a fully automated way:
 ```
-ampa.mod
-Ca_HVA.mod
-Ca_LVAst.mod
-DetAMPANMDA.mod
-DetGABAAB.mod
-gap.mod
-GluSynapse.mod
-Ih.mod
-Im.mod
-internal_ions.mod
-IonSynapse.mod
-kcc2.mod
-KdShu2007.mod
-K_Pst.mod
-K_Tst.mod
-leak.mod
-naclamp.mod
-nakcc.mod
-nakpump.mod
-Nap_Et2_ionic.mod
-NaTa_t_ionic.mod
-NaTg.mod
-NaTs2_t_ionic.mod
-ProbAMPANMDA_EMS.mod
-ProbGABAAB_EMS.mod
-SK_E2.mod
-SKv3_1.mod
-StochKv3.mod
-TTXDynamicsSwitch.mod
+module load neurodamus-neocortex-multiscale_run
+```
+or 
+```
+spack install/load neurodamus-neocortex@develop+ngv+metabolism
 ```
 
-## List of mod files that need to be added in the official repos
+The custom special is based on the mod files of the `custom_ndam_2021_02_22_archive202101` folder, found [here](https://bbpgitlab.epfl.ch/molsys/metabolismndam/-/tree/main/custom_ndam_2021_02_22_archive202101). This folder has been curated and now resides in [neocortex repo](https://bbpgitlab.epfl.ch/hpc/sim/models/neocortex) in `mod/metabolism`.
 
-The up-to-date/latest mod files can be found as well in the installation folder of neurodamus, following these steps:
-
-1. ``` ndam_installation_dir=`spack find --paths neurodamus-neocortex+ngv | tail -n 1 | grep -o "/.*"` ```
-1. latest mod files are located in `$ndam_installation_dir/share/mod_full`
-1. List of mod files that are not in the **mod_full** but are in the legacy folders:
-    ```
-    ampa.mod
-    internal_ions.mod
-    IonSynapse.mod
-    kcc2.mod
-    leak.mod
-    naclamp.mod
-    nakcc.mod
-    nakpump.mod
-    Nap_Et2_ionic.mod
-    NaTa_t_ionic.mod
-    NaTs2_t_ionic.mod
-    ```
-    These mod files should be eventually added in neurodamus+ngv related mod folder.
+After spack installation, all the gathered mod files can be found following the steps below:
+1. ``` ndam_installation_dir=`spack find --paths neurodamus-neocortex@develop+ngv+metabolism | tail -n 1 | grep -o "/.*"` ```
+1. mod files -> `$ndam_installation_dir/share/mod_full`
 
 ## Convert BlueConfig to SONATA compatible json file
 

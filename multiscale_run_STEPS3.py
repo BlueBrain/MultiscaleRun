@@ -355,6 +355,8 @@ def main():
             if rank == 0:
                 all_needs.pop(0)
 
+            metabolism = gen_metabolism_model()
+
     log_stage("===============================================")
     log_stage("Running the selected solvers ...")
 
@@ -767,7 +769,6 @@ def main():
             #                print("u0: ",len(u0))
             #                print("u027: ",u0[27])
                         
-                        metabolism = gen_metabolism_model() # TODO: move outside or not ? 
 
                         tspan_m = (1e-3*float(idxm)*SIM_END_coupling_interval,1e-3*(float(idxm)+1.0)*SIM_END_coupling_interval)  #tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0)) 
                         um[(0,c_gid)] = u0

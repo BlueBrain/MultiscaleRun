@@ -26,4 +26,4 @@ export which_BlueConfig=BlueConfig
 export dualrun=1
 export triplerun=1
 echo " *** STEPS${which_STEPS} run *** "
-time srun dplace x86_64/special -mpi -python ${PYDRIVER}
+time srun dplace special -mpi -python ${PYDRIVER}
