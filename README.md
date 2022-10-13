@@ -55,3 +55,14 @@ Currently, there is a [merge request in bluepy-configfile repo](https://bbpgitla
 1. Go to the multiscale_run repo and run `blueconfig convert-to-sonata ngv.json ./BlueConfig`.
 1. In the `ngv.json`, change the `network` field to point to the correct `circuit_config.json` file.
 1. Now the `ngv.json` can be used from the jupyter notebook for the visualizations.
+
+## Profile multiscale_run script with ARM MAP
+
+In the `job_script`:
+1. After the `source ./set_env.sh ...`, add the following line: `module load arm-forge`.
+1. Execute `map --profile --output OUT.map srun special -mpi -python ${PYDRIVER}`.
+1. Open `OUT.map` with the Arm Forge Client (locally).
+
+For more on how to use ARM MAP check [here](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
+
+**REMARK**: In the past, at the very end of the multiscale_run script we were calling `exit() # needed to avoid hanging`. However, this `exit` is crashing ARM MAP because some processes exit before `MPI_Finalize` is called. In the latest versions of Neurodamus and STEPS, there is no need for using `exit()` and therefore it has been removed from the script.

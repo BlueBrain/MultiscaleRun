@@ -959,4 +959,5 @@ def main():
 
 if __name__ == "__main__":
     main()
-    exit() # needed to avoid hanging
+    # Comment it out : Crashes ARM MAP!
+    #exit() # needed to avoid hanging
