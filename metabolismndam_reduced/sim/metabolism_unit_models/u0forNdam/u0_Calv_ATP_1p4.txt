@@ -1,0 +1,59 @@
+### common initial conditions [THIS DOESN'T INCLUDE GLYCOGEN, BECAUSE ITS U0 IS LAYER-SPECIFIC]
+#VNeu0 = -73.0 #mV # -56.1999 # Calvetti2018
+#Va0 = -90.0 # mV  # -0.09 V # Breslin2018 microdomains
+#m0 =  0.1*(VNeu0+30.0)/(1.0-np.exp(-0.1*(VNeu0+30.0))) / (  0.1*(VNeu0+30.0)/(1.0-np.exp(-0.1*(VNeu0+30.0)))    +     4.0*np.exp(-(VNeu0+55.0)/18.0) )  # (alpha_m + beta_m)
+h0 = 0.9002
+n0 = 0.1558
+# Concentrations
+Conc_Cl_out = 140.0 # mM # Novel determinants of the neuronal Cl− concentration Eric Delpire 2014 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4215762/
+Conc_Cl_in =  8.0 # mM # Novel determinants of the neuronal Cl− concentration Eric Delpire 2014 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4215762/
+
+Na0in = 11.5604 # mM # u[8] # when have callback and Iinj
+K0out = 5.0 #4.1 # 6.2773 # mM # u[9] # when have callback and Iinj
+#K_a0 = 52.0 #Witthoft2013 # 100.0 #Flanagan2018  #  # 130.0 # approx  ## in intracellular K+ concentration [K+]in (from 110 to ~113 mM) dissipated over several seconds after [K+]out returned to 3 mM 
+#Na_a0 = 17.0 #Witthoft2013 
+#Ca_a0 = 75e-6 #75 nM # Physiology of Astroglia. Verkhratsky and Nedergaard 2018 # [Ca2+]i of 50−80 nM and [Na+]i of 15 mM, the ENCX could be as negative as about −85 to −90 mV, being thus very close (or even slightly more negative) to the resting membrane potential of astrocytes.
+
+# some more info on ions concentrations https://www.physiologyweb.com/lecture_notes/resting_membrane_potential/resting_membrane_potential_nernst_equilibrium_potential.html 
+
+Glc_b = 4.51 # mM Calvetti2018
+Lac_b = 1.24 # mM Calvetti2018
+O2_b = 6.67 # mM Calvetti2018 # ?is it total or free?
+
+#Q0 = 0.4 #mL/min
+Q0 = 0.0067 #mL/s #0.4 # mL/min denoted as Q in table but seems to be q0 (baseline bloodflow) according to text and equations; used for callback
+#Q0 = 0.0000067 #mL/ms #mL/ms doesn't work  #0.4 # mL/min denoted as Q in table but seems to be q0 (baseline bloodflow) according to text and equations; used for callback
+
+Glc_ecs = 1.19 # mM Calvetti2018
+Lac_ecs = 1.30 # mM Calvetti2018
+O2_ecs = 0.04 # mM Calvetti2018
+O2_n = 0.03 # mM Calvetti2018
+O2_a = 0.03 # mM Calvetti2018
+Glc_n = 1.19 # mM Calvetti2018
+Glc_a = 0.65 # mM Calvetti2018
+
+Lac_n = 1.3 # mM Calvetti2018
+Lac_a = 1.3 # mM Calvetti2018
+
+Pyr_n = 0.38 # mM Calvetti2018
+Pyr_a = 0.35 # mM Calvetti2018
+
+PCr_n = 10.33 # mM Calvetti2018
+PCr_a = 10.32 # mM Calvetti2018
+Cr_n = 3.0e-4 # mM Calvetti2018
+Cr_a =  1.1e-3 # mM Calvetti2018
+
+ATP_n = 1.4 #2.18 #1.4 #2.18 # mM Calvetti2018
+ATP_a = 1.4 #2.17 #1.4 #2.17 # mM Calvetti2018
+ADP_n = 6.3e-3 # mM Calvetti2018
+ADP_a = 0.013 #0.03 # mM Calvetti2018
+
+NADH_n = 1.2e-3 # mM Calvetti2018
+NADH_a =  1.2e-3 # mM Calvetti2018
+
+NAD_n = 0.03 # mM Calvetti2018  
+NAD_a = 0.03 # mM Calvetti2018  
+
+ksi0 = 0.06
+ksi0 = 0.06
+

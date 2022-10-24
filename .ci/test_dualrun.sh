@@ -8,10 +8,10 @@ module purge
 module load unstable git python-dev py-neurodamus py-mpi4py
 module load intel gcc hpe-mpi
 
-echo "Cloning various repos."
-echo "metabolismndam"
-rm -rf metabolismndam/
-git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
+#echo "Cloning various repos."
+#echo "metabolismndam"
+#rm -rf metabolismndam/
+#git clone --quiet -b main --single-branch https://gitlab-ci-token:${CI_JOB_TOKEN}@bbpgitlab.epfl.ch/molsys/metabolismndam.git
 
 echo "*******************************************************************************"
 echo "STEPS_INSTALLED_HASH=${STEPS_INSTALLED_HASH}"

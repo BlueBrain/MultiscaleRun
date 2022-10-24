@@ -38,6 +38,7 @@ else
     echo "Julia packages already set."
 fi
 
+echo "Setting up Python env."
 if [ $# -eq 0 ]
 then
     rm -rf ./python-venv
@@ -54,16 +55,17 @@ else
     source ./python-venv/bin/activate
 fi
 
-if [ $# -eq 0 ]
-then
-    rm -rf metabolismndam
-    git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
-else
-    echo "Metabolism repo already set, just updating it."
-    pushd metabolismndam
-    git pull
-    popd
-fi
+#if [ $# -eq 0 ]
+#then
+#    echo "Cloning metabolismndam."
+#    rm -rf metabolismndam
+#    git clone --quiet -b main --single-branch git@bbpgitlab.epfl.ch:molsys/metabolismndam.git
+#else
+#    echo "Metabolism repo already set, just updating it."
+#    pushd metabolismndam
+#    git pull
+#    popd
+#fi
 
 # STEPS related
 export OMP_NUM_THREADS=1

@@ -1,0 +1,9 @@
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_gids.txt .
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_exc_gids.txt .
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_inh_gids.txt .
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_L1_gids.txt .
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_L2_gids.txt .
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_L3_gids.txt .
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_L4_gids.txt .
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_L5_gids.txt .
+[shichkov@bbpv1 gids_sets]$ cp /gpfs/bbp.cscs.ch/home/shichkov/dan/nrnsteps/invivolike/simulation/mc2_L6_gids.txt .

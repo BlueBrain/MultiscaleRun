@@ -163,7 +163,8 @@ if triplerun_env:
 
     # paths
     path_to_results = "./RESULTS/"
-    path_to_metab_jl = "./metabolismndam/sim/metabolism_unit_models/"
+    path_to_metabolismndam="./metabolismndam_reduced/"
+    path_to_metab_jl = path_to_metabolismndam + "sim/metabolism_unit_models/"
 
     #files
 
@@ -185,15 +186,15 @@ if triplerun_env:
     err_solver_output = path_to_results + f"dis_solver_errors_{timestr}.txt"
     #####
     #voltages_per_gid_f = "./metabolismndam/in_data/voltages_per_gid.txt"
-    target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0.txt") # hex0 gids
-    exc_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_exc_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0exc.txt")
-    inh_target_gids = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_inh_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0inh.txt")
-    target_gids_L1 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L1_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l1.txt")
-    target_gids_L2 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L2_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l2.txt")
-    target_gids_L3 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L3_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l3.txt")
-    target_gids_L4 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L4_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l4.txt")
-    target_gids_L5 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L5_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l5.txt")
-    target_gids_L6 = np.loadtxt("./metabolismndam/sim/gids_sets/O1_20190912_spines/mc2_L6_gids.txt") #for sscx: np.loadtxt("./metabolismndam/sim/gids_sets/hex0l6.txt")
+    target_gids = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0.txt") # hex0 gids
+    exc_target_gids = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_exc_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0exc.txt")
+    inh_target_gids = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_inh_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0inh.txt")
+    target_gids_L1 = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_L1_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0l1.txt")
+    target_gids_L2 = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_L2_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0l2.txt")
+    target_gids_L3 = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_L3_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0l3.txt")
+    target_gids_L4 = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_L4_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0l4.txt")
+    target_gids_L5 = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_L5_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0l5.txt")
+    target_gids_L6 = np.loadtxt(path_to_metabolismndam + "sim/gids_sets/O1_20190912_spines/mc2_L6_gids.txt") #for sscx: np.loadtxt(path_to_metabolismndam + "sim/gids_sets/hex0l6.txt")
 
     ########################################################################
 
