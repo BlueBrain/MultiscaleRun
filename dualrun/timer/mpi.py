@@ -5,8 +5,10 @@ import sys
 from contextlib import contextmanager
 import time
 
+
 class timer:
-    """ A simple mpi timer class"""
+    """A simple mpi timer class"""
+
     _timings = dict()
 
     @contextmanager
@@ -34,9 +36,19 @@ class timer:
             llbl = max(len(reg), llbl)
 
         if myRank == 0:
-            print(80*"-")
-            print("region", (llbl-6)*" ", "max", 12*" ", "min", 12*" ", "ave", 12*" ", "times" )
-            print(80*"-")
+            print(80 * "-")
+            print(
+                "region",
+                (llbl - 6) * " ",
+                "max",
+                12 * " ",
+                "min",
+                12 * " ",
+                "ave",
+                12 * " ",
+                "times",
+            )
+            print(80 * "-")
 
         for reg in timer._timings:
             region = np.zeros(1)
@@ -55,10 +67,10 @@ class timer:
                 print(s)
 
         if myRank == 0:
-            print(80*"-")
+            print(80 * "-")
 
 
-if(__name__ =='__main__'):
+if __name__ == "__main__":
     comm = MPI.COMM_WORLD
     nRanks = comm.Get_size()
     myRank = comm.Get_rank()
@@ -66,12 +78,12 @@ if(__name__ =='__main__'):
     assert nRanks == 2
 
     with timer.region("region"):
-        req = [MPI.REQUEST_NULL  for i in range(0,2)]
+        req = [MPI.REQUEST_NULL for i in range(0, 2)]
 
         if myRank == 0:
-            data = np.array([0,1,2], dtype=np.int64)
+            data = np.array([0, 1, 2], dtype=np.int64)
         else:
-            data = np.zeros(3, dtype=np.int64 )
+            data = np.zeros(3, dtype=np.int64)
 
         if myRank == 0:
             comm.Isend([data, 3, MPI.LONG], dest=1, tag=myRank)
@@ -85,6 +97,5 @@ if(__name__ =='__main__'):
             print("sent     ", data)
         else:
             print("received ", data)
-
 
     timer.print()

@@ -11,3 +11,5 @@ python-venv/
 x86_64/
 metabolismndam/
 .ipynb_checkpoints/
+HBP_STEPS/
+spackenv/

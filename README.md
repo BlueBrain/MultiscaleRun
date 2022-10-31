@@ -4,7 +4,7 @@
 1. triplerun : Coupling dualrun & metabolism. The triplerun is based on the one found in the **triplerun** folder of [this repo](https://bbpgitlab.epfl.ch/molsys/metabolismndam).
 1. quadrun : Coupling triplerun & blood flow. [**WIP**]
 
-The `multiscale_run_STEPS3.py` (STEPS3 compatible only) script executes the various runs. Just by exporting specific environment variables (see `job_script`), the user can decide which coupling wants to execute or even mix them, i.e. dual/triple/quad-run.
+The `main.py` script executes the various runs. Just by exporting specific environment variables (see `job_script`), the user can decide which coupling wants to execute or even mix them, i.e. dual/triple/quad-run.
 
 ## Environment Setup
 
@@ -19,7 +19,7 @@ The `multiscale_run_STEPS3.py` (STEPS3 compatible only) script executes the vari
     * There is no need for `module load spack`
 1. `source .bashrc`
 1. `salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 --constraint=clx`
-1. `source set_env.sh`
+1. `source setup.sh`
 1. `exit`
 
 ## Run Simulation
@@ -43,6 +43,10 @@ The custom special is based on the mod files of the `custom_ndam_2021_02_22_arch
 After spack installation, all the gathered mod files can be found following the steps below:
 1. ``` ndam_installation_dir=`spack find --paths neurodamus-neocortex@develop+ngv+metabolism | tail -n 1 | grep -o "/.*"` ```
 1. mod files -> `$ndam_installation_dir/share/mod_full`
+
+## Spack
+
+We now use environments! In this way we can keep our standard spack separated with the one needed for multiscale_run. More info [here](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md)
 
 ## Convert BlueConfig to SONATA compatible json file
 

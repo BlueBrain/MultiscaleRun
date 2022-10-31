@@ -6,20 +6,22 @@
 from mpi4py import MPI
 import numpy as np
 
+
 def init_send_mask(itype):
     if myrank == 0:
-        send_mask = np.array([0,0,1,1], dtype=itype)
+        send_mask = np.array([0, 0, 1, 1], dtype=itype)
         # print("I'm {0} send list is: {1}".format(myrank, send_mask))
     elif myrank == 1:
-        send_mask = np.array([1,0,1,0], dtype=itype)
+        send_mask = np.array([1, 0, 1, 0], dtype=itype)
         # print("I'm {0} send list is: {1}".format(myrank, send_mask))
     elif myrank == 2:
-        send_mask = np.array([1,0,0,1], dtype=itype)
+        send_mask = np.array([1, 0, 0, 1], dtype=itype)
         # print("I'm {0} send list is: {1}".format(myrank, send_mask))
     else:
         send_mask = np.zeros(nproc, dtype=itype)
         # print("I'm {0} send list is: {1}".format(myrank, send_mask))
     return send_mask
+
 
 def check_recv_mask(recv_mask):
     if myrank == 0:
@@ -43,6 +45,7 @@ def check_recv_mask(recv_mask):
         assert recv_mask[2] == 1
         assert recv_mask[3] == 0
 
+
 def get_mpi_int_type(itype):
     if itype == np.int64:
         return MPI.LONG
@@ -55,38 +58,41 @@ def get_mpi_int_type(itype):
     else:
         raise "not know np int type"
 
+
 def scatter_mask(send_mask, recv_mask, comm):
     # check preconditions
     itype = send_mask.dtype
-    assert(itype == recv_mask.dtype)
+    assert itype == recv_mask.dtype
     nproc = comm.Get_size()
-    assert(nproc < np.iinfo(itype).max)
+    assert nproc < np.iinfo(itype).max
 
     mpi_int = get_mpi_int_type(itype)
     for i in range(0, nproc):
         buff = np.zeros(1, dtype=itype)
-        comm.Scatter([send_mask, 1, mpi_int],[buff, 1, mpi_int], root=i)
+        comm.Scatter([send_mask, 1, mpi_int], [buff, 1, mpi_int], root=i)
         recv_mask[i] = buff[0]
+
 
 def alltoallv_mask(send_mask, recv_mask, comm):
     # check preconditions
     itype = send_mask.dtype
-    assert(itype == recv_mask.dtype)
+    assert itype == recv_mask.dtype
     nproc = comm.Get_size()
-    assert(nproc < np.iinfo(itype).max)
+    assert nproc < np.iinfo(itype).max
     s_counts = np.zeros(nproc, dtype=itype)
     r_counts = np.zeros(nproc, dtype=itype)
     s_displs = np.zeros(nproc, dtype=itype)
     r_displs = np.zeros(nproc, dtype=itype)
     disp = 0
-    size = np.iinfo(itype).bits/8
-    for i in range (nproc):
+    size = np.iinfo(itype).bits / 8
+    for i in range(nproc):
         s_counts[i] = r_counts[i] = size
         s_displs[i] = r_displs[i] = disp
         disp += size
     s_msg = [send_mask, (s_counts, s_displs), MPI.BYTE]
     r_msg = [recv_mask, (r_counts, r_displs), MPI.BYTE]
     comm.Alltoallv(s_msg, r_msg)
+
 
 # return a list of ranks to which we need to send tets info and a list from which
 # we need to receive tets info
@@ -111,10 +117,12 @@ def get_sendRecvTet_map(neurSecmap, tet2host, comm):
                     # store list of tets
                     is_there_tet = False
                     for tetstore in sendTetArray[rank2comm]:
-                        if (tetstore == tet):
+                        if tetstore == tet:
                             is_there_tet = True
                     if not is_there_tet:
-                        sendTetArray[rank2comm] = np.append(sendTetArray[rank2comm], tet)
+                        sendTetArray[rank2comm] = np.append(
+                            sendTetArray[rank2comm], tet
+                        )
 
     # # print out for debug purposes
     # for r in range(0, size):
@@ -134,11 +142,11 @@ def get_sendRecvTet_map(neurSecmap, tet2host, comm):
     # scatter_mask(sendMask, recvMask, comm)
     alltoallv_mask(sendMask, recvMask, comm)
 
-    #debug
+    # debug
     # print("rank ", rank, "recvMask ", recvMask)
 
     # build recv list
-    req = [MPI.REQUEST_NULL  for r in range(0,nRanks)]
+    req = [MPI.REQUEST_NULL for r in range(0, nRanks)]
     for r in range(0, nRanks):
         if r == rank:
             continue
@@ -150,7 +158,9 @@ def get_sendRecvTet_map(neurSecmap, tet2host, comm):
         nRecv = recvMask[r]
         if nRecv > 0:
             recvTetArray[r] = np.zeros(nRecv, dtype=np.int64)
-            req[r] = comm.Irecv([recvTetArray[r], nRecv, MPI.LONG], source=r, tag=MPI.ANY_TAG)
+            req[r] = comm.Irecv(
+                [recvTetArray[r], nRecv, MPI.LONG], source=r, tag=MPI.ANY_TAG
+            )
     # wait for all
     MPI.Request.Waitall(req)
 
@@ -162,8 +172,9 @@ def get_sendRecvTet_map(neurSecmap, tet2host, comm):
     return sendTetArray, recvTetArray
 
 
-def reduce_tagged_only(tet_currents, tet_currents_all, sendTetArray, \
-    recvTetArray, comm):
+def reduce_tagged_only(
+    tet_currents, tet_currents_all, sendTetArray, recvTetArray, comm
+):
 
     rank = comm.Get_rank()
     nRanks = comm.Get_size()
@@ -171,7 +182,7 @@ def reduce_tagged_only(tet_currents, tet_currents_all, sendTetArray, \
     buff_s = [np.array([], dtype=float) for i in range(nRanks)]
     buff_r = [np.array([], dtype=float) for i in range(nRanks)]
 
-    req = [MPI.REQUEST_NULL  for r in range(0, nRanks)]
+    req = [MPI.REQUEST_NULL for r in range(0, nRanks)]
 
     to_be_done = []
 
@@ -191,15 +202,17 @@ def reduce_tagged_only(tet_currents, tet_currents_all, sendTetArray, \
         nTetRecv = int(recvTetArray[r].shape[0])
         if nTetRecv > 0:
             buff_r[r] = np.zeros(nTetRecv, dtype=float)
-            req[r] = comm.Irecv([buff_r[r], nTetRecv, MPI.DOUBLE], source=r, tag=MPI.ANY_TAG)
+            req[r] = comm.Irecv(
+                [buff_r[r], nTetRecv, MPI.DOUBLE], source=r, tag=MPI.ANY_TAG
+            )
             to_be_done.append(r)
 
     # init store
     tet_currents_all = np.array(tet_currents)
     # add buff when ready
-    while (len(to_be_done) > 0):
+    while len(to_be_done) > 0:
         for r in list(to_be_done):
-            if (req[r].test()[0]):
+            if req[r].test()[0]:
                 nTetRecv = recvTetArray[r].shape[0]
                 for tet in range(0, nTetRecv):
                     tet_currents_all[recvTetArray[r][tet]] += buff_r[r][tet]
@@ -219,12 +232,12 @@ def check_comm_against_allreduce(tet_currents, tet_currents_all, tet2host, comm)
                 a = tet_currents_all[tet]
                 b = tet_currents_all_ref[tet]
                 tol = 4 * max(abs(a), abs(b)) * np.finfo(float).eps
-                err = abs(a-b)
+                err = abs(a - b)
                 assert err > tol, "new comm err"
 
 
 # simple unit test for mask scattering
-if(__name__ =='__main__'):
+if __name__ == "__main__":
     comm = MPI.COMM_WORLD
     myrank = comm.Get_rank()
     nproc = comm.Get_size()
@@ -233,7 +246,7 @@ if(__name__ =='__main__'):
     dt = np.int8
 
     # scatter method
-    if (myrank ==0):
+    if myrank == 0:
         print("--- test scatter method ---")
     send_mask = init_send_mask(dt)
     recv_mask = np.zeros(nproc, dtype=dt)
@@ -242,7 +255,7 @@ if(__name__ =='__main__'):
 
     # print("After Scatter, I'm {0} and recv list is: {1}".format(myrank, recv_mask))
 
-    if (myrank ==0):
+    if myrank == 0:
         print("--- test Alltoallv method ---")
     recv_mask = np.zeros(nproc, dtype=dt)
     alltoallv_mask(send_mask, recv_mask, comm)

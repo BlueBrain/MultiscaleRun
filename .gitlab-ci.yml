@@ -2,6 +2,7 @@ include:
   - project: hpc/gitlab-pipelines
     file: 
       - spack-build-components.gitlab-ci.yml
+      - bbp-gitlab-access.yml
 
 default:
   tags: [bb5_map]
@@ -40,41 +41,58 @@ neurodamus_setup:
     bb5_constraint: cpu
     bb5_memory: 0
     bb5_cpus_per_task: 2
+    OMP_NUM_THREADS: 1
 
-dualrun_test:
-  extends: [.allocation]
-  artifacts:
-    when: always
-    paths: 
-      - RESULTS/*
-    expire_in: 4 weeks
+pytests:
+  extends: .allocation
   stage: test
   needs:
     - steps_setup
     - neurodamus_setup
-  timeout: 1 hour
+  script:
+    - !reference [.bbp_gitlab_access, script]
+    - . ${SPACK_ROOT}/share/spack/setup-env.sh
+    - source setup.sh
+    - pytest pytests
+
+.nrun_test:
+  extends: .allocation
+  timeout: 2 hours
+  stage: test
+  needs:
+    - steps_setup
+    - neurodamus_setup
+  artifacts:
+    when: always
+    paths:
+      - RESULTS/*
+    expire_in: 5 days
+  variables:
+    blueconfig_path: BlueConfig
+    mesh_path: steps_meshes/mc2c/mc2c.msh
+    #leave it empty (master) or add your favorite branch that you want to check
+    steps_branch: master
+  script:
+    - !reference [.bbp_gitlab_access, script]
+    - . ${SPACK_ROOT}/share/spack/setup-env.sh
+    - source setup.sh $custom_HBP_STEPS
+    - .ci/test.sh
+
+dualrun_test:
+  extends: .nrun_test
+  timeout: 2 hours
   variables:
     bb5_duration: "01:00:00"
     bb5_ntasks: 16
-  script:
-    - . ${SPACK_ROOT}/share/spack/setup-env.sh
-    - .ci/test_dualrun.sh
+    nrun: 2
 
 triplerun_test:
-  extends: [.allocation]
-  artifacts:
-    when: always
-    paths: 
-      - RESULTS/*
-    expire_in: 4 weeks
-  stage: test
-  needs:
-    - steps_setup
-    - neurodamus_setup
+  extends: .nrun_test
   timeout: 2 hours
   variables:
     bb5_duration: "02:00:00"
     bb5_ntasks: 32
-  script:
-    - . ${SPACK_ROOT}/share/spack/setup-env.sh
-    - .ci/test_triplerun.sh
+    nrun: 3
+
+
+
