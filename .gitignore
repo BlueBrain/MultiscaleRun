@@ -13,3 +13,5 @@ metabolismndam/
 .ipynb_checkpoints/
 HBP_STEPS/
 spackenv/
+!.setup_*
+.julia/

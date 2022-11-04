@@ -14,7 +14,7 @@ variables:
     value: main
 
 spack_setup:
-  extends: .spack_setup_ccache
+  extends: [.spack_setup_ccache]
 
 .build:
   extends: [.spack_build]
@@ -23,19 +23,74 @@ spack_setup:
     bb5_cpus_per_task: 8 # ninja -j {this}
     bb5_memory: 76G # ~16*384/80
 
-steps_setup:
+setup_steps:
   extends: [.build]
   variables:
     SPACK_PACKAGE: steps
     SPACK_PACKAGE_SPEC: +distmesh+petsc
 
-neurodamus_setup:
+setup_neurodamus:
   extends: [.build]
   variables:
     SPACK_PACKAGE: neurodamus-neocortex
     SPACK_PACKAGE_SPEC: +ngv+metabolism
 
-.allocation:
+.custom_build:
+  stage: build
+  variables:
+    bb5_ntasks: 2   # so we block 16 cores
+    bb5_cpus_per_task: 8 # ninja -j {this}
+    bb5_memory: 76G # ~16*384/80
+  artifacts:
+    when: always
+    paths:
+      - "${pathenv}.env"
+    reports:
+      dotenv:
+        - "${pathenv}.env"
+  script:
+    - !reference [ .bbp_gitlab_access, script ]
+    - source .ci/setup.sh
+
+setup_bloodflow:
+  extends: [.custom_build]
+  variables:
+    setup_file: .setup_bloodflow.sh
+    pathenv: BLOODFLOW_PATH
+
+setup_spackenv:
+  extends: [.custom_build]
+  needs:
+    - setup_steps
+    - setup_neurodamus
+  variables:
+    setup_file: .setup_spackenv.sh
+    pathenv: SPACKENV_PATH
+
+setup_python_venv:
+  extends: [.custom_build]
+  variables:
+    setup_file: .setup_python_venv.sh
+    pathenv: PYTHON_VENV_PATH
+
+setup_julia:
+  extends: [.custom_build]
+  needs:
+    - spack_setup
+    - setup_python_venv
+  variables:
+    setup_file: .setup_julia.sh
+    pathenv: JULIA_DEPOT_PATH
+
+.test:
+  stage: test
+  needs:
+    - setup_spackenv
+    - setup_julia
+    - setup_python_venv
+    - setup_neurodamus
+    - setup_steps
+    - setup_bloodflow
   variables:
     bb5_exclusive: "full"
     bb5_constraint: cpu
@@ -44,42 +99,29 @@ neurodamus_setup:
     OMP_NUM_THREADS: 1
 
 pytests:
-  extends: .allocation
-  stage: test
-  needs:
-    - steps_setup
-    - neurodamus_setup
+  extends: [.test]
   script:
-    - !reference [.bbp_gitlab_access, script]
-    - . ${SPACK_ROOT}/share/spack/setup-env.sh
-    - source setup.sh
+    - source .ci/load.sh
     - pytest pytests
 
 .nrun_test:
-  extends: .allocation
+  extends: [.test]
   timeout: 2 hours
-  stage: test
-  needs:
-    - steps_setup
-    - neurodamus_setup
+
   artifacts:
     when: always
     paths:
       - RESULTS/*
-    expire_in: 5 days
+    expire_in: 3 days
   variables:
     blueconfig_path: BlueConfig
     mesh_path: steps_meshes/mc2c/mc2c.msh
-    #leave it empty (master) or add your favorite branch that you want to check
-    steps_branch: master
   script:
-    - !reference [.bbp_gitlab_access, script]
-    - . ${SPACK_ROOT}/share/spack/setup-env.sh
-    - source setup.sh $custom_HBP_STEPS
+    - source .ci/load.sh
     - .ci/test.sh
 
 dualrun_test:
-  extends: .nrun_test
+  extends: [.nrun_test]
   timeout: 2 hours
   variables:
     bb5_duration: "01:00:00"
@@ -87,7 +129,7 @@ dualrun_test:
     nrun: 2
 
 triplerun_test:
-  extends: .nrun_test
+  extends: [.nrun_test]
   timeout: 2 hours
   variables:
     bb5_duration: "02:00:00"

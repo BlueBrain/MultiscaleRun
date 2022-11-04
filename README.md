@@ -8,24 +8,20 @@ The `main.py` script executes the various runs. Just by exporting specific envir
 
 ## Environment Setup
 
-1. [Set Spack up on BlueBrain5](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/setup_bb5.md). Do not rely on `module load spack` and instead set it up in your `$HOME` folder as instructed (main steps here, but follow the spack README for more):
-    * `git clone -c feature.manyFiles=true https://github.com/BlueBrain/spack.git` (`HOME` dir)
-    * Add these lines in your `.bashrc`:
-        ```
-        . $HOME/spack/share/spack/setup-env.sh
-        export SPACK_SYSTEM_CONFIG_PATH=/gpfs/bbp.cscs.ch/ssd/apps/bsd/config
-        export SPACK_USER_CACHE_PATH=$HOME/spack_install
-        ```
-    * There is no need for `module load spack`
-1. `source .bashrc`
-1. `salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 --constraint=clx`
-1. `source setup.sh`
-1. `exit`
 
+The environment setup is pretty involved because there are a lot of different, contributing projects. Fortunately, it was all figured out!
+Just `source setup.sh` before proceeding with the simulations. It sets up all the environment for you and download the repos, packages and modules that you need.
+For problems contact Katta.
+
+If it is the first time you call `setup.sh` it is suggested to allocate a node to not stress the login node. For example:
+```
+salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 --constraint=clx
+```
 ## Run Simulation
 
-1. **Environment Setup** first
-1. `sbatch job_script`
+Run your job with sbatch. For example: `sbatch job_script`. 
+The parameters are either in `params.py` and `job_script`. Check them for more info. 
+
 
 ## Custom special
 
