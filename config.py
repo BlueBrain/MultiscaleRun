@@ -4,7 +4,7 @@ import time
 import numpy as np
 from scipy import constants as spc
 
-
+# TODO: change to config
 ##############################################
 # Dualrun related
 ##############################################

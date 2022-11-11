@@ -29,7 +29,7 @@ from multiscale_run import (
     printer,
 )
 
-import params as msrp
+import config
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -58,17 +58,17 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
             "Dt"
         ]  # 0.025  #ms i.e. = 25 usec which is timstep of ndam
         SIM_END = ndamus._run_conf["Duration"]  # 500.0 #10.0 #1000.0 #ms
-        SIM_END_coupling_interval = DT * msrp.dt_nrn2dt_jl
+        SIM_END_coupling_interval = DT * config.dt_nrn2dt_jl
         logging.info(f"DT: {DT}")
         logging.info(f"SIM_END: {SIM_END}")
         logging.info(f"SIM_END_coupling_interval: {SIM_END_coupling_interval}")
 
         # In steps use M/L and apply the SIM_REAL ratio
         CA = (
-            msrp.COULOMB
-            / msrp.AVOGADRO
-            * msrp.CONC_FACTOR
-            * (DT * 1e3 * msrp.dt_nrn2dt_steps)
+            config.COULOMB
+            / config.AVOGADRO
+            * config.CONC_FACTOR
+            * (DT * 1e3 * config.dt_nrn2dt_steps)
         )
 
         logging.info(f"Initializing simulations...")
@@ -94,7 +94,7 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
             tet_currents_all = np.zeros((ntets,), dtype=float)
 
         if nrun >= 3:
-            with open(msrp.u0_file, "r") as u0file:
+            with open(config.u0_file, "r") as u0file:
                 u0fromFile = [
                     float(line.replace(" ", "").split("=")[1].split("#")[0].strip())
                     for line in u0file
@@ -114,17 +114,17 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
             )
             if rank == 0:
                 all_needs.pop(0)
-            # TODO can we remove this?
-            # metabolism = metabolism_utils.gen_metabolism_model()
+
+            metabolism = metabolism_utils.gen_metabolism_model()
 
     log_stage("===============================================")
     log_stage("Running the selected solvers ...")
 
     steps, idxm = 0, 0
-    for t in ProgressBar(int(SIM_END / (msrp.dt_nrn2dt_steps * DT)))(
-        utils.timesteps(SIM_END, DT * msrp.dt_nrn2dt_steps)
+    for t in ProgressBar(int(SIM_END / (config.dt_nrn2dt_steps * DT)))(
+        utils.timesteps(SIM_END, DT * config.dt_nrn2dt_steps)
     ):
-        steps += msrp.dt_nrn2dt_steps
+        steps += config.dt_nrn2dt_steps
         with timeit(name="main_loop"):
             with timeit(name="neurodamus_solver"):
                 ndamus.solve(t)
@@ -146,33 +146,33 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
 
                         # update the tet concentrations according to the currents
                         steps_sim.stepsSolver.getBatchTetSpecConcsNP(
-                            index, msrp.Na.name, tetConcs
+                            index, config.Na.name, tetConcs
                         )
                         # 0.001A/mA 6.24e18 particles/coulomb 1000L/m3
                         tetConcs = tetConcs + tet_currents_all * CA * tetVol
                         steps_sim.stepsSolver.setBatchTetSpecConcsNP(
-                            index, msrp.Na.name, tetConcs
+                            index, config.Na.name, tetConcs
                         )
 
                         prnt.append_to_file(
-                            msrp.moles_current_output,
+                            config.moles_current_output,
                             [t, sum(tetConcs * tetVol), sum(tet_currents_all)],
                         )
 
                         prnt.append_to_file(
-                            msrp.comp_counts_output,
+                            config.comp_counts_output,
                             [
                                 t,
                                 *[
                                     steps_sim.stepsSolver.getCompSpecCount(
-                                        msrp.Mesh.compname, spec
+                                        config.Mesh.compname, spec
                                     )
-                                    for spec in msrp.specNames
+                                    for spec in config.specNames
                                 ],
                             ],
                         )
 
-            if (steps % msrp.dt_nrn2dt_jl == 0) and nrun >= 3:
+            if (steps % config.dt_nrn2dt_jl == 0) and nrun >= 3:
                 with timeit(name="metabolism_loop"):
                     log_stage("metabolism loop")
                     outs_r_glu, outs_r_gaba = {}, {}
@@ -186,7 +186,7 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                         collected_num_releases_glutamate
                     ).items():
                         prnt.append_to_file(
-                            msrp.ins_glut_file_output,
+                            config.ins_glut_file_output,
                             [idxm, t, v],
                             comm.Get_rank(),
                         )
@@ -195,7 +195,7 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                         collected_num_releases_gaba
                     ).items():
                         prnt.append_to_file(
-                            msrp.ins_gaba_file_output,
+                            config.ins_gaba_file_output,
                             [idxm, t, v],
                             comm.Get_rank(),
                         )
@@ -208,14 +208,14 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                         outs_r_glu,
                     )
                     for sgid, v in all_outs_r_glut.items():
-                        prnt.append_to_file(msrp.outs_glut_file_output, [idxm, sgid, v])
+                        prnt.append_to_file(config.outs_glut_file_output, [idxm, sgid, v])
 
                     logging.info(f"collect all_events gaba")
                     all_outs_r_gaba = neurodamus_utils.collect_received_events(
                         collected_num_releases_gaba, all_needs, gid_to_cell, outs_r_gaba
                     )
                     for sgid, v in all_outs_r_gaba.items():
-                        prnt.append_to_file(msrp.outs_glut_file_output, [idxm, sgid, v])
+                        prnt.append_to_file(config.outs_glut_file_output, [idxm, sgid, v])
 
                     comm.Barrier()
 
@@ -230,11 +230,11 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                             adpi_mean,
                             gids_without_valid_segs,
                         ) = neurodamus_utils.get_current_densities_and_means(
-                            gid_to_cell=gid_to_cell, seg_filter=msrp.seg_filter
+                            gid_to_cell=gid_to_cell, seg_filter=config.seg_filter
                         )
                         for c_gid in gids_without_valid_segs:
                             prnt.append_to_file(
-                                msrp.test_counter_seg_file,
+                                config.test_counter_seg_file,
                                 c_gid,
                             )
                     comm.Barrier()
@@ -243,35 +243,28 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                     failed_cells = set()
                     for c_gid, nc in neurodamus_utils.gen_ncs(gid_to_cell):
                         logging.info(f"metabolism, processing c_gid: {c_gid}")
-                        outs_r_to_met_factor = msrp.OUTS_R_TO_MET_FACTOR / (
+                        outs_r_to_met_factor = config.OUTS_R_TO_MET_FACTOR / (
                             cells_volumes[c_gid] * SIM_END_coupling_interval
                         )  # mM/ms
-                        if c_gid in msrp.exc_target_gids:
+                        if c_gid in config.exc_target_gids:
                             outs_r_to_met = outs_r_to_met_factor * outs_r_glu.get(
                                 c_gid, 0.0
                             )
                             glutamatergic_gaba_scaling = 0.1
-                        elif c_gid in msrp.inh_target_gids:
+                        elif c_gid in config.inh_target_gids:
                             outs_r_to_met = outs_r_to_met_factor * outs_r_gaba.get(
                                 c_gid, 0.0
                             )
                             glutamatergic_gaba_scaling = 1.0
                         else:
                             prnt.append_to_file(
-                                msrp.wrong_gids_testing_file, c_gid, rank
+                                config.wrong_gids_testing_file, c_gid, rank
                             )
                             continue
-                        GLY_a, mito_scale = msrp.get_GLY_a_and_mito_vol_frac(c_gid)
+                        GLY_a, mito_scale = config.get_GLY_a_and_mito_vol_frac(c_gid)
 
-                        u0 = [-65.0, msrp.m0, *u0fromFile]
-                        # TODO should we remove this?
+                        u0 = [-65.0, config.m0, *u0fromFile]
                         # u0 = [VNeu0,m0,h0,n0,Conc_Cl_out,Conc_Cl_in, Na0in,K0out,Glc_b,Lac_b,O2_b,Q0,Glc_ecs,Lac_ecs,O2_ecs,O2_n,O2_a,Glc_n,Glc_a,Lac_n,Lac_a,Pyr_n,Pyr_a,PCr_n,PCr_a,Cr_n,Cr_a,ATP_n,ATP_a,ADP_n,ADP_a,NADH_n,NADH_a,NAD_n,NAD_a,ksi0,ksi0]
-                        # if rank == 0:
-                        #     print("u0: ",len(u0))
-                        #     print("u027: ",u0[27])
-                        metabolism = (
-                            metabolism_utils.gen_metabolism_model()
-                        )  # TODO: move outside or not ?
 
                         tspan_m = (
                             1e-3 * float(idxm) * SIM_END_coupling_interval,
@@ -284,28 +277,22 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                         # vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
                         # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
 
-                        # comm.Barrier()
 
                         vm[6] = nais_mean[c_gid]
                         vm[7] = u0[7] - 1.33 * (
                             kis_mean[c_gid] - 140.0
-                        )  # Kout #changed7jan2021 # TODO: STEPS feedback
-                        #            vm[8] = 2.255 # Glc_b
+                        )
                         # 2.2 should coincide with the BC METypePath field & with u0_file
+                        # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
                         vm[27] = (
                             0.5 * 2.2 + 0.5 * atpi_mean[c_gid]
-                        )  # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
+                        )
+                        # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
                         vm[29] = (
                             0.5 * 6.3e-3 + 0.5 * adpi_mean[c_gid]
-                        )  # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
+                        )
 
                         # TODO : Here goes the coupling with Blood flow solver
-                        # param = [current_ina[c_gid], 0.06, voltage_mean[c_gid],nais_mean[c_gid],kis_mean[c_gid], current_ik[c_gid], 4.4, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling]
-
-                        # comm.Barrier()
-
-                        #            param = [current_ina[c_gid], 0.06, voltage_mean[c_gid], nais_mean[c_gid], kis_mean[c_gid], current_ik[c_gid], 4.1, pAKTPFK2, atpi_mean[c_gid],vm[27],cais_mean[c_gid],mito_scale,glutamatergic_gaba_scaling, outs_r_to_met[c_gid]]
-                        #!!! 1000* in param is to have current_ina and current_ik units = uA/cm2 same as in Calvetti
 
                         param = [
                             ina_density[c_gid],
@@ -325,9 +312,8 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                         ]
                         prob_metabo = de.ODEProblem(metabolism, vm, tspan_m, param)
 
-                        # current_ina[c_gid], outs_r[idxm].get(c_gid, 0.0), cells_areas[c_gid]
                         prnt.append_to_file(
-                            msrp.param_out_file,
+                            config.param_out_file,
                             [c_gid, idxm, *param, cells_volumes[c_gid]],
                             rank,
                         )
@@ -342,47 +328,33 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
 
                         log_stage("solve metabolism")
 
-                        #  sol = de.solve(prob_metabo, de.Rodas5(),reltol=1e-8,abstol=1e-8,save_everystep=False )
                         sol = None
                         error_solver = None
-                        for i in range(5):
-                            logging.info(f"metab solver attempt: {i}")
-                            try:
-                                with timeit(name="metabolism_solver"):
-                                    sol = de.solve(
-                                        prob_metabo,
-                                        de.Rodas4P(),
-                                        reltol=1e-6,
-                                        abstol=1e-6,
-                                        maxiters=1e4,
-                                        save_everystep=False,
-                                    )
-                                    # TODO remove this?
-                                    # de.Rodas4P ,autodiff=False (deprecated ?)
-                                    # sol = de.solve(prob_metabo, de.Rosenbrock23(),autodiff=False ,reltol=1e-8,abstol=1e-8,maxiters=1e4,save_everystep=False) #de.Rodas4P
+                        try:
+                            with timeit(name="metabolism_solver"):
+                                sol = de.solve(
+                                    prob_metabo,
+                                    de.Rodas4P(),
+                                    reltol=1e-6,
+                                    abstol=1e-6,
+                                    maxiters=1e4,
+                                    save_everystep=False,
+                                )
 
-                                    # sol = de.solve(prob_metabo, de.Tsit5(),reltol=1e-4,abstol=1e-4,maxiters=1e4,save_everystep=False)
-                                    # sol = de.solve(prob_metabo, de.AutoTsit5(de.Rosenbrock23()),reltol=1e-4,abstol=1e-6,maxiters=1e4,save_everystep=False)
-                                    # sol = de.solve(prob_metabo, de.Tsit5(),reltol=1e-6,abstol=1e-6,maxiters=1e4,save_everystep=False)
+                                if sol.retcode != "Success":
+                                    print(f"sol.retcode: {sol.retcode}")
 
-                                    # with open(f"/gpfs/bbp.cscs.ch/project/proj34/scratch/polina/solver_good_{timestr}.txt", "a") as f:
-                                    #    f.write(f"{rank}\t{c_gid}\n")
-
-                                    if sol.retcode != "Success":
-                                        print(f"sol.retcode: {sol.retcode}")
-
-                                break
-                            except Exception as e:
-                                prnt.append_to_file(msrp.err_solver_output, c_gid, rank)
-                                error_solver = e
-                                failed_cells.add(c_gid)
+                        except Exception as e:
+                            prnt.append_to_file(config.err_solver_output, c_gid, rank)
+                            error_solver = e
+                            failed_cells.add(c_gid)
 
                         if sol is None:
                             raise error_solver
 
                         um[(idxm + 1, c_gid)] = sol.u[-1]
                         prnt.append_to_file(
-                            msrp.um_out_file, [c_gid, idxm, sol.u[-1]], rank
+                            config.um_out_file, [c_gid, idxm, sol.u[-1]], rank
                         )
 
                         # u stands for Julia ODE var and m stands for metabolism
@@ -405,35 +377,15 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                         # feedback loop to constrain ndamus by metabolism output
                         um[(idxm, c_gid)] = None
 
-                        ### KATTA STOPPED HERE! ###
-
                         with timeit(name="neurodamus_metabolism_feedback"):
                             log_stage("feedback")
-                            for seg in neurodamus_utils.gen_segs(nc, msrp.seg_filter):
-                                # TODO can we remove this?
-                                # for sec_elem in secs_Na:
-                                #    for seg in sec_elem:
-                                # nao stands for extracellular (outside) & nai inside
+                            for seg in neurodamus_utils.gen_segs(nc, config.seg_filter):
                                 seg.nao = nao_weighted_mean  # 140
                                 seg.nai = nai_weighted_mean  # 10
                                 seg.ko = ko_weighted_mean  # 5
                                 seg.ki = ki_weighted_mean  # 140
                                 seg.atpi = atpi_weighted_mean  # 1.4
                                 seg.adpi = adpi_weighted_mean  # 0.03
-
-                            # TODO can we remove this?
-                            #        seg.v = -65.0
-
-                    # TODO can we remove this?
-                    #            secs_v = [sec for sec in nc.CCell.all if (hasattr(sec, "v") )]
-                    #            for sec_elem in secs_v:
-                    #                seg_all = sec_elem.allseg()
-                    #                for seg in seg_all:
-                    #                #for sec_elem in secs_v:
-                    #                #for seg in sec_elem:
-                    #                    seg.v = -65.0
-                    #            #del secs_v
-                    # del secs_all
 
                     comm.Barrier()
                     logging.info(

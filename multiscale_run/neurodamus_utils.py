@@ -8,7 +8,7 @@ import logging
 
 import os
 
-import params
+import config
 
 
 def get_cell_volumes(ndamus):
@@ -43,7 +43,7 @@ def collect_gaba_glutamate_releases(ndamus):
         for conn in syn_manager.all_connections():
             num_releases_glutamate = 0  # 12jan2021
             num_releases_gaba = 0  # 12jan2021
-            if conn.sgid in params.target_gids:  # 12jan2021
+            if conn.sgid in config.target_gids:  # 12jan2021
                 collected_num_releases_glutamate.setdefault(conn.sgid, {})
                 collected_num_releases_gaba.setdefault(conn.sgid, {})
 
@@ -105,10 +105,10 @@ def collect_received_events(releases, all_needs, gid_to_cell, outs_r):
 
 def gen_ncs(gid_to_cell):
     for c_gid, nc in gid_to_cell.items():
-        if c_gid not in params.target_gids:
+        if c_gid not in config.target_gids:
             logging.warning(f"{c_gid} not in target_gids")
 
-            for i in params.target_gids:
+            for i in config.target_gids:
                 print(i, type(i))
 
             continue

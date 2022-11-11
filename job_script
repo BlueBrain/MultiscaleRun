@@ -21,7 +21,6 @@
 
 source ./setup.sh
 
-<<<<<<< HEAD
 # parameters
 steps_version=4
 mesh_path=steps_meshes/mc2c/mc2c.msh
@@ -29,14 +28,16 @@ blueconfig_path=BlueConfig
 nrun=3
 RESULTS_PATH=RESULTS/STEPS$steps_version
 
-# simulation run
-=======
-steps_version=3
-mesh_path=steps_meshes/mc2c/mc2c.msh
-blueconfig_path=BlueConfig
-nrun=2
-RESULTS_PATH=RESULTS/STEPS$steps_version
-
->>>>>>> main
 echo " *** STEPS${steps_version} run *** "
-time srun dplace special -mpi -python main.py $nrun $steps_version $RESULTS_PATH $blueconfig_path $mesh_path
+
+
+if [ -d "x86_64" ]
+then
+  echo "use custom special"
+  special_path=x86_64/special
+else
+  echo "use standard special"
+  special_path=special
+fi
+
+time srun dplace $special_path -mpi -python main.py $nrun $steps_version $RESULTS_PATH $blueconfig_path $mesh_path

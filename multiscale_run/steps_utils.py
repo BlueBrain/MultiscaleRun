@@ -11,7 +11,7 @@ from steps.saving import *
 from steps.sim import *
 from steps.utils import *
 
-import params
+import config
 import dualrun.sec_mapping.sec_mapping as sec_mapping
 
 from . import utils
@@ -22,10 +22,10 @@ import os
 def gen_model():
     mdl = Model()
     with mdl:
-        extraNa = VolumeSystem(name=params.Volsys0.name)
-        Na = Species(name=params.Na.name)
+        extraNa = VolumeSystem(name=config.Volsys0.name)
+        Na = Species(name=config.Na.name)
         with extraNa:
-            diff = Diffusion.Create(Na, params.Na.diffcst)
+            diff = Diffusion.Create(Na, config.Na.diffcst)
     return mdl
 
 
@@ -45,10 +45,10 @@ def gen_mesh(steps_version, mesh_path):
     ntets = len(mesh.tets)
     with mesh:
         if steps_version == 4:
-            extra = Compartment(name=params.Mesh.compname, vsys=params.Volsys0.name)
+            extra = Compartment(name=config.Mesh.compname, vsys=config.Volsys0.name)
         else:
             extra = Compartment(
-                mesh.tets, name=params.Mesh.compname, vsys=params.Volsys0.name
+                mesh.tets, name=config.Mesh.compname, vsys=config.Volsys0.name
             )
 
     return mesh, ntets
@@ -85,11 +85,11 @@ def init_steps(steps_version, ndamus, mesh_path):
 
     logging.info("Computing segments per tet...")
     neurSecmap = sec_mapping.get_sec_mapping_collective(
-        ndamus, msh, params.Na.current_var
+        ndamus, msh, config.Na.current_var
     )
 
     # there are 0.001 M/mM
-    steps_sim.extra.Na.Conc = 1e-3 * params.Na.conc_0 * params.CONC_FACTOR
+    steps_sim.extra.Na.Conc = 1e-3 * config.Na.conc_0 * config.CONC_FACTOR
     tetVol = np.array([i.Vol for i in msh.tets], dtype=float)
 
     utils.print_once(f"The total tet mesh volume is : {np.sum(tetVol)}")

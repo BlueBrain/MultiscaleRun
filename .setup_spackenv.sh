@@ -10,7 +10,7 @@ echo
 echo "   ### spack env and additional repos"
 echo
 
-module load unstable intel gcc hpe-mpi
+module load unstable intel-oneapi-compilers gcc hpe-mpi
 
 if [[ -n "${CI}" ]]
 then
