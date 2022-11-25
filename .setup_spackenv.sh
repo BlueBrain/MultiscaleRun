@@ -10,12 +10,15 @@ echo
 echo "   ### spack env and additional repos"
 echo
 
-module load unstable intel-oneapi-compilers gcc hpe-mpi
+# Pramod's suggestion: `gcc` before `intel-oneapi-compilers`
+module load unstable gcc intel-oneapi-compilers hpe-mpi
 
 if [[ -n "${CI}" ]]
 then
   module load git
-  echo "ndam from CI"
+  echo "ndam py from CI"
+  spack load /${PY_NEURODAMUS_INSTALLED_HASH}
+  echo "ndam neocortex from CI"
   spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
   echo "steps from CI"
   spack load /${STEPS_INSTALLED_HASH}
@@ -33,7 +36,16 @@ spack env activate -d spackenv
 
 if [[ -z "${CI}" ]]
 then
-  echo "add ndam"
+  echo "add ndam py"
+  if [[ -z "${PY_NEURODAMUS_BRANCH}" ]]
+  then
+    export PY_NEURODAMUS_BRANCH=katta/init_vasccouplingB
+  fi
+  lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH
+  spack add py-neurodamus@develop
+  spack develop -p ${PWD}/py-neurodamus --no-clone py-neurodamus@develop
+
+  echo "add ndam neocortex"
   spack add neurodamus-neocortex@develop+ngv+metabolism
 
   echo "add steps"
@@ -47,7 +59,7 @@ then
 fi
 
 echo "additional software"
-spack add py-psutil py-bluepysnap py-scipy py-neurodamus py-pytest
+spack add py-psutil py-bluepysnap py-scipy py-pytest
 
 spack install
 spack env deactivate

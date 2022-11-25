@@ -22,22 +22,32 @@
 source ./setup.sh
 
 # parameters
-steps_version=4
-mesh_path=steps_meshes/mc2c/mc2c.msh
-blueconfig_path=BlueConfig
-nrun=3
-RESULTS_PATH=RESULTS/STEPS$steps_version
+#export with_steps=1
+#export with_metabolism=1
+export with_bloodflow=0
 
-echo " *** STEPS${steps_version} run *** "
+#export results_path=RESULTS/STEPS4
 
+#export blueconfig_path=BlueConfig
 
-if [ -d "x86_64" ]
+#export steps_version=4
+#export steps_mesh_path=steps_meshes/mc2c/mc2c.msh
+
+#export bloodflow_path=bloodflow_src
+#special_path=special # uncomment this to override which special you want to use
+
+if [[ -z "${special_path}" ]]
 then
-  echo "use custom special"
-  special_path=x86_64/special
-else
-  echo "use standard special"
-  special_path=special
+  if [ -d "x86_64" ]
+  then
+    echo "use custom special"
+    SPECIAL_PATH=x86_64/special
+  else
+
+    SPECIAL_PATH=special
+  fi
 fi
 
-time srun dplace $special_path -mpi -python main.py $nrun $steps_version $RESULTS_PATH $blueconfig_path $mesh_path
+echo "SPECIAL_PATH="$SPECIAL_PATH
+
+time srun dplace $SPECIAL_PATH -mpi -python main.py

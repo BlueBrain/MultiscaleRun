@@ -26,6 +26,7 @@ from multiscale_run import (
     steps_utils,
     metabolism_utils,
     neurodamus_utils,
+    bloodflow_manager,
     printer,
 )
 
@@ -34,20 +35,16 @@ import config
 logging.basicConfig(level=logging.DEBUG)
 
 
-def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
-    nrun, steps_version = int(nrun), int(steps_version)
+def main():
 
-    logging.info(f"nrun: {nrun}")
-    logging.info(f"steps_version: {steps_version}")
-    logging.info(f"result_path: {result_path}")
-
-    prnt = printer.MsrPrinter(result_path)
+    config.print_config()
+    prnt = printer.MsrPrinter()
 
     with timeit(name="initialization"):
         rank: int = comm.Get_rank()
 
         ndamus = Neurodamus(
-            blueconfig_path,
+            config.blueconfig_path,
             enable_reports=False,
             logging_level=None,
             enable_coord_mapping=True,
@@ -78,7 +75,7 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
         # TODO explanation of every entry that eventually will appear in this vector?
         um = {}  # u stands for Julia ODE var and m stands for metabolism
 
-        if nrun >= 2:
+        if config.with_steps:
             log_stage("Initializing steps model and mesh...")
 
             (
@@ -88,12 +85,12 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                 global_inds,
                 index,
                 tetVol,
-            ) = steps_utils.init_steps(steps_version, ndamus, mesh_path)
+            ) = steps_utils.init_steps(ndamus)
 
             tetConcs = np.zeros((ntets,), dtype=float)
             tet_currents_all = np.zeros((ntets,), dtype=float)
 
-        if nrun >= 3:
+        if config.with_metabolism:
             with open(config.u0_file, "r") as u0file:
                 u0fromFile = [
                     float(line.replace(" ", "").split("=")[1].split("#")[0].strip())
@@ -117,6 +114,9 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
 
             metabolism = metabolism_utils.gen_metabolism_model()
 
+        if config.with_bloodflow:
+            bf_manager = bloodflow_manager.MsrBloodflowManager(ndamus)
+
     log_stage("===============================================")
     log_stage("Running the selected solvers ...")
 
@@ -127,9 +127,10 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
         steps += config.dt_nrn2dt_steps
         with timeit(name="main_loop"):
             with timeit(name="neurodamus_solver"):
+
                 ndamus.solve(t)
 
-            if nrun >= 2:
+            if config.with_steps:
 
                 with timeit(name="steps_loop"):
                     log_stage("steps loop")
@@ -172,7 +173,7 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                             ],
                         )
 
-            if (steps % config.dt_nrn2dt_jl == 0) and nrun >= 3:
+            if (steps % config.dt_nrn2dt_jl == 0) and config.with_metabolism:
                 with timeit(name="metabolism_loop"):
                     log_stage("metabolism loop")
                     outs_r_glu, outs_r_gaba = {}, {}
@@ -208,14 +209,18 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                         outs_r_glu,
                     )
                     for sgid, v in all_outs_r_glut.items():
-                        prnt.append_to_file(config.outs_glut_file_output, [idxm, sgid, v])
+                        prnt.append_to_file(
+                            config.outs_glut_file_output, [idxm, sgid, v]
+                        )
 
                     logging.info(f"collect all_events gaba")
                     all_outs_r_gaba = neurodamus_utils.collect_received_events(
                         collected_num_releases_gaba, all_needs, gid_to_cell, outs_r_gaba
                     )
                     for sgid, v in all_outs_r_gaba.items():
-                        prnt.append_to_file(config.outs_glut_file_output, [idxm, sgid, v])
+                        prnt.append_to_file(
+                            config.outs_glut_file_output, [idxm, sgid, v]
+                        )
 
                     comm.Barrier()
 
@@ -277,20 +282,13 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
                         # vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
                         # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
 
-
                         vm[6] = nais_mean[c_gid]
-                        vm[7] = u0[7] - 1.33 * (
-                            kis_mean[c_gid] - 140.0
-                        )
+                        vm[7] = u0[7] - 1.33 * (kis_mean[c_gid] - 140.0)
                         # 2.2 should coincide with the BC METypePath field & with u0_file
                         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-                        vm[27] = (
-                            0.5 * 2.2 + 0.5 * atpi_mean[c_gid]
-                        )
+                        vm[27] = 0.5 * 2.2 + 0.5 * atpi_mean[c_gid]
                         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-                        vm[29] = (
-                            0.5 * 6.3e-3 + 0.5 * adpi_mean[c_gid]
-                        )
+                        vm[29] = 0.5 * 6.3e-3 + 0.5 * adpi_mean[c_gid]
 
                         # TODO : Here goes the coupling with Blood flow solver
 
@@ -397,8 +395,12 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
 
                     idxm += 1
 
+            if (steps % config.dt_nrn2dt_bf == 0) and config.with_bloodflow:
+                bf_manager.sync(ndamus)
+                bf_manager.get_static_flow()
+
             rss.append(
-                psutil.Process().memory_info().rss / (1024**2)
+                psutil.Process().memory_info().rss / (1024 ** 2)
             )  # memory consumption in MB
 
     ndamus.spike2file(prnt.file_path("out.dat"))
@@ -410,4 +412,4 @@ def main(nrun, steps_version, result_path, blueconfig_path, mesh_path):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[sys.argv.index(os.path.basename(__file__)) + 1 :])
+    main()

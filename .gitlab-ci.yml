@@ -10,11 +10,15 @@ default:
 variables:
   STEPS_BRANCH:
     value: master
+  PY_NEURODAMUS_BRANCH:
+    value: katta/init_vasccouplingB
   NEURODAMUS_NEOCORTEX_BRANCH:
     value: main
 
 spack_setup:
   extends: [.spack_setup_ccache]
+  before_script:
+    - SPACK_BRANCH=katta/tweak_vasccouplingB
 
 .build:
   extends: [.spack_build]
@@ -29,11 +33,16 @@ setup_steps:
     SPACK_PACKAGE: steps
     SPACK_PACKAGE_SPEC: +distmesh+petsc
 
-setup_neurodamus:
+setup_neurodamus_neocortex:
   extends: [.build]
   variables:
     SPACK_PACKAGE: neurodamus-neocortex
     SPACK_PACKAGE_SPEC: +ngv+metabolism
+
+setup_py_neurodamus:
+  extends: [.build]
+  variables:
+    SPACK_PACKAGE: py-neurodamus
 
 .custom_build:
   stage: build
@@ -56,19 +65,23 @@ setup_bloodflow:
   extends: [.custom_build]
   variables:
     setup_file: .setup_bloodflow.sh
-    pathenv: BLOODFLOW_PATH
+    pathenv: bloodflow_path
 
 setup_spackenv:
   extends: [.custom_build]
   needs:
     - setup_steps
-    - setup_neurodamus
+    - setup_neurodamus_neocortex
+    - setup_py_neurodamus
   variables:
     setup_file: .setup_spackenv.sh
     pathenv: SPACKENV_PATH
 
 setup_python_venv:
   extends: [.custom_build]
+  needs:
+    - spack_setup
+    - setup_bloodflow
   variables:
     setup_file: .setup_python_venv.sh
     pathenv: PYTHON_VENV_PATH
@@ -88,7 +101,8 @@ setup_julia:
     - setup_spackenv
     - setup_julia
     - setup_python_venv
-    - setup_neurodamus
+    - setup_neurodamus_neocortex
+    - setup_py_neurodamus
     - setup_steps
     - setup_bloodflow
   variables:
@@ -126,7 +140,9 @@ dualrun_test:
   variables:
     bb5_duration: "01:00:00"
     bb5_ntasks: 16
-    nrun: 2
+    with_steps: 1
+    with_metabolism: 0
+    with_bloodflow: 0
 
 triplerun_test:
   extends: [.nrun_test]
@@ -134,7 +150,16 @@ triplerun_test:
   variables:
     bb5_duration: "02:00:00"
     bb5_ntasks: 32
-    nrun: 3
+    with_steps: 1
+    with_metabolism: 1
+    with_bloodflow: 0
 
-
-
+quadrun_test:
+  extends: [.nrun_test]
+  timeout: 2 hours
+  variables:
+    bb5_duration: "02:00:00"
+    bb5_ntasks: 32
+    with_steps: 1
+    with_metabolism: 1
+    with_bloodflow: 1

@@ -4,11 +4,57 @@ import time
 import numpy as np
 from scipy import constants as spc
 
-# TODO: change to config
 ##############################################
 # Dualrun related
 ##############################################
 
+
+import os
+import time
+
+import numpy as np
+from scipy import constants as spc
+
+
+class ConfigError(Exception):
+    pass
+
+
+def load_from_env(env_name, default):
+    """Either load from environment or set with default (env takes priority)"""
+    var = os.getenv(env_name)
+
+    if isinstance(default, bool):
+        return bool(int(var)) if var is not None else default
+    elif isinstance(default, int):
+        return int(var) if var is not None else default
+    else:
+        return var if var is not None else default
+
+
+##############################################
+# base flags and paths
+##############################################
+
+
+with_steps = load_from_env("with_steps", True)
+with_metabolism = load_from_env("with_metabolism", True)
+with_bloodflow = load_from_env("with_bloodflow", True)
+
+results_path = load_from_env("results_path", "RESULTS/STEPS4")
+
+blueconfig_path = load_from_env("blueconfig_path", "BlueConfig")
+
+steps_version = load_from_env("steps_version", 4)
+steps_mesh_path = load_from_env("steps_mesh_path", "steps_meshes/mc2c/mc2c.msh")
+
+##############################################
+# Dualrun related
+##############################################
+
+
+if steps_version not in [3, 4]:
+    raise ConfigError(f"Steps number: {steps_version} is not 3 or 4")
 
 # for out file names
 timestr = time.strftime("%Y%m%d%H")
@@ -21,9 +67,10 @@ COULOMB = spc.physical_constants["joule-electron volt relationship"][0]
 CONC_FACTOR = 1e-9
 OUTS_R_TO_MET_FACTOR = 4000.0 * 1e3 / (AVOGADRO * 1e-15)
 
-
+# TODO revert back the following 2 values
 dt_nrn2dt_steps: int = 100  # 100 steps-ndam coupling
 dt_nrn2dt_jl: int = 2000  # 2000 metabolism (julia)-ndam coupling (2000 is a meaningful value according to Polina)
+dt_nrn2dt_bf: int = dt_nrn2dt_jl  # TODO decide when to sync with bloodflow
 
 m0 = (
     0.1
@@ -94,7 +141,7 @@ class Ca:
     cai_var = "cai"
 
 
-class Volsys0:
+class Volsys:
     name = "extraNa"
     specs = (Na,)
 
@@ -260,3 +307,37 @@ def get_GLY_a_and_mito_vol_frac(c_gid):
             return glycogen_scaled[idx] * 5, mito_volume_fraction_scaled[idx]
 
     return None, None
+
+
+##############################################
+# Quadrun related
+##############################################
+
+
+# paths
+bloodflow_path = load_from_env("bloodflow_path", "bloodflow_src")
+bloodflow_params_path = os.path.join(bloodflow_path, "examples/data/params.yaml")
+
+
+def print_config():
+    print(
+        f"""
+
+--- MSR CONFIG ---
+You can override any of the floowing variables by setting the omonim environment variable
+with_steps: {with_steps}
+with_metabolism: {with_metabolism}
+with_bloodflow: {with_bloodflow}
+
+results_path: {results_path}
+
+blueconfig_path: {blueconfig_path}
+
+steps_version: {steps_version}
+steps_mesh_path: {steps_mesh_path}
+
+bloodflow_path: {bloodflow_path}
+--- MSR CONFIG ---
+
+"""
+    )

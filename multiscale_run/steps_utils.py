@@ -12,6 +12,7 @@ from steps.sim import *
 from steps.utils import *
 
 import config
+
 import dualrun.sec_mapping.sec_mapping as sec_mapping
 
 from . import utils
@@ -22,33 +23,30 @@ import os
 def gen_model():
     mdl = Model()
     with mdl:
-        extraNa = VolumeSystem(name=config.Volsys0.name)
+        extraNa = VolumeSystem(name=config.Volsys.name)
         Na = Species(name=config.Na.name)
         with extraNa:
             diff = Diffusion.Create(Na, config.Na.diffcst)
     return mdl
 
 
-def gen_mesh(steps_version, mesh_path):
-    if type(steps_version) is str:
-        steps_version = int(steps_version)
-
+def gen_mesh():
     # STEPS default length scale is m
     # NEURON default length scale is um
 
     mesh = (
-        DistMesh(mesh_path, scale=1e-6)
-        if steps_version == 4
-        else TetMesh.LoadGmsh(mesh_path, scale=1e-6)
+        DistMesh(config.steps_mesh_path, scale=1e-6)
+        if config.steps_version == 4
+        else TetMesh.LoadGmsh(config.steps_mesh_path, scale=1e-6)
     )
 
     ntets = len(mesh.tets)
     with mesh:
-        if steps_version == 4:
-            extra = Compartment(name=config.Mesh.compname, vsys=config.Volsys0.name)
+        if config.steps_version == 4:
+            extra = Compartment(name=config.Mesh.compname, vsys=config.Volsys.name)
         else:
             extra = Compartment(
-                mesh.tets, name=config.Mesh.compname, vsys=config.Volsys0.name
+                mesh.tets, name=config.Mesh.compname, vsys=config.Volsys.name
             )
 
     return mesh, ntets
@@ -70,11 +68,10 @@ def init_solver(model, mesh):
         return Simulation("TetOpSplit", model, mesh, rng, MPI.EF_NONE, part)
 
 
-def init_steps(steps_version, ndamus, mesh_path):
-
+def init_steps(ndamus):
 
     model = gen_model()
-    msh, ntets = gen_mesh(steps_version, mesh_path)
+    msh, ntets = gen_mesh()
 
     steps_sim = init_solver(model, msh)
     steps_sim.newRun()
@@ -94,7 +91,8 @@ def init_steps(steps_version, ndamus, mesh_path):
 
     utils.print_once(f"The total tet mesh volume is : {np.sum(tetVol)}")
 
-
-    index = np.array(range(ntets), dtype=np.int64 if steps_version == 4 else np.uint32)
+    index = np.array(
+        range(ntets), dtype=np.int64 if config.steps_version == 4 else np.uint32
+    )
 
     return steps_sim, neurSecmap, ntets, global_inds, index, tetVol

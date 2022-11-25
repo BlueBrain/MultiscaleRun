@@ -28,8 +28,8 @@ def ck_and_get_ATPconc(path):
 
 
 def test_ATPconc():
-    ATPconc_S3 = ck_and_get_ATPconc("./RESULTS/STEPS3/notebook.html")
-    ATPconc_S4 = ck_and_get_ATPconc("./RESULTS/STEPS4/notebook.html")
+    ATPconc_S3 = ck_and_get_ATPconc("./RESULTS/STEPS3/postproc.html")
+    ATPconc_S4 = ck_and_get_ATPconc("./RESULTS/STEPS4/postproc.html")
 
     assert np.allclose(ATPconc_S3, ATPconc_S4)
     assert np.allclose(ATPconc_S4, ATPconc_S3)

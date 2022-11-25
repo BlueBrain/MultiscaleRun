@@ -24,11 +24,11 @@ fi
 
 # run and record results (mainly for the CI)
 ms_run () {
-  RESULTS_PATH=./RESULTS/STEPS$1/
+  results_path=./RESULTS/STEPS$1/
   echo "*******************************************************************************"
   echo " *** STEPS$1 run *** "
   echo "*******************************************************************************"
-  srun --overlap -n $bb5_ntasks dplace special -mpi -python main.py $nrun $1 $RESULTS_PATH $blueconfig_path $mesh_path
+  srun --overlap -n $bb5_ntasks dplace special -mpi -python main.py
 
   echo "*******************************************************************************"
   echo " *** Jupyter notebook *** "
@@ -40,6 +40,6 @@ ms_run () {
   --execute \
   --to html \
   --no-input \
-  --output-dir=$RESULTS_PATH \
-  notebook.ipynb
+  --output-dir=$results_path \
+  postproc.ipynb
 }

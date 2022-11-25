@@ -58,6 +58,7 @@ Projection GlioVascular
     Type GlioVascular
     Destination GLIA:
     Path /gpfs/bbp.cscs.ch/project/proj62/scratch/ngv_circuits/20210211/build/sonata/edges/gliovascular.h5
+    VasculaturePath /gpfs/bbp.cscs.ch/project/proj62/scratch/ngv_circuits/20210211/build/sonata/nodes/vasculature.h5
 }
 
 #Connection Neuronal

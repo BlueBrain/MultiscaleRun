@@ -1,12 +1,13 @@
 from mpi4py import MPI as MPI4PY
 import os
 from pathlib import Path
+import config
 
 
 class MsrPrinter:
-    def __init__(self, result_path):
-        self.result_path = result_path
-        Path(result_path).mkdir(parents=True, exist_ok=True)
+    def __init__(self):
+        self.results_path = config.results_path
+        Path(self.results_path).mkdir(parents=True, exist_ok=True)
         self.files = {}
 
     def __del__(self):
@@ -14,7 +15,7 @@ class MsrPrinter:
             i.close()
 
     def file_path(self, file):
-        return os.path.join(self.result_path, file)
+        return os.path.join(self.results_path, file)
 
     def append_to_file(self, file, values, rank=None):
         if rank is None:

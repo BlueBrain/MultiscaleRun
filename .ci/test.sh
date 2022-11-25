@@ -19,4 +19,7 @@ then
 elif [[ $nrun -eq 3 ]]
 then
   pytest -v .ci/test_triplerun_results.py
+elif [[ $nrun -eq 4 ]]
+then
+  pytest -v .ci/test_triplerun_results.py
 fi

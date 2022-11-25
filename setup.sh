@@ -4,8 +4,13 @@ echo "   It is suggested to allocate a node if it is the first time you run this
 echo
 
 module purge
+git pull
 
 source .utils.sh
+
+export PY_NEURODAMUS_BRANCH=katta/init_vasccouplingB
+export NEURODAMUS_NEOCORTEX_BRANCH=main
+export STEPS_BRANCH=master
 
 source .setup_bloodflow.sh
 source .setup_spackenv.sh

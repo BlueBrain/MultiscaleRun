@@ -36,6 +36,8 @@ def print_once(*args, **kwargs):
     """Print only once among ranks"""
     if MPI4PY.COMM_WORLD.Get_rank() == 0:
         print(*args, *kwargs)
+
+
 def check_param(param, idxm):
     """Check that all the parameters are valid floats"""
 

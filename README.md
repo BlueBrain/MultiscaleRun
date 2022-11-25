@@ -8,6 +8,10 @@ The `main.py` script executes the various runs. Just by exporting specific envir
 
 ## Environment Setup
 
+First of all, update spack. More info [here](https://github.com/BlueBrain/spack).
+
+You also need access to [this](https://github.com/CNS-OIST/HBP_STEPS) git repository. Contact Alessandro Cattabiani (Katta)
+in case you do not already have access rights.
 
 The environment setup is pretty involved because there are a lot of different, contributing projects. Fortunately, it was all figured out!
 Just `source setup.sh` before proceeding with the simulations. It sets up all the environment for you and download the repos, packages and modules that you need.
@@ -22,27 +26,35 @@ salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 
 Run your job with sbatch. For example: `sbatch job_script`. 
 The parameters are either in `params.py` and `job_script`. Check them for more info. 
 
-
-## Custom special
-
-The special is being built in a fully automated way:
-```
-module load neurodamus-neocortex-multiscale_run
-```
-or 
-```
-spack install/load neurodamus-neocortex@develop+ngv+metabolism
-```
-
-The custom special is based on the mod files of the `custom_ndam_2021_02_22_archive202101` folder, found [here](https://bbpgitlab.epfl.ch/molsys/metabolismndam/-/tree/main/custom_ndam_2021_02_22_archive202101). This folder has been curated and now resides in [neocortex repo](https://bbpgitlab.epfl.ch/hpc/sim/models/neocortex) in `mod/metabolism`.
-
-After spack installation, all the gathered mod files can be found following the steps below:
-1. ``` ndam_installation_dir=`spack find --paths neurodamus-neocortex@develop+ngv+metabolism | tail -n 1 | grep -o "/.*"` ```
-1. mod files -> `$ndam_installation_dir/share/mod_full`
-
 ## Spack
 
 We now use environments! In this way we can keep our standard spack separated with the one needed for multiscale_run. More info [here](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md)
+
+
+## Custom special
+
+ 
+The special is being built in a fully automated way with `setup.sh` through spack environments. More info [here](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md).
+Thus, a custom special is usually not needed. Conversely it is somewhat discouraged since it can lead to inconsistencies on what mod files are used). 
+However, in the case you want to change some mod files and test them quickly, this is the workaround for you.
+The custom special is based on the mod files of the `custom_ndam_2021_02_22_archive202101` folder, 
+found [here](https://bbpgitlab.epfl.ch/molsys/metabolismndam/-/tree/main/custom_ndam_2021_02_22_archive202101). 
+This folder has been curated and now resides in [neocortex repo](https://bbpgitlab.epfl.ch/hpc/sim/models/neocortex) in
+`mod/metabolism`.
+
+After `setup.sh`, all the gathered mod files can be found following the steps below:
+1. ``` ndam_installation_dir=`spack find --paths neurodamus-neocortex@develop+ngv+metabolism | tail -n 1 | grep -o "/.*"` ```
+1. mod files -> `$ndam_installation_dir/share/mod_full`
+
+Before running you should place all your mod files in the `mod` folder. After:
+
+```bash
+build_neurodamus.sh mod
+```
+
+`job_script` should pick up automatically the custom special (if the `x86_64` folder is there). In case you want to fix 
+you can override this behavior in `job_script` itself by uncommenting `special_path`.
+
 
 ## Convert BlueConfig to SONATA compatible json file
 
