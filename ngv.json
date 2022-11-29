@@ -1,10 +1,10 @@
 {
     "run": {
-        "tstop": 2000.0,
+        "tstop": 1000.0,
         "dt": 0.025
     },
     "network": "/gpfs/bbp.cscs.ch/project/proj62/Circuits/O1/20190912_spines/sonata/circuit_config.json",
-    "node_sets_file": "./user.target",
+    "node_sets_file": "user.target",
     "node_set": "mc2c_CI",
     "output": {
         "output_dir": "./RESULTS"

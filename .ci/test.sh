@@ -1,5 +1,7 @@
 #!/bin/bash
 
+-e
+
 if [[ $nrun -eq 2 ]]
 then
   sed -i 's/StimulusInject pInj/#StimulusInject pInj/g' $blueconfig_path

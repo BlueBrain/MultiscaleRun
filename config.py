@@ -67,20 +67,11 @@ COULOMB = spc.physical_constants["joule-electron volt relationship"][0]
 CONC_FACTOR = 1e-9
 OUTS_R_TO_MET_FACTOR = 4000.0 * 1e3 / (AVOGADRO * 1e-15)
 
-# TODO revert back the following 2 values
-dt_nrn2dt_steps: int = 100  # 100 steps-ndam coupling
-dt_nrn2dt_jl: int = 2000  # 2000 metabolism (julia)-ndam coupling (2000 is a meaningful value according to Polina)
-dt_nrn2dt_bf: int = dt_nrn2dt_jl  # TODO decide when to sync with bloodflow
-
-m0 = (
-    0.1
-    * (-65.0 + 30.0)
-    / (1.0 - np.exp(-0.1 * (-65.0 + 30.0)))
-    / (
-        0.1 * (-65.0 + 30.0) / (1.0 - np.exp(-0.1 * (-65.0 + 30.0)))
-        + 4.0 * np.exp(-(-65.0 + 55.0) / 18.0)
-    )
+dt_nrn2dt_steps: int = (
+    100  # 100 steps-ndam coupling. NOT SECONDS NOT MS, IT'S NUMBER OF NDAM DT
 )
+dt_nrn2dt_jl: int = 4000  # 40000  # metabolism (julia)-ndam coupling. NOT SECONDS NOT MS, IT'S NUMBER OF NDAM DT
+dt_nrn2dt_bf: int = dt_nrn2dt_jl  # TODO decide when to sync with bloodflow
 
 
 class Mesh:
@@ -161,8 +152,19 @@ path_to_metab_jl = os.path.join(metabolism_path, "sim/metabolism_unit_models")
 # files
 
 
-julia_code_file = os.path.join(path_to_metab_jl, "julia_gen_18feb2021.jl")
-u0_file = os.path.join(path_to_metab_jl, "u0forNdam/u0_Calv_ATP2p2_Nai10.txt")
+julia_code_file_name = [
+    "metabolism_model_21nov22_noEphys_noSB.jl",
+    "metabolism_model_21nov22_withEphysCurrNdam_noSB.jl",
+    "metabolism_model_21nov22_withEphysNoCurrNdam_noSB.jl",
+][
+    1
+]  # choose HERE
+julia_code_file = os.path.join(
+    path_to_metab_jl, julia_code_file_name
+)  # file created based on /gpfs/bbp.cscs.ch/project/proj34/metabolismndam/optimiz_unit/enzymes/enzymes_preBigg/COMBO/MODEL_17Nov22.ipynb
+u0_file = os.path.join(
+    path_to_metab_jl, "u0steady_22nov22.csv"
+)  # file created from /gpfs/bbp.cscs.ch/project/proj34/metabolismndam/optimiz_unit/enzymes/enzymes_preBigg/COMBO/MODEL_17Nov22.ipynb
 
 
 ins_glut_file_output = f"dis_ins_r_glut_{timestr}.csv"
@@ -292,19 +294,10 @@ glycogen_au = [
 glycogen_scaled = [i / max(glycogen_au) for i in glycogen_au]
 
 
-seg_filter = [
-    Na.current_var,
-    K.current_var,
-    ATP.atpi_var,
-    ADP.adpi_var,
-    Ca.current_var,
-]
-
-
 def get_GLY_a_and_mito_vol_frac(c_gid):
     for idx, tgt in enumerate(target_gids_L):
         if c_gid in tgt:
-            return glycogen_scaled[idx] * 5, mito_volume_fraction_scaled[idx]
+            return glycogen_scaled[idx] * 14, mito_volume_fraction_scaled[idx]
 
     return None, None
 
@@ -322,7 +315,7 @@ bloodflow_params_path = os.path.join(bloodflow_path, "examples/data/params.yaml"
 def print_config():
     print(
         f"""
-
+-----------------------------------------------------
 --- MSR CONFIG ---
 You can override any of the floowing variables by setting the omonim environment variable
 with_steps: {with_steps}
@@ -338,6 +331,6 @@ steps_mesh_path: {steps_mesh_path}
 
 bloodflow_path: {bloodflow_path}
 --- MSR CONFIG ---
-
+-----------------------------------------------------
 """
     )

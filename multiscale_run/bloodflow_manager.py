@@ -45,7 +45,7 @@ class MsrBloodflowManager:
         def logs(*args, **kwargs):
             start = time.perf_counter()
             foo(*args, **kwargs)
-            mem = psutil.Process().memory_info().rss / 1024 ** 2
+            mem = psutil.Process().memory_info().rss / 1024**2
             logging.info(f"Memory in use: {mem}")
             stop = time.perf_counter()
             logging.info(f"stop stopwatch. Time passed: {stop - start}")

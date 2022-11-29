@@ -125,61 +125,39 @@ def gen_segs(nc, filter0):
             yield seg
 
 
-def get_current_densities_and_means(gid_to_cell, seg_filter):
-    ina_density = {}
-    ik_density = {}
-
-    nais_mean = {}
-    kis_mean = {}
-    cais_mean = {}
-    atpi_mean = {}
-    adpi_mean = {}
-
-    gids_without_valid_segs = []
-
+def get_current_density(gid_to_cell, seg_filter):
+    current_density = {}
+    gids_without_valid_segs = set()
     for c_gid, nc in gen_ncs(gid_to_cell):
         _exhausted = object()
-        if next(gen_segs(nc, seg_filter), _exhausted) is _exhausted:
-            gids_without_valid_segs.append(c_gid)
+        if next(gen_segs(nc, [seg_filter]), _exhausted) is _exhausted:
+            gids_without_valid_segs.add(c_gid)
         else:
-            tot_vol = sum(i.volume() for i in gen_segs(nc, seg_filter))
-            tot_area = sum(i.area() for i in gen_segs(nc, seg_filter))
+            tot_area = sum(i.area() for i in gen_segs(nc, [seg_filter]))
+            current_density[c_gid] = (
+                sum(
+                    getattr(seg, seg_filter) * seg.area()
+                    for seg in gen_segs(nc, [seg_filter])
+                )
+                / tot_area
+            )
+    return current_density, gids_without_valid_segs
 
-            ina_density[c_gid] = (
-                sum(seg.ina * seg.area() for seg in gen_segs(nc, seg_filter)) / tot_area
-            )
-            ik_density[c_gid] = (
-                sum(seg.ik * seg.area() for seg in gen_segs(nc, seg_filter)) / tot_area
-            )
 
-            # mM #/ counter_seg[c_gid]
-            nais_mean[c_gid] = (
-                sum(seg.nai * seg.volume() for seg in gen_segs(nc, seg_filter))
+def get_current_mean(gid_to_cell, seg_filter):
+    current_mean = {}
+    gids_without_valid_segs = set()
+    for c_gid, nc in gen_ncs(gid_to_cell):
+        _exhausted = object()
+        if next(gen_segs(nc, [seg_filter]), _exhausted) is _exhausted:
+            gids_without_valid_segs.add(c_gid)
+        else:
+            tot_vol = sum(i.volume() for i in gen_segs(nc, [seg_filter]))
+            current_mean[c_gid] = (
+                sum(
+                    getattr(seg, seg_filter) * seg.volume()
+                    for seg in gen_segs(nc, [seg_filter])
+                )
                 / tot_vol
             )
-            kis_mean[c_gid] = (
-                sum(seg.ki * seg.volume() for seg in gen_segs(nc, seg_filter)) / tot_vol
-            )
-            cais_mean[c_gid] = (
-                sum(seg.cai * seg.volume() for seg in gen_segs(nc, seg_filter))
-                / tot_vol
-            )
-            atpi_mean[c_gid] = (
-                sum(seg.atpi * seg.volume() for seg in gen_segs(nc, seg_filter))
-                / tot_vol
-            )
-            adpi_mean[c_gid] = (
-                sum(seg.adpi * seg.volume() for seg in gen_segs(nc, seg_filter))
-                / tot_vol
-            )
-
-    return (
-        ina_density,
-        ik_density,
-        nais_mean,
-        kis_mean,
-        cais_mean,
-        atpi_mean,
-        adpi_mean,
-        gids_without_valid_segs,
-    )
+    return current_mean, gids_without_valid_segs

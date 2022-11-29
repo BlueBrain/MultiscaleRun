@@ -10,7 +10,7 @@ def ck_and_get_ATPconc(path):
     for line in notebook_html:
 
         # Choose the line with the following format -> data_ATPConcAllCmps : mean=..., min=..., max=...
-        if "data_ATPConcAllCmps" in line:
+        if "data_ATPConcAllCmps : mean" in line:
             ATPconc = line
             break
     assert ATPconc is not None
@@ -21,7 +21,7 @@ def ck_and_get_ATPconc(path):
     print(ATPconc)
 
     # ATP should be between these values
-    assert ATPconc[ATPconc < 1.0].size == 0
+    assert ATPconc[ATPconc < 0.1].size == 0
     assert ATPconc[ATPconc > 2.2].size == 0
 
     return ATPconc

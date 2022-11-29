@@ -1,11 +1,11 @@
 from __future__ import print_function
 
 import logging
-import os
-import sys
 
 import numpy as np
+import pandas as pd
 from diffeqpy import de
+from julia import Main
 
 # the object MPI exists already. It is the steps one
 from mpi4py import MPI as MPI4PY
@@ -91,12 +91,7 @@ def main():
             tet_currents_all = np.zeros((ntets,), dtype=float)
 
         if config.with_metabolism:
-            with open(config.u0_file, "r") as u0file:
-                u0fromFile = [
-                    float(line.replace(" ", "").split("=")[1].split("#")[0].strip())
-                    for line in u0file
-                    if ((not line.startswith("#")) and (len(line.replace(" ", "")) > 2))
-                ]
+            u0 = pd.read_csv(config.u0_file, sep=",", header=None)[0].tolist()
 
             logging.info(f"get volumes")
             cells_volumes = neurodamus_utils.get_cell_volumes(ndamus)
@@ -112,7 +107,8 @@ def main():
             if rank == 0:
                 all_needs.pop(0)
 
-            metabolism = metabolism_utils.gen_metabolism_model()
+            ATDPtot_n = metabolism_utils.load_metabolism_data(Main)
+            metabolism = metabolism_utils.gen_metabolism_model(Main)
 
         if config.with_bloodflow:
             bf_manager = bloodflow_manager.MsrBloodflowManager(ndamus)
@@ -225,18 +221,66 @@ def main():
                     comm.Barrier()
 
                     with timeit(name="neurodamus_metabolism_feedback"):
+
                         (
                             ina_density,
-                            ik_density,
-                            nais_mean,
-                            kis_mean,
-                            cais_mean,
-                            atpi_mean,
-                            adpi_mean,
-                            gids_without_valid_segs,
-                        ) = neurodamus_utils.get_current_densities_and_means(
-                            gid_to_cell=gid_to_cell, seg_filter=config.seg_filter
+                            ina_density_gids_without_valid_segs,
+                        ) = neurodamus_utils.get_current_density(
+                            gid_to_cell=gid_to_cell, seg_filter=config.Na.current_var
                         )
+                        (
+                            ik_density,
+                            ik_density_gids_without_valid_segs,
+                        ) = neurodamus_utils.get_current_density(
+                            gid_to_cell=gid_to_cell,
+                            seg_filter=config.K.current_var,
+                        )
+                        (
+                            nais_mean,
+                            nais_mean_gids_without_valid_segs,
+                        ) = neurodamus_utils.get_current_mean(
+                            gid_to_cell=gid_to_cell,
+                            seg_filter=config.Na.nai_var,
+                        )
+                        (
+                            kis_mean,
+                            kis_mean_gids_without_valid_segs,
+                        ) = neurodamus_utils.get_current_mean(
+                            gid_to_cell=gid_to_cell,
+                            seg_filter=config.K.ki_var,
+                        )
+                        (
+                            cais_mean,
+                            cais_mean_gids_without_valid_segs,
+                        ) = neurodamus_utils.get_current_mean(
+                            gid_to_cell=gid_to_cell,
+                            seg_filter=config.Ca.current_var,
+                        )
+                        (
+                            atpi_mean,
+                            atpi_mean_gids_without_valid_segs,
+                        ) = neurodamus_utils.get_current_mean(
+                            gid_to_cell=gid_to_cell,
+                            seg_filter=config.ATP.atpi_var,
+                        )
+                        (
+                            adpi_mean,
+                            adpi_mean_gids_without_valid_segs,
+                        ) = neurodamus_utils.get_current_mean(
+                            gid_to_cell=gid_to_cell,
+                            seg_filter=config.ADP.adpi_var,
+                        )
+
+                        gids_without_valid_segs = (
+                            ina_density_gids_without_valid_segs
+                            & ik_density_gids_without_valid_segs
+                            & nais_mean_gids_without_valid_segs
+                            & kis_mean_gids_without_valid_segs
+                            & cais_mean_gids_without_valid_segs
+                            & atpi_mean_gids_without_valid_segs
+                            & adpi_mean_gids_without_valid_segs
+                        )
+
                         for c_gid in gids_without_valid_segs:
                             prnt.append_to_file(
                                 config.test_counter_seg_file,
@@ -251,6 +295,7 @@ def main():
                         outs_r_to_met_factor = config.OUTS_R_TO_MET_FACTOR / (
                             cells_volumes[c_gid] * SIM_END_coupling_interval
                         )  # mM/ms
+
                         if c_gid in config.exc_target_gids:
                             outs_r_to_met = outs_r_to_met_factor * outs_r_glu.get(
                                 c_gid, 0.0
@@ -268,7 +313,7 @@ def main():
                             continue
                         GLY_a, mito_scale = config.get_GLY_a_and_mito_vol_frac(c_gid)
 
-                        u0 = [-65.0, config.m0, *u0fromFile]
+                        # u0 = [-65.0, config.m0, *u0fromFile]
                         # u0 = [VNeu0,m0,h0,n0,Conc_Cl_out,Conc_Cl_in, Na0in,K0out,Glc_b,Lac_b,O2_b,Q0,Glc_ecs,Lac_ecs,O2_ecs,O2_n,O2_a,Glc_n,Glc_a,Lac_n,Lac_a,Pyr_n,Pyr_a,PCr_n,PCr_a,Cr_n,Cr_a,ATP_n,ATP_a,ADP_n,ADP_a,NADH_n,NADH_a,NAD_n,NAD_a,ksi0,ksi0]
 
                         tspan_m = (
@@ -277,37 +322,57 @@ def main():
                         )  # tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0))
                         um[(0, c_gid)] = u0
 
+                        # ini GLY_a c_gid dependent
+
+                        # um[(0, c_gid)][127] = GLY_a
                         vm = um[(idxm, c_gid)]
 
                         # vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
                         # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
 
-                        vm[6] = nais_mean[c_gid]
-                        vm[7] = u0[7] - 1.33 * (kis_mean[c_gid] - 140.0)
+                        vm[22] = (
+                            0.5 * 1.384727988648391 + 0.5 * atpi_mean[c_gid]
+                        )  # atpi_mean[c_gid] #0.5 * 2.2 + 0.5 * atpi_mean[c_gid] # 23 in jl
+
+                        vm[23] = 0.5 * 1.384727988648391 / 2 * (
+                            -0.92
+                            + np.sqrt(
+                                0.92 * 0.92
+                                + 4 * 0.92 * (ATDPtot_n / 1.384727988648391 - 1)
+                            )
+                        ) + 0.5 * atpi_mean[c_gid] / 2 * (
+                            -0.92
+                            + np.sqrt(
+                                0.92 * 0.92
+                                + 4 * 0.92 * (ATDPtot_n / atpi_mean[c_gid] - 1)
+                            )
+                        )
+
+                        vm[98] = nais_mean[
+                            c_gid
+                        ]  # old idx: 6 # idx 99 in jl, but py is 0-based and jl is 1-based # Na_n
+                        vm[95] = um[(idxm, c_gid)][95] - 1.33 * (
+                            kis_mean[c_gid] - 140.0
+                        )  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
+
+                        logging.info(
+                            f"------------------------ NDAM FOR METAB: {', '.join(str(i) for i in [vm[22], vm[23], vm[98], vm[95]])}"
+                        )
+
                         # 2.2 should coincide with the BC METypePath field & with u0_file
                         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-                        vm[27] = 0.5 * 2.2 + 0.5 * atpi_mean[c_gid]
                         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-                        vm[29] = 0.5 * 6.3e-3 + 0.5 * adpi_mean[c_gid]
 
                         # TODO : Here goes the coupling with Blood flow solver
 
                         param = [
                             ina_density[c_gid],
-                            0.06,
-                            -65.0,
-                            nais_mean[c_gid],
-                            kis_mean[c_gid],
                             ik_density[c_gid],
-                            4.1,
-                            0.17,
-                            atpi_mean[c_gid],
-                            vm[27],
-                            cais_mean[c_gid],
                             mito_scale,
                             glutamatergic_gaba_scaling,
                             outs_r_to_met,
                         ]
+
                         prob_metabo = de.ODEProblem(metabolism, vm, tspan_m, param)
 
                         prnt.append_to_file(
@@ -332,11 +397,11 @@ def main():
                             with timeit(name="metabolism_solver"):
                                 sol = de.solve(
                                     prob_metabo,
-                                    de.Rodas4P(),
-                                    reltol=1e-6,
-                                    abstol=1e-6,
-                                    maxiters=1e4,
-                                    save_everystep=False,
+                                    de.Rosenbrock23(autodiff=False),
+                                    reltol=1e-8,
+                                    abstol=1e-8,
+                                    saveat=1,
+                                    maxiters=1e6,
                                 )
 
                                 if sol.retcode != "Success":
@@ -356,34 +421,83 @@ def main():
                         )
 
                         # u stands for Julia ODE var and m stands for metabolism
-                        atpi_weighted_mean = (
-                            0.5 * 1.2 + 0.5 * um[(idxm + 1, c_gid)][27]
-                        )  # um[(idxm+1,c_gid)][27]
+                        atpi_weighted_mean = um[(idxm + 1, c_gid)][
+                            22
+                        ]  # 0.5 * 1.2 + 0.5 * um[(idxm + 1, c_gid)][22] #um[(idxm+1,c_gid)][27]
+
                         adpi_weighted_mean = (
-                            0.5 * 6.3e-3 + 0.5 * um[(idxm + 1, c_gid)][29]
-                        )  # um[(idxm+1,c_gid)][29]
-                        nao_weighted_mean = 0.5 * 140.0 + 0.5 * (
-                            140.0 - 1.33 * (um[(idxm + 1, c_gid)][6] - 10.0)
-                        )  # 140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
-                        ko_weighted_mean = (
-                            0.5 * 5.0 + 0.5 * um[(idxm + 1, c_gid)][7]
-                        )  # um[(idxm+1,c_gid)][7]
-                        nai_weighted_mean = (
-                            0.5 * 10.0 + 0.5 * um[(idxm + 1, c_gid)][6]
-                        )  # 0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #um[(idxm+1,c_gid)][6]
-                        ki_weighted_mean = 0.5 * 140.0 + 0.5 * param[4]  # 14jan2021
-                        # feedback loop to constrain ndamus by metabolism output
+                            atpi_weighted_mean
+                            / 2
+                            * (
+                                -0.92
+                                + np.sqrt(
+                                    0.92 * 0.92
+                                    + 4 * 0.92 * (ATDPtot_n / atpi_weighted_mean - 1)
+                                )
+                            )
+                        )  # 0.5 * 6.3e-3 + 0.5 * um[(idxm + 1, c_gid)][29] # um[(idxm+1,c_gid)][29]
+
+                        #                         nao_weighted_mean = 0.5 * 140.0 + 0.5 * (
+                        #                             140.0 - 1.33 * (um[(idxm + 1, c_gid)][6] - 10.0)
+                        #                         )  # 140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
+
+                        # ko_weighted_mean = (
+                        #     0.5 * 5.0 + 0.5 * um[(idxm + 1, c_gid)][7]
+                        # )  # um[(idxm+1,c_gid)][7]
+
+                        #                         nai_weighted_mean = (
+                        #                             0.5 * 10.0 + 0.5 * um[(idxm + 1, c_gid)][6]
+                        #                         )  # 0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #um[(idxm+1,c_gid)][6]
+
+                        #                         ki_weighted_mean = 0.5 * 140.0 + 0.5 * param[4]  # 14jan2021
+                        #                         # feedback loop to constrain ndamus by metabolism output
+
                         um[(idxm, c_gid)] = None
 
                         with timeit(name="neurodamus_metabolism_feedback"):
                             log_stage("feedback")
-                            for seg in neurodamus_utils.gen_segs(nc, config.seg_filter):
-                                seg.nao = nao_weighted_mean  # 140
-                                seg.nai = nai_weighted_mean  # 10
-                                seg.ko = ko_weighted_mean  # 5
-                                seg.ki = ki_weighted_mean  # 140
+
+                            # for seg in neurodamus_utils.gen_segs(nc, config.seg_filter):
+                            #     seg.nao = nao_weighted_mean  # 140
+                            #     seg.nai = nai_weighted_mean  # 10
+                            #     seg.ko = ko_weighted_mean  # 5
+                            #     seg.ki = ki_weighted_mean  # 140
+                            #     seg.atpi = atpi_weighted_mean  # 1.4
+                            #     seg.adpi = adpi_weighted_mean  # 0.03
+
+                            # for seg in neurodamus_utils.gen_segs(nc, [Na.nai_var]):
+                            #     seg.nao = nao_weighted_mean  # 140                       # TMP disable feedback from STEPS to NDAM
+
+                            #                             for seg in neurodamus_utils.gen_segs(nc, [Na.nai_var]):
+                            #                                 seg.nai = nai_weighted_mean  # 10
+
+                            # for seg in neurodamus_utils.gen_segs(nc, [Na.nai_var]):
+                            #     seg.ko = ko_weighted_mean  # 5                           # TMP disable feedback from STEPS to NDAM
+
+                            #                             for seg in neurodamus_utils.gen_segs(nc, [K.ki_var]):
+                            #                                 seg.ki = ki_weighted_mean  # 140
+
+                            for seg in neurodamus_utils.gen_segs(
+                                nc, [config.ATP.atpi_var]
+                            ):
                                 seg.atpi = atpi_weighted_mean  # 1.4
-                                seg.adpi = adpi_weighted_mean  # 0.03
+
+                            for seg in neurodamus_utils.gen_segs(
+                                nc, [config.ADP.adpi_var]
+                            ):
+                                seg.adpi = (
+                                    atpi_weighted_mean
+                                    / 2
+                                    * (
+                                        -0.92
+                                        + np.sqrt(
+                                            0.92 * 0.92
+                                            + 4
+                                            * 0.92
+                                            * (ATDPtot_n / atpi_weighted_mean - 1)
+                                        )
+                                    )
+                                )  # adpi_weighted_mean  # 0.03
 
                     comm.Barrier()
                     logging.info(
@@ -400,7 +514,7 @@ def main():
                 bf_manager.get_static_flow()
 
             rss.append(
-                psutil.Process().memory_info().rss / (1024 ** 2)
+                psutil.Process().memory_info().rss / (1024**2)
             )  # memory consumption in MB
 
     ndamus.spike2file(prnt.file_path("out.dat"))

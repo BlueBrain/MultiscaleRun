@@ -21,7 +21,8 @@ class MsrPrinter:
         if rank is None:
             rank = 0
         else:
-            file += f"_rank{rank}"
+            file, ext = os.path.splitext(file)
+            file = os.path.join(file + f"_rank{rank}", ext)
 
         if MPI4PY.COMM_WORLD.Get_rank() != rank:
             return
