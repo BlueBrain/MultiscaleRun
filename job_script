@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name="PS_Indm"
+#SBATCH --job-name="multiscale_sjob"
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=32
 
