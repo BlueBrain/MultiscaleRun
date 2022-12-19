@@ -18,7 +18,7 @@ variables:
 spack_setup:
   extends: [.spack_setup_ccache]
   before_script:
-    - SPACK_BRANCH=magkanar/update_neuron
+    - SPACK_BRANCH=develop
 
 .build:
   extends: [.spack_build]
