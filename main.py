@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import os
 import logging
 
 import numpy as np
@@ -517,7 +518,7 @@ def main():
                 psutil.Process().memory_info().rss / (1024**2)
             )  # memory consumption in MB
 
-    ndamus.spike2file(prnt.file_path("out.dat"))
+    ndamus.spike2file(os.getcwd() + '/' + prnt.file_path("out.dat"))
 
     rss = np.mean(rss)
     avg_rss = comm.allreduce(rss, MPI4PY.SUM) / comm.size
