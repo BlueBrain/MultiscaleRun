@@ -39,8 +39,7 @@ then
   echo "add ndam py"
   if [[ -z "${PY_NEURODAMUS_BRANCH}" ]]
   then
-    #TODO move to develop once this pr is merged
-    export PY_NEURODAMUS_BRANCH=katta/init_vasccouplingB
+    export PY_NEURODAMUS_BRANCH=main
   fi
   lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH
   spack add py-neurodamus@develop
