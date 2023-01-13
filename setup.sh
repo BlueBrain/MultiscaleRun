@@ -8,7 +8,7 @@ git pull
 
 source .utils.sh
 
-export PY_NEURODAMUS_BRANCH=katta/init_vasccouplingB
+export PY_NEURODAMUS_BRANCH=main
 export NEURODAMUS_NEOCORTEX_BRANCH=main
 export STEPS_BRANCH=master
 
