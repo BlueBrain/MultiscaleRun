@@ -11,7 +11,7 @@ variables:
   STEPS_BRANCH:
     value: master
   PY_NEURODAMUS_BRANCH:
-    value: katta/init_vasccouplingB
+    value: main
   NEURODAMUS_NEOCORTEX_BRANCH:
     value: main
 
