@@ -37,12 +37,13 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 def main():
+    rank: int = comm.Get_rank()
 
-    config.print_config()
+    config.print_config(rank)
     prnt = printer.MsrPrinter()
 
     with timeit(name="initialization"):
-        rank: int = comm.Get_rank()
+
 
         ndamus = Neurodamus(
             config.blueconfig_path,

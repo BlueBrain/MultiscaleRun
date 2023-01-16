@@ -312,7 +312,9 @@ bloodflow_path = load_from_env("bloodflow_path", "bloodflow_src")
 bloodflow_params_path = os.path.join(bloodflow_path, "examples/data/params.yaml")
 
 
-def print_config():
+def print_config(rank):
+    if rank != 0:
+        return
     print(
         f"""
 -----------------------------------------------------
