@@ -8,7 +8,7 @@ The `main.py` script executes the various runs. Just by exporting specific envir
 
 ## Environment Setup
 
-First of all, update spack. More info [here](https://github.com/BlueBrain/spack).
+First of all, **update spack**. More info [here](https://github.com/BlueBrain/spack).
 
 You also need access to [this](https://github.com/CNS-OIST/HBP_STEPS) git repository. Contact Alessandro Cattabiani (Katta)
 in case you do not already have access rights.

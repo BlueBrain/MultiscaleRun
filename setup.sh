@@ -8,9 +8,17 @@ git pull
 
 source .utils.sh
 
+export BLOODFLOW_BRANCH=main
+export UPDATE_BLOODFLOW=1
+
 export PY_NEURODAMUS_BRANCH=main
+export UPDATE_NEURODAMUS=1
+
+# this is completely handled by spack. We keep it updated for now
 export NEURODAMUS_NEOCORTEX_BRANCH=main
+
 export STEPS_BRANCH=master
+export UPDATE_STEPS=1
 
 source .setup_bloodflow.sh
 source .setup_spackenv.sh

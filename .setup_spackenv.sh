@@ -41,7 +41,7 @@ then
   then
     export PY_NEURODAMUS_BRANCH=main
   fi
-  lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH
+  lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH $UPDATE_NEURODAMUS
   spack add py-neurodamus@develop
   spack develop -p ${PWD}/py-neurodamus --no-clone py-neurodamus@develop
 
@@ -53,7 +53,7 @@ then
   then
     export STEPS_BRANCH=master
   fi
-  lazy_clone HBP_STEPS git@github.com:CNS-OIST/HBP_STEPS.git $STEPS_BRANCH
+  lazy_clone HBP_STEPS git@github.com:CNS-OIST/HBP_STEPS.git $STEPS_BRANCH $UPDATE_STEPS
   spack add steps@develop
   spack develop -p ${PWD}/HBP_STEPS --no-clone steps@develop
 fi

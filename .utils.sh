@@ -8,18 +8,28 @@ lazy_clone () {
 folder=$1
 repo=$2
 branch=$3
+update_branch=$4
 if [ -d "$folder" ]
 then
-  echo "$folder already set. Just pulling latest changes"
-  pushd $folder
-  git pull
-  git submodule update
-  popd
+  echo "$folder already set"
+  if [ $update_branch -eq 0 ]
+  then
+    echo "keeping it as is"
+  else
+    echo "updating to latest version of branch: $branch"
+    pushd $folder
+    git checkout $branch
+    git pull
+    git submodule update
+    popd
+  fi
 else
-  echo "clone $folder"
-  git clone -b $branch --single-branch --recursive $repo $folder
+  echo "clone $folder and branch: $branch"
+  git clone --recursive $repo $folder
+  pushd $folder
+  git checkout $branch
+  popd
 fi
-
 }
 
 # run and record results (mainly for the CI)
