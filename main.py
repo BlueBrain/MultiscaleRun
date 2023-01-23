@@ -235,7 +235,7 @@ def main():
                             ik_density_gids_without_valid_segs,
                         ) = neurodamus_utils.get_current_density(
                             gid_to_cell=gid_to_cell,
-                            seg_filter=config.K.current_var,
+                            seg_filter=config.KK.current_var,
                         )
                         (
                             nais_mean,
@@ -249,7 +249,7 @@ def main():
                             kis_mean_gids_without_valid_segs,
                         ) = neurodamus_utils.get_current_mean(
                             gid_to_cell=gid_to_cell,
-                            seg_filter=config.K.ki_var,
+                            seg_filter=config.KK.ki_var,
                         )
                         (
                             cais_mean,

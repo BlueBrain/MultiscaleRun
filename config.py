@@ -94,11 +94,12 @@ class Na:
     nai_var = "nai"
 
 
-class K:
-    name = "K"
-    conc_0 = 2  # 3 it was 3 in Dan's example  # (mM/L)
-    base_conc = 2  # 3 it was 3 in Dan's example #sum here is 6 which is probably too high according to Magistretti #base_conc+conc_0 is the real concentration, conc_0 is the extracellular amount simulated
-    diffname = "diff_K"
+class KK:
+    """Potassium specs. It is not just K because it is reserved in steps"""
+    name = "KK"
+    conc_0 = 0  # 3 it was 3 in Dan's example  # (mM/L)
+    base_conc = 0  # 3 it was 3 in Dan's example #sum here is 6 which is probably too high according to Magistretti #base_conc+conc_0 is the real concentration, conc_0 is the extracellular amount simulated
+    diffname = "diff_KK"
     diffcst = 2e-9
     current_var = "ik"
     ki_var = "ki"
@@ -138,11 +139,11 @@ class Ca:
 
 
 class Volsys:
-    name = "extraNa"
-    specs = (Na,)
+    name = "extra_volsys"
+    specs = (Na,KK)
 
 
-specNames = [Na.name]
+specNames = [Na.name, KK.name]
 
 
 ##############################################

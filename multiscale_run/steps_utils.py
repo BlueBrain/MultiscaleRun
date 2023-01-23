@@ -23,10 +23,14 @@ import os
 def gen_model():
     mdl = Model()
     with mdl:
-        extraNa = VolumeSystem(name=config.Volsys.name)
+        extra_volsys = VolumeSystem(name=config.Volsys.name)
         Na = Species(name=config.Na.name)
-        with extraNa:
-            diff = Diffusion.Create(Na, config.Na.diffcst)
+        # TODO atm the KK concentration is 0 so no extra meaningful computation is added
+        # If you want to really activate Potassium you need to change init_steps
+        KK = Species(name=config.KK.name)
+        with extra_volsys:
+            diff_Na = Diffusion.Create(Na, config.Na.diffcst)
+            diff_KK = Diffusion.Create(KK, config.KK.diffcst)
     return mdl
 
 
@@ -87,6 +91,11 @@ def init_steps(ndamus):
 
     # there are 0.001 M/mM
     steps_sim.extra.Na.Conc = 1e-3 * config.Na.conc_0 * config.CONC_FACTOR
+    # TODO add KK concentration from scientific data
+    # I leave this line as example to explain how to add a non-zero concentration of potassium.
+    # This was not created from meningful scientific data, just an example. --Katta
+    # steps_sim.extra.KK.Conc = 1e-3 * config.KK.conc_0 * config.CONC_FACTOR
+
     tetVol = np.array([i.Vol for i in msh.tets], dtype=float)
 
     utils.print_once(f"The total tet mesh volume is : {np.sum(tetVol)}")
