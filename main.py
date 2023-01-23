@@ -13,11 +13,11 @@ from mpi4py import MPI as MPI4PY
 from neurodamus import Neurodamus
 from neurodamus.core import ProgressBarRank0 as ProgressBar
 from neurodamus.utils.logging import log_stage
-from neurodamus.utils.timeit import timeit
+from neurodamus.utils.timeit import TimerManager, timeit
 
 comm = MPI4PY.COMM_WORLD
-import dualrun.timer.mpi as mt
-import dualrun.sec_mapping.sec_mapping as sec_mapping
+import multiscale_run.dualrun.timer.mpi as mt
+import multiscale_run.dualrun.sec_mapping.sec_mapping as sec_mapping
 
 # Memory tracking
 import psutil
@@ -39,17 +39,17 @@ logging.basicConfig(level=logging.DEBUG)
 def main():
     rank: int = comm.Get_rank()
 
-    config.print_config(rank)
+    config.print_config()
     prnt = printer.MsrPrinter()
 
     with timeit(name="initialization"):
-
 
         ndamus = Neurodamus(
             config.blueconfig_path,
             enable_reports=False,
             logging_level=None,
             enable_coord_mapping=True,
+            cleanup_atexit=False,
         )
 
         # Times are in ms (for NEURON, because STEPS works with SI)
@@ -525,6 +525,8 @@ def main():
     avg_rss = comm.allreduce(rss, MPI4PY.SUM) / comm.size
     utils.print_once(f"average (across ranks) memory consumption [MB]: {avg_rss}")
     mt.timer.print()
+
+    TimerManager.timeit_show_stats()
 
 
 if __name__ == "__main__":

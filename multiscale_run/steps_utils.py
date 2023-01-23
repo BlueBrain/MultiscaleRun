@@ -13,7 +13,7 @@ from steps.utils import *
 
 import config
 
-import dualrun.sec_mapping.sec_mapping as sec_mapping
+import multiscale_run.dualrun.sec_mapping.sec_mapping as sec_mapping
 
 from . import utils
 
@@ -76,7 +76,7 @@ def init_steps(ndamus):
     steps_sim = init_solver(model, msh)
     steps_sim.newRun()
 
-    # In STEPS4 the global indices are not sequential and they can be over ntets.
+    # In STEPS4 the global indices are not sequential and they can be over ntets. [DEPRECATED behavior]
     # This dictionary does a mapping from 0 to ntets. In STEPS3, it is trivial, i: i.
     global_inds = {tet.idx: i for i, tet in enumerate(msh.tets)}
 

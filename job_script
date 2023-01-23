@@ -7,7 +7,7 @@
 #SBATCH --account=proj40
 #SBATCH --partition=prod
 #SBATCH --constraint=cpu
-#SBATCH --time=16:00:00
+#SBATCH --time=00:30:00
 
 #SBATCH --cpus-per-task=2
 #SBATCH --exclusive
@@ -47,7 +47,9 @@ then
   fi
 fi
 
-export JULIA_NUM_THREADS=20
+# Our approach is to map 1 core per MPI task.
+# Therefore, this strategy is not compatible with multi-threading.
+export JULIA_NUM_THREADS=1
 
 echo "special_path="$special_path
 

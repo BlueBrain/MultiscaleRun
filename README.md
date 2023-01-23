@@ -21,6 +21,14 @@ If it is the first time you call `setup.sh` it is suggested to allocate a node t
 ```
 salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 --constraint=clx
 ```
+
+## Julia environment
+
+Julia's enviroment is frozen (packages with specific versions) and completely defined by `Project.toml` and `Manifest.toml` found in `./julia_environment` folder.
+
+If for some reason, you want to update the environment, either modify `Project.toml` and `Manifest.toml`, or delete `./julia_environment` (along with `.julia` folder) and re-run the setup script.
+The latter approach will regenerate `./julia_environment` folder.
+
 ## Run Simulation
 
 Run your job with sbatch. For example: `sbatch job_script`. 

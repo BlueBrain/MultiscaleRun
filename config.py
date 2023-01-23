@@ -4,6 +4,12 @@ import time
 import numpy as np
 from scipy import constants as spc
 
+from mpi4py import MPI as MPI4PY
+
+MPI_COMM = MPI4PY.COMM_WORLD
+MPI_RANK = MPI_COMM.Get_rank()
+MPI_SIZE = MPI_COMM.Get_size()
+
 ##############################################
 # Dualrun related
 ##############################################
@@ -35,7 +41,6 @@ def load_from_env(env_name, default):
 ##############################################
 # base flags and paths
 ##############################################
-
 
 with_steps = load_from_env("with_steps", True)
 with_metabolism = load_from_env("with_metabolism", True)
@@ -312,27 +317,27 @@ bloodflow_path = load_from_env("bloodflow_path", "bloodflow_src")
 bloodflow_params_path = os.path.join(bloodflow_path, "examples/data/params.yaml")
 
 
-def print_config(rank):
-    if rank != 0:
-        return
-    print(
-        f"""
------------------------------------------------------
---- MSR CONFIG ---
-You can override any of the floowing variables by setting the omonim environment variable
-with_steps: {with_steps}
-with_metabolism: {with_metabolism}
-with_bloodflow: {with_bloodflow}
+def print_config():
+    if MPI_RANK == 0:
+        print(
+            f"""
+    -----------------------------------------------------
+    --- MSR CONFIG ---
+    You can override any of the following variables by setting the omonim environment variable
+    with_steps: {with_steps}
+    with_metabolism: {with_metabolism}
+    with_bloodflow: {with_bloodflow}
 
-results_path: {results_path}
+    results_path: {results_path}
 
-blueconfig_path: {blueconfig_path}
+    blueconfig_path: {blueconfig_path}
 
-steps_version: {steps_version}
-steps_mesh_path: {steps_mesh_path}
+    steps_version: {steps_version}
+    steps_mesh_path: {steps_mesh_path}
 
-bloodflow_path: {bloodflow_path}
---- MSR CONFIG ---
------------------------------------------------------
-"""
-    )
+    bloodflow_path: {bloodflow_path}
+    --- MSR CONFIG ---
+    -----------------------------------------------------
+    """,
+            flush=True,
+        )

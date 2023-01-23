@@ -14,18 +14,24 @@ source $PYTHON_VENV_PATH/bin/activate
 module load unstable julia
 
 export JULIA_DEPOT_PATH=${PWD}/.julia
+export JULIA_PROJECT=${PWD}/julia_environment
+
 if [ -d ".julia" ]
 then
   echo "julia packages already set"
 else
   echo "setup julia"
   mkdir .julia
-  julia -e 'using Pkg; Pkg.add("IJulia")'
-  julia -e 'using Pkg; Pkg.add("DifferentialEquations")'
-  julia -e 'using Pkg; Pkg.add("DiffEqBase")'
-  julia -e 'using Pkg; Pkg.add("ParameterizedFunctions")'
-  julia -e 'using Pkg; Pkg.add("StaticArrays")'
-  julia -e 'using Pkg; Pkg.add("RecursiveArrayTools")'
-  julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
+  if [ -d ${JULIA_PROJECT} ]
+  then
+    julia -e 'using Pkg; Pkg.instantiate(; verbose=true)'
+  else
+    julia -e 'using Pkg; Pkg.add("IJulia")'
+    julia -e 'using Pkg; Pkg.add("DifferentialEquations")'
+    julia -e 'using Pkg; Pkg.add("DiffEqBase")'
+    julia -e 'using Pkg; Pkg.add("ParameterizedFunctions")'
+    julia -e 'using Pkg; Pkg.add("StaticArrays")'
+    julia -e 'using Pkg; Pkg.add("RecursiveArrayTools")'
+    julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
+  fi
 fi
-
