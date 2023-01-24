@@ -314,7 +314,7 @@ def get_GLY_a_and_mito_vol_frac(c_gid):
 
 
 # paths
-bloodflow_path = load_from_env("bloodflow_path", "bloodflow_src")
+bloodflow_path = load_from_env("BLOODFLOW_PATH", "bloodflow_src")
 bloodflow_params_path = os.path.join(bloodflow_path, "examples/data/params.yaml")
 
 
@@ -336,7 +336,7 @@ def print_config():
     steps_version: {steps_version}
     steps_mesh_path: {steps_mesh_path}
 
-    bloodflow_path: {bloodflow_path}
+    BLOODFLOW_PATH: {bloodflow_path}
     --- MSR CONFIG ---
     -----------------------------------------------------
     """,

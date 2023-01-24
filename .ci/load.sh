@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 # There are a lot of things to load. Better have a blueprint for that
 
 . ${SPACK_ROOT}/share/spack/setup-env.sh

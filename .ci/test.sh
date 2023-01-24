@@ -1,6 +1,6 @@
 #!/bin/bash
 
--e
+set -e
 
 if [[ $nrun -eq 2 ]]
 then

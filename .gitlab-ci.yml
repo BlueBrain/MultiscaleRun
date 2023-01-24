@@ -53,10 +53,10 @@ setup_py_neurodamus:
   artifacts:
     when: always
     paths:
-      - "${pathenv}.env"
+      - "${envfile}.env"
     reports:
       dotenv:
-        - "${pathenv}.env"
+        - "${envfile}.env"
   script:
     - !reference [ .bbp_gitlab_access, script ]
     - source .ci/setup.sh
@@ -65,7 +65,8 @@ setup_bloodflow:
   extends: [.custom_build]
   variables:
     setup_file: .setup_bloodflow.sh
-    pathenv: bloodflow_path
+    envvars: "envvars=(BLOODFLOW_PATH)"
+    envfile: bloodflow_envs
 
 setup_spackenv:
   extends: [.custom_build]
@@ -75,7 +76,8 @@ setup_spackenv:
     - setup_py_neurodamus
   variables:
     setup_file: .setup_spackenv.sh
-    pathenv: SPACKENV_PATH
+    envvars: "envvars=(SPACKENV_PATH)"
+    envfile: spack_envs
 
 setup_python_venv:
   extends: [.custom_build]
@@ -84,7 +86,8 @@ setup_python_venv:
     - setup_bloodflow
   variables:
     setup_file: .setup_python_venv.sh
-    pathenv: PYTHON_VENV_PATH
+    envvars: "envvars=(PYTHON_VENV_PATH)"
+    envfile: python_venv_envs
 
 setup_julia:
   extends: [.custom_build]
@@ -93,7 +96,8 @@ setup_julia:
     - setup_python_venv
   variables:
     setup_file: .setup_julia.sh
-    pathenv: JULIA_DEPOT_PATH
+    envvars: "envvars=(JULIA_DEPOT_PATH JULIA_PROJECT)"
+    envfile: julia_envs
 
 .test:
   stage: test

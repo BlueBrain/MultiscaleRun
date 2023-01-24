@@ -19,11 +19,11 @@ then
 else
   python -m venv python-venv
   source python-venv/bin/activate
-  pip install diffeqpy julia
   python -m pip install --upgrade pip
+  pip install diffeqpy julia
 fi
 
 # install bloodflow-related packages
-pushd $bloodflow_path
+pushd $BLOODFLOW_PATH
 pip install --index-url https://bbpteam.epfl.ch/repository/devpi/bbprelman/dev/+simple/ -e .
 popd
