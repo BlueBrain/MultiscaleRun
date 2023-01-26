@@ -19,6 +19,14 @@ def get_cell_volumes(ndamus):
         for nc in ndamus.circuits.base_cell_manager.cells
     }
 
+def get_cell_areas(ndamus):
+    return {
+        int(nc.CCell.gid): sum(
+            [val.area() for sublist in nc.CCell.all for val in sublist.allseg()]
+        )
+        for nc in ndamus.circuits.base_cell_manager.cells
+    }
+
 
 def release_sums(release):
     sum_t = {}

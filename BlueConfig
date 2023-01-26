@@ -19,8 +19,11 @@ Run Default
     TargetFile ./user.target
 
     OutputRoot ./RESULTS
+    #CircuitTarget mc2c_develop
     CircuitTarget mc2c_CI
     #CircuitTarget mc2_Column
+    #only one cell time for playing around
+    #'hoc:cNAC_L23NGC'
     RunMode RR
     RNGMode UpdatedMCell
     Duration 1000

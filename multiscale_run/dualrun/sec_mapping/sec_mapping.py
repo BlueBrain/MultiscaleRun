@@ -4,6 +4,39 @@ import logging
 
 import steps
 
+
+def seg_extremes(nseg, pp):
+    """ Compute the position of beginning and end of each compartment in a section
+
+    Assumption: all the compartments have the same length
+
+    Inputs:
+        - nseg: number of compartments. Notice that there are 2 "joint" compartments at the extremes of a section
+        used for connection with vol and area == 0
+        - pp is a nX4 matrix of positions of points. The first col give the relative position, (x in neuron) along the
+        axis. It is in the interval [0, 1]. The other 3 columns give x,y,z triplets of the points in a global system of
+        reference.
+
+    Outputs:
+    - a matrix 3Xn of the position of the extremes of every proper compartment (not the extremes) """
+
+    def extend_extremes(v):
+        """This takes care of the extreme joint compartments"""
+        if len(v):
+            return [v[0], *v, v[-1]]
+        else:
+            return []
+
+    pp = np.array(pp)
+    x_rel, xp, yp, zp = pp[:, 0], pp[:, 1], pp[:, 2], pp[:, 3]
+    x = np.linspace(0, 1, nseg + 1)
+    xp_seg = extend_extremes(np.interp(x, x_rel, xp))
+    yp_seg = extend_extremes(np.interp(x, x_rel, yp))
+    zp_seg = extend_extremes(np.interp(x, x_rel, zp))
+
+    return np.transpose([xp_seg, yp_seg, zp_seg])
+
+
 # returns a list of tet mappings for the neurons
 # each segment mapping is a list of (tetnum, fraction of segment)
 def get_sec_mapping_collective_single_mesh(ndamus, mesh, attr1):
@@ -43,11 +76,13 @@ def get_sec_mapping_collective_single_mesh(ndamus, mesh, attr1):
                 # logging.warning("Sec %s doesnt have 3d points", sec)
                 continue
 
-            # Store points in section
-            pts = np.empty((npts, 3), dtype=float)
-
-            for i in range(npts):
-                pts[i] = np.array([sec.x3d(i), sec.y3d(i), sec.z3d(i)])
+            pts = seg_extremes(
+                sec.nseg,
+                [
+                    [sec.arc3d(i) / sec.L, sec.x3d(i), sec.y3d(i), sec.z3d(i)]
+                    for i in range(npts)
+                ],
+            )
 
             # Transform to absolute coordinates (copy is necessary to get correct stride)
             pts_abs_coo = (
@@ -59,7 +94,15 @@ def get_sec_mapping_collective_single_mesh(ndamus, mesh, attr1):
             n_bbox_max = np.maximum(np.amax(pts_abs_coo, axis=0), n_bbox_max)
 
             # store map for each section
-            secmap.append((sec, [[(tet.idx, rat) for tet, rat in seg] for seg in mesh.intersect(pts_abs_coo)]))
+            secmap.append(
+                (
+                    sec,
+                    [
+                        [(tet.idx, rat) for tet, rat in seg]
+                        for seg in mesh.intersect(pts_abs_coo)
+                    ],
+                )
+            )
 
         neurSecmap.append(secmap)
 
@@ -128,9 +171,13 @@ def get_sec_mapping_collective_partitioned_mesh(ndamus, mesh, attr1):
                 # logging.warning("Sec %s doesnt have 3d points", sec)
                 continue
 
-            pts = np.empty((npts, 3), dtype=float)
-            for i in range(npts):
-                pts[i] = np.array([sec.x3d(i), sec.y3d(i), sec.z3d(i)])
+            pts = seg_extremes(
+                sec.nseg,
+                [
+                    [sec.arc3d(i) / sec.L, sec.x3d(i), sec.y3d(i), sec.z3d(i)]
+                    for i in range(npts)
+                ],
+            )
 
             # Transform to absolute coordinates (copy is necessary to get correct stride)
             pts_abs_coo = (
@@ -147,8 +194,16 @@ def get_sec_mapping_collective_partitioned_mesh(ndamus, mesh, attr1):
     with mesh.asLocal():
         s_bbox_min, s_bbox_max = mesh.bbox.min, mesh.bbox.max
 
-    print(f"{rank} bounding box Neuron [um] : ", n_bbox_min/micrometer2meter, n_bbox_max/micrometer2meter)
-    print(f"{rank} bounding box STEPS [um] (local, per rank): ", np.array(s_bbox_min)/micrometer2meter, np.array(s_bbox_max)/micrometer2meter)
+    print(
+        f"{rank} bounding box Neuron [um] : ",
+        n_bbox_min / micrometer2meter,
+        n_bbox_max / micrometer2meter,
+    )
+    print(
+        f"{rank} bounding box STEPS [um] (local, per rank): ",
+        np.array(s_bbox_min) / micrometer2meter,
+        np.array(s_bbox_max) / micrometer2meter,
+    )
 
     # all MPI tasks process all the points/segments (STEPS side - naive approach as a first step)
     # list of lists: External list refers to the task, internal is the list created above

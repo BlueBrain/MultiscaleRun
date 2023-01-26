@@ -71,6 +71,11 @@ Target Cell mc2c_CI
   a20 a22 a24 a25 a26 a27 a58 a59 a64 a65 a66 a68 a69 a70 a72 a73 a78 a86 a87 a92 a99 a101 a111 a112 a132 a2548 a2550 a2551 a2584 a2592 a2738 a2739 
 }
 
+Target Cell mc2c_develop
+{
+  a20
+}
+
 Target Compartment AllComps_mc2c
 {
   mc2_Column
