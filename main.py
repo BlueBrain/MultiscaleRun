@@ -523,8 +523,8 @@ def main():
 
     rss = np.mean(rss)
     avg_rss = comm.allreduce(rss, MPI4PY.SUM) / comm.size
-    utils.print_once(f"average (across ranks) memory consumption [MB]: {avg_rss}")
-    mt.timer.print()
+    #utils.print_once(f"average (across ranks) memory consumption [MB]: {avg_rss}")
+    #mt.timer.print()
 
     TimerManager.timeit_show_stats()
 

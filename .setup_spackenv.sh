@@ -42,6 +42,8 @@ then
     export PY_NEURODAMUS_BRANCH=main
   fi
   lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH $UPDATE_NEURODAMUS
+  # hack to remove the links to proj12 for the people that do not have access. Discussion in [BBPBGLIB-973]
+  rm py-neurodamus/tests/simulations/v5_gapjunctions/gap_junctions
   spack add py-neurodamus@develop
   spack develop -p ${PWD}/py-neurodamus --no-clone py-neurodamus@develop
 

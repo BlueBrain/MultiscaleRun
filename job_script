@@ -1,13 +1,13 @@
 #!/bin/bash
 
-#SBATCH --job-name="multiscale_sjob"
+#SBATCH --job-name="mr_sjob"
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=32
 
 #SBATCH --account=proj40
 #SBATCH --partition=prod
 #SBATCH --constraint=cpu
-#SBATCH --time=00:30:00
+#SBATCH --time=1:30:00
 
 #SBATCH --cpus-per-task=2
 #SBATCH --exclusive
@@ -29,7 +29,7 @@ source ./setup.sh
 
 #export blueconfig_path=BlueConfig
 
-#export steps_version=4
+#export steps_version=3
 #export steps_mesh_path=steps_meshes/mc2c/mc2c.msh
 
 #export BLOODFLOW_PATH=bloodflow_src

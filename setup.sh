@@ -8,7 +8,7 @@ git pull
 
 source .utils.sh
 
-export BLOODFLOW_BRANCH=main
+export BLOODFLOW_BRANCH=katta/new_circuit
 export UPDATE_BLOODFLOW=1
 
 export PY_NEURODAMUS_BRANCH=main

@@ -195,26 +195,26 @@ comp_counts_output = "CompCount.csv"
 
 #####
 # voltages_per_gid_f = "./metabolismndam/in/voltages_per_gid.txt"
-
+gids_lists_dir = "metabolismndam_reduced/sim/gids_sets/SSCX_NGV/"
 try:
     target_gids = set(
         np.loadtxt(
             os.path.join(
-                metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_gids.txt"
+                gids_lists_dir, "mc2_gids.txt"
             )
         )
     )  # for sscx: np.loadtxt(os.path.join(metabolism_path, "sim/gids_sets/hex0.txt") # hex0 gids
     exc_target_gids = set(
         np.loadtxt(
             os.path.join(
-                metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_exc_gids.txt"
+                gids_lists_dir, "mc2_exc_gids.txt"
             )
         )
     )  # for sscx: np.loadtxt(os.path.join(metabolism_path, "sim/gids_sets/hex0exc.txt"))
     inh_target_gids = set(
         np.loadtxt(
             os.path.join(
-                metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_inh_gids.txt"
+                gids_lists_dir, "mc2_inh_gids.txt"
             )
         )
     )  # for sscx: set(np.loadtxt(os.path.join(metabolism_path, "sim/gids_sets/hex0inh.txt"))
@@ -224,7 +224,7 @@ try:
         set(
             np.loadtxt(
                 os.path.join(
-                    metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_L1_gids.txt"
+                    gids_lists_dir, "mc2_L1_gids.txt"
                 )
             )
         )
@@ -233,7 +233,7 @@ try:
         set(
             np.loadtxt(
                 os.path.join(
-                    metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_L2_gids.txt"
+                    gids_lists_dir, "mc2_L2_gids.txt"
                 )
             )
         )
@@ -242,7 +242,7 @@ try:
         set(
             np.loadtxt(
                 os.path.join(
-                    metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_L3_gids.txt"
+                    gids_lists_dir, "mc2_L3_gids.txt"
                 )
             )
         )
@@ -251,7 +251,7 @@ try:
         set(
             np.loadtxt(
                 os.path.join(
-                    metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_L4_gids.txt"
+                    gids_lists_dir, "mc2_L4_gids.txt"
                 )
             )
         )
@@ -260,7 +260,7 @@ try:
         set(
             np.loadtxt(
                 os.path.join(
-                    metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_L5_gids.txt"
+                    gids_lists_dir, "mc2_L5_gids.txt"
                 )
             )
         )
@@ -269,7 +269,7 @@ try:
         set(
             np.loadtxt(
                 os.path.join(
-                    metabolism_path, "sim/gids_sets/O1_20190912_spines/mc2_L6_gids.txt"
+                    gids_lists_dir, "mc2_L6_gids.txt"
                 )
             )
         )
