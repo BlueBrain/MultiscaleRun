@@ -34,7 +34,8 @@ fi
 
 # run and record results (mainly for the CI)
 ms_run () {
-  results_path=./RESULTS/STEPS$1/
+  export results_path=./RESULTS/STEPS$1/
+  export steps_version=$1
   echo "*******************************************************************************"
   echo " *** STEPS$1 run *** "
   echo "*******************************************************************************"

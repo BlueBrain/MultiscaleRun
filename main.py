@@ -353,12 +353,12 @@ def main():
                         vm[98] = nais_mean[
                             c_gid
                         ]  # old idx: 6 # idx 99 in jl, but py is 0-based and jl is 1-based # Na_n
-                        vm[95] = um[(idxm, c_gid)][95] - 1.33 * (
-                            kis_mean[c_gid] - 140.0
-                        )  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
+                        
+                        #vm[95] = um[(0, c_gid)][95] - 1.33 * ( kis_mean[c_gid] - 140.0 )  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
+                        vm[95] = 3.0 - 1.33 * ( kis_mean[c_gid] - 140.0 )  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
 
                         logging.info(
-                            f"------------------------ NDAM FOR METAB: {', '.join(str(i) for i in [vm[22], vm[23], vm[98], vm[95]])}"
+                            f"------------------------ NDAM FOR METAB: {', '.join(str(i) for i in [vm[22], vm[23], vm[98], vm[95], um[(0, c_gid)][95], kis_mean[c_gid], outs_r_to_met])}"
                         )
 
                         # 2.2 should coincide with the BC METypePath field & with u0_file
@@ -395,8 +395,8 @@ def main():
 
                         sol = None
                         error_solver = None
+
                         try:
-                            with timeit(name="metabolism_solver"):
                                 sol = de.solve(
                                     prob_metabo,
                                     de.Rosenbrock23(autodiff=False),
@@ -443,9 +443,10 @@ def main():
                         #                             140.0 - 1.33 * (um[(idxm + 1, c_gid)][6] - 10.0)
                         #                         )  # 140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
 
-                        # ko_weighted_mean = (
-                        #     0.5 * 5.0 + 0.5 * um[(idxm + 1, c_gid)][7]
-                        # )  # um[(idxm+1,c_gid)][7]
+                        ko_weighted_mean = (
+                            0.5 * um[(0, c_gid)][95] + 0.5 * um[(idxm + 1, c_gid)][95]
+                            
+                        )  # um[(idxm+1,c_gid)][7]
 
                         #                         nai_weighted_mean = (
                         #                             0.5 * 10.0 + 0.5 * um[(idxm + 1, c_gid)][6]
@@ -456,50 +457,49 @@ def main():
 
                         um[(idxm, c_gid)] = None
 
-                        with timeit(name="neurodamus_metabolism_feedback"):
-                            log_stage("feedback")
+                        log_stage("feedback")
 
-                            # for seg in neurodamus_utils.gen_segs(nc, config.seg_filter):
-                            #     seg.nao = nao_weighted_mean  # 140
-                            #     seg.nai = nai_weighted_mean  # 10
-                            #     seg.ko = ko_weighted_mean  # 5
-                            #     seg.ki = ki_weighted_mean  # 140
-                            #     seg.atpi = atpi_weighted_mean  # 1.4
-                            #     seg.adpi = adpi_weighted_mean  # 0.03
+                        # for seg in neurodamus_utils.gen_segs(nc, config.seg_filter):
+                        #     seg.nao = nao_weighted_mean  # 140
+                        #     seg.nai = nai_weighted_mean  # 10
+                        #     seg.ko = ko_weighted_mean  # 5
+                        #     seg.ki = ki_weighted_mean  # 140
+                        #     seg.atpi = atpi_weighted_mean  # 1.4
+                        #     seg.adpi = adpi_weighted_mean  # 0.03
 
-                            # for seg in neurodamus_utils.gen_segs(nc, [Na.nai_var]):
-                            #     seg.nao = nao_weighted_mean  # 140                       # TMP disable feedback from STEPS to NDAM
+                        # for seg in neurodamus_utils.gen_segs(nc, [Na.nai_var]):
+                        #     seg.nao = nao_weighted_mean  # 140                       # TMP disable feedback from STEPS to NDAM
 
-                            #                             for seg in neurodamus_utils.gen_segs(nc, [Na.nai_var]):
-                            #                                 seg.nai = nai_weighted_mean  # 10
+                        #                             for seg in neurodamus_utils.gen_segs(nc, [Na.nai_var]):
+                        #                                 seg.nai = nai_weighted_mean  # 10
 
-                            # for seg in neurodamus_utils.gen_segs(nc, [Na.nai_var]):
-                            #     seg.ko = ko_weighted_mean  # 5                           # TMP disable feedback from STEPS to NDAM
+                        for seg in neurodamus_utils.gen_segs(nc, [config.KK.ki_var]):
+                            seg.ko = ko_weighted_mean  # 5                           # TMP disable feedback from STEPS to NDAM
 
-                            #                             for seg in neurodamus_utils.gen_segs(nc, [K.ki_var]):
-                            #                                 seg.ki = ki_weighted_mean  # 140
+                        #                             for seg in neurodamus_utils.gen_segs(nc, [K.ki_var]):
+                        #                                 seg.ki = ki_weighted_mean  # 140
 
-                            for seg in neurodamus_utils.gen_segs(
-                                nc, [config.ATP.atpi_var]
-                            ):
-                                seg.atpi = atpi_weighted_mean  # 1.4
+                        for seg in neurodamus_utils.gen_segs(
+                            nc, [config.ATP.atpi_var]
+                        ):
+                            seg.atpi = atpi_weighted_mean  # 1.4
 
-                            for seg in neurodamus_utils.gen_segs(
-                                nc, [config.ADP.adpi_var]
-                            ):
-                                seg.adpi = (
-                                    atpi_weighted_mean
-                                    / 2
-                                    * (
-                                        -0.92
-                                        + np.sqrt(
-                                            0.92 * 0.92
-                                            + 4
-                                            * 0.92
-                                            * (ATDPtot_n / atpi_weighted_mean - 1)
-                                        )
+                        for seg in neurodamus_utils.gen_segs(
+                            nc, [config.ADP.adpi_var]
+                        ):
+                            seg.adpi = (
+                                atpi_weighted_mean
+                                / 2
+                                * (
+                                    -0.92
+                                    + np.sqrt(
+                                        0.92 * 0.92
+                                        + 4
+                                        * 0.92
+                                        * (ATDPtot_n / atpi_weighted_mean - 1)
                                     )
-                                )  # adpi_weighted_mean  # 0.03
+                                )
+                            )  # adpi_weighted_mean  # 0.03
 
                     comm.Barrier()
                     logging.info(
@@ -520,12 +520,6 @@ def main():
             )  # memory consumption in MB
 
     ndamus.spike2file(os.getcwd() + '/' + prnt.file_path("out.dat"))
-
-    rss = np.mean(rss)
-    avg_rss = comm.allreduce(rss, MPI4PY.SUM) / comm.size
-    #utils.print_once(f"average (across ranks) memory consumption [MB]: {avg_rss}")
-    #mt.timer.print()
-
     TimerManager.timeit_show_stats()
 
 

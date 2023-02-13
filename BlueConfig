@@ -5,10 +5,10 @@ Run Default
     CircuitPath /gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/data/base_circuit
     nrnPath /gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/data/base_circuit/default/edges.h5
     CellLibraryFile /gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/data/base_circuit/All/nodes.h5
-    MorphologyPath /gpfs/bbp.cscs.ch/project/proj83/morphologies/fixed_ais_L23PC_20201210/ascii
+    MorphologyPath /gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj83/morphologies/fixed_ais_L23PC_20201210/ascii
     MorphologyType asc
-    METypePath /gpfs/bbp.cscs.ch/project/proj34/sh_ngvm/emodels_atp_scan/emodels_atp_1p4
-    MEComboInfoFile /gpfs/bbp.cscs.ch/project/proj83/singlecell/fixed_L6_allBPC_thresholds/mecombo_emodel.tsv
+    METypePath /gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj34/sh_ngvm/emodels_atp_scan/emodels_atp_1p4
+    MEComboInfoFile /gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj83/singlecell/fixed_L6_allBPC_thresholds/mecombo_emodel.tsv
 
     TargetFile ./user.target
 
@@ -28,7 +28,7 @@ Circuit GLIA
     CellLibraryFile /gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/sonata/networks/nodes/astrocytes/nodes.h5
     MorphologyPath /gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/morphologies/astrocytes/h5
     MorphologyType h5
-    METypePath /gpfs/bbp.cscs.ch/project/proj62/NGV/emodels
+    METypePath /gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj62/NGV/emodels
     CircuitTarget AstroMini
 }
 
