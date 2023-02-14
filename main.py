@@ -222,6 +222,7 @@ def main():
 
                     comm.Barrier()
 
+
                     with timeit(name="neurodamus_metabolism_feedback"):
 
                         (
@@ -360,6 +361,15 @@ def main():
                         logging.info(
                             f"------------------------ NDAM FOR METAB: {', '.join(str(i) for i in [vm[22], vm[23], vm[98], vm[95], um[(0, c_gid)][95], kis_mean[c_gid], outs_r_to_met])}"
                         )
+
+                        # Katta: "Polina suggested the following asserts as rule of thumb. In this way we detect
+                        # macro-problems like K+ accumulation faster. For now the additional computation is minimal.
+                        # Improvements are possible if needed."
+                        assert 0.25 <= vm[22] <= 2.5 # assert 0.7 <= vm[95] <= 2.3 # TODO make it stricter once more things are in place
+                        assert 7 <= vm[98] <= 30 # usually around 10 # TODO recheck this once everything is in place
+                        assert 2.5 <= vm[95] <= 20  # assert 2.5 <= vm[95] <= 8 # TODO switch once K+ accumulation is fully fixed
+                        assert 2.5 <= um[(0, c_gid)][95] <= 20 # assert 2.5 <= um[(0, c_gid)][95] <= 8 # TODO switch once K+ accumulation is fully fixed
+                        assert 120 <= kis_mean[c_gid] <= 160
 
                         # 2.2 should coincide with the BC METypePath field & with u0_file
                         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
