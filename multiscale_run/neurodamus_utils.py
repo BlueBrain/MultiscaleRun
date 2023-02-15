@@ -5,6 +5,7 @@ comm = MPI4PY.COMM_WORLD
 from . import utils
 
 import logging
+import numpy as np
 
 import os
 
@@ -132,40 +133,19 @@ def gen_segs(nc, filter0):
         for seg in sec.allseg():
             yield seg
 
+def get_current_avgs(gid_to_cell, seg_filter, weights: str = None):
+    """ Get current average
 
-def get_current_density(gid_to_cell, seg_filter):
-    current_density = {}
+    weights: for the average. "None" means arithmetic average
+    """
+    current_avgs = {}
     gids_without_valid_segs = set()
     for c_gid, nc in gen_ncs(gid_to_cell):
         _exhausted = object()
         if next(gen_segs(nc, [seg_filter]), _exhausted) is _exhausted:
             gids_without_valid_segs.add(c_gid)
         else:
-            tot_area = sum(i.area() for i in gen_segs(nc, [seg_filter]))
-            current_density[c_gid] = (
-                sum(
-                    getattr(seg, seg_filter) * seg.area()
-                    for seg in gen_segs(nc, [seg_filter])
-                )
-                / tot_area
-            )
-    return current_density, gids_without_valid_segs
-
-
-def get_current_mean(gid_to_cell, seg_filter):
-    current_mean = {}
-    gids_without_valid_segs = set()
-    for c_gid, nc in gen_ncs(gid_to_cell):
-        _exhausted = object()
-        if next(gen_segs(nc, [seg_filter]), _exhausted) is _exhausted:
-            gids_without_valid_segs.add(c_gid)
-        else:
-            tot_vol = sum(i.volume() for i in gen_segs(nc, [seg_filter]))
-            current_mean[c_gid] = (
-                sum(
-                    getattr(seg, seg_filter) * seg.volume()
-                    for seg in gen_segs(nc, [seg_filter])
-                )
-                / tot_vol
-            )
-    return current_mean, gids_without_valid_segs
+            w = [getattr(seg, weights)() for seg in gen_segs(nc, [seg_filter])] if weights else None
+            vals = [getattr(seg, seg_filter) for seg in gen_segs(nc, [seg_filter])]
+            current_avgs[c_gid] = np.average(vals, weights=w)
+    return current_avgs, gids_without_valid_segs

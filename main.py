@@ -64,10 +64,10 @@ def main():
 
         # In steps use M/L and apply the SIM_REAL ratio
         CA = (
-            config.COULOMB
-            / config.AVOGADRO
-            * config.CONC_FACTOR
-            * (DT * 1e3 * config.dt_nrn2dt_steps)
+                config.COULOMB
+                / config.AVOGADRO
+                * config.CONC_FACTOR
+                * (DT * 1e3 * config.dt_nrn2dt_steps)
         )
 
         logging.info(f"Initializing simulations...")
@@ -120,7 +120,7 @@ def main():
 
     steps, idxm = 0, 0
     for t in ProgressBar(int(SIM_END / (config.dt_nrn2dt_steps * DT)))(
-        utils.timesteps(SIM_END, DT * config.dt_nrn2dt_steps)
+            utils.timesteps(SIM_END, DT * config.dt_nrn2dt_steps)
     ):
         steps += config.dt_nrn2dt_steps
         with timeit(name="main_loop"):
@@ -129,7 +129,6 @@ def main():
                 ndamus.solve(t)
 
             if config.with_steps:
-
                 with timeit(name="steps_loop"):
                     log_stage("steps loop")
 
@@ -182,7 +181,7 @@ def main():
 
                     comm.Barrier()
                     for k, v in neurodamus_utils.release_sums(
-                        collected_num_releases_glutamate
+                            collected_num_releases_glutamate
                     ).items():
                         prnt.append_to_file(
                             config.ins_glut_file_output,
@@ -191,7 +190,7 @@ def main():
                         )
                     comm.Barrier()
                     for k, v in neurodamus_utils.release_sums(
-                        collected_num_releases_gaba
+                            collected_num_releases_gaba
                     ).items():
                         prnt.append_to_file(
                             config.ins_gaba_file_output,
@@ -228,60 +227,60 @@ def main():
                         (
                             ina_density,
                             ina_density_gids_without_valid_segs,
-                        ) = neurodamus_utils.get_current_density(
-                            gid_to_cell=gid_to_cell, seg_filter=config.Na.current_var
+                        ) = neurodamus_utils.get_current_avgs(
+                            gid_to_cell=gid_to_cell, seg_filter=config.Na.current_var, weights="area"
                         )
                         (
                             ik_density,
                             ik_density_gids_without_valid_segs,
-                        ) = neurodamus_utils.get_current_density(
+                        ) = neurodamus_utils.get_current_avgs(
                             gid_to_cell=gid_to_cell,
-                            seg_filter=config.KK.current_var,
+                            seg_filter=config.KK.current_var, weights="area"
                         )
                         (
                             nais_mean,
                             nais_mean_gids_without_valid_segs,
-                        ) = neurodamus_utils.get_current_mean(
+                        ) = neurodamus_utils.get_current_avgs(
                             gid_to_cell=gid_to_cell,
-                            seg_filter=config.Na.nai_var,
+                            seg_filter=config.Na.nai_var, weights="volume"
                         )
                         (
                             kis_mean,
                             kis_mean_gids_without_valid_segs,
-                        ) = neurodamus_utils.get_current_mean(
+                        ) = neurodamus_utils.get_current_avgs(
                             gid_to_cell=gid_to_cell,
-                            seg_filter=config.KK.ki_var,
+                            seg_filter=config.KK.ki_var, weights="volume"
                         )
                         (
                             cais_mean,
                             cais_mean_gids_without_valid_segs,
-                        ) = neurodamus_utils.get_current_mean(
+                        ) = neurodamus_utils.get_current_avgs(
                             gid_to_cell=gid_to_cell,
-                            seg_filter=config.Ca.current_var,
+                            seg_filter=config.Ca.current_var, weights="volume"
                         )
                         (
                             atpi_mean,
                             atpi_mean_gids_without_valid_segs,
-                        ) = neurodamus_utils.get_current_mean(
+                        ) = neurodamus_utils.get_current_avgs(
                             gid_to_cell=gid_to_cell,
-                            seg_filter=config.ATP.atpi_var,
+                            seg_filter=config.ATP.atpi_var, weights="volume"
                         )
                         (
                             adpi_mean,
                             adpi_mean_gids_without_valid_segs,
-                        ) = neurodamus_utils.get_current_mean(
+                        ) = neurodamus_utils.get_current_avgs(
                             gid_to_cell=gid_to_cell,
-                            seg_filter=config.ADP.adpi_var,
+                            seg_filter=config.ADP.adpi_var, weights="volume"
                         )
 
                         gids_without_valid_segs = (
-                            ina_density_gids_without_valid_segs
-                            & ik_density_gids_without_valid_segs
-                            & nais_mean_gids_without_valid_segs
-                            & kis_mean_gids_without_valid_segs
-                            & cais_mean_gids_without_valid_segs
-                            & atpi_mean_gids_without_valid_segs
-                            & adpi_mean_gids_without_valid_segs
+                                ina_density_gids_without_valid_segs
+                                & ik_density_gids_without_valid_segs
+                                & nais_mean_gids_without_valid_segs
+                                & kis_mean_gids_without_valid_segs
+                                & cais_mean_gids_without_valid_segs
+                                & atpi_mean_gids_without_valid_segs
+                                & adpi_mean_gids_without_valid_segs
                         )
 
                         for c_gid in gids_without_valid_segs:
@@ -296,7 +295,7 @@ def main():
                     for c_gid, nc in neurodamus_utils.gen_ncs(gid_to_cell):
                         logging.info(f"metabolism, processing c_gid: {c_gid}")
                         outs_r_to_met_factor = config.OUTS_R_TO_MET_FACTOR / (
-                            cells_volumes[c_gid] * SIM_END_coupling_interval
+                                cells_volumes[c_gid] * SIM_END_coupling_interval
                         )  # mM/ms
 
                         if c_gid in config.exc_target_gids:
@@ -334,29 +333,30 @@ def main():
                         # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
 
                         vm[22] = (
-                            0.5 * 1.384727988648391 + 0.5 * atpi_mean[c_gid]
+                                0.5 * 1.384727988648391 + 0.5 * atpi_mean[c_gid]
                         )  # atpi_mean[c_gid] #0.5 * 2.2 + 0.5 * atpi_mean[c_gid] # 23 in jl
 
                         vm[23] = 0.5 * 1.384727988648391 / 2 * (
-                            -0.92
-                            + np.sqrt(
-                                0.92 * 0.92
-                                + 4 * 0.92 * (ATDPtot_n / 1.384727988648391 - 1)
-                            )
-                        ) + 0.5 * atpi_mean[c_gid] / 2 * (
-                            -0.92
-                            + np.sqrt(
-                                0.92 * 0.92
-                                + 4 * 0.92 * (ATDPtot_n / atpi_mean[c_gid] - 1)
-                            )
+                                -0.92
+                                + np.sqrt(
+                            0.92 * 0.92
+                            + 4 * 0.92 * (ATDPtot_n / 1.384727988648391 - 1)
                         )
+                        ) + 0.5 * atpi_mean[c_gid] / 2 * (
+                                         -0.92
+                                         + np.sqrt(
+                                     0.92 * 0.92
+                                     + 4 * 0.92 * (ATDPtot_n / atpi_mean[c_gid] - 1)
+                                 )
+                                 )
 
                         vm[98] = nais_mean[
                             c_gid
                         ]  # old idx: 6 # idx 99 in jl, but py is 0-based and jl is 1-based # Na_n
-                        
-                        #vm[95] = um[(0, c_gid)][95] - 1.33 * ( kis_mean[c_gid] - 140.0 )  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
-                        vm[95] = 3.0 - 1.33 * ( kis_mean[c_gid] - 140.0 )  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
+
+                        # vm[95] = um[(0, c_gid)][95] - 1.33 * ( kis_mean[c_gid] - 140.0 )  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
+                        vm[95] = 3.0 - 1.33 * (kis_mean[
+                                                   c_gid] - 140.0)  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
 
                         logging.info(
                             f"------------------------ NDAM FOR METAB: {', '.join(str(i) for i in [vm[22], vm[23], vm[98], vm[95], um[(0, c_gid)][95], kis_mean[c_gid], outs_r_to_met])}"
@@ -407,17 +407,17 @@ def main():
                         error_solver = None
 
                         try:
-                                sol = de.solve(
-                                    prob_metabo,
-                                    de.Rosenbrock23(autodiff=False),
-                                    reltol=1e-8,
-                                    abstol=1e-8,
-                                    saveat=1,
-                                    maxiters=1e6,
-                                )
+                            sol = de.solve(
+                                prob_metabo,
+                                de.Rosenbrock23(autodiff=False),
+                                reltol=1e-8,
+                                abstol=1e-8,
+                                saveat=1,
+                                maxiters=1e6,
+                            )
 
-                                if sol.retcode != "Success":
-                                    print(f"sol.retcode: {sol.retcode}")
+                            if sol.retcode != "Success":
+                                print(f"sol.retcode: {sol.retcode}")
 
                         except Exception as e:
                             prnt.append_to_file(config.err_solver_output, c_gid, rank)
@@ -438,15 +438,15 @@ def main():
                         ]  # 0.5 * 1.2 + 0.5 * um[(idxm + 1, c_gid)][22] #um[(idxm+1,c_gid)][27]
 
                         adpi_weighted_mean = (
-                            atpi_weighted_mean
-                            / 2
-                            * (
-                                -0.92
-                                + np.sqrt(
+                                atpi_weighted_mean
+                                / 2
+                                * (
+                                        -0.92
+                                        + np.sqrt(
                                     0.92 * 0.92
                                     + 4 * 0.92 * (ATDPtot_n / atpi_weighted_mean - 1)
                                 )
-                            )
+                                )
                         )  # 0.5 * 6.3e-3 + 0.5 * um[(idxm + 1, c_gid)][29] # um[(idxm+1,c_gid)][29]
 
                         #                         nao_weighted_mean = 0.5 * 140.0 + 0.5 * (
@@ -454,8 +454,8 @@ def main():
                         #                         )  # 140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
 
                         ko_weighted_mean = (
-                            0.5 * um[(0, c_gid)][95] + 0.5 * um[(idxm + 1, c_gid)][95]
-                            
+                                0.5 * um[(0, c_gid)][95] + 0.5 * um[(idxm + 1, c_gid)][95]
+
                         )  # um[(idxm+1,c_gid)][7]
 
                         #                         nai_weighted_mean = (
@@ -490,25 +490,25 @@ def main():
                         #                                 seg.ki = ki_weighted_mean  # 140
 
                         for seg in neurodamus_utils.gen_segs(
-                            nc, [config.ATP.atpi_var]
+                                nc, [config.ATP.atpi_var]
                         ):
                             seg.atpi = atpi_weighted_mean  # 1.4
 
                         for seg in neurodamus_utils.gen_segs(
-                            nc, [config.ADP.adpi_var]
+                                nc, [config.ADP.adpi_var]
                         ):
                             seg.adpi = (
-                                atpi_weighted_mean
-                                / 2
-                                * (
-                                    -0.92
-                                    + np.sqrt(
+                                    atpi_weighted_mean
+                                    / 2
+                                    * (
+                                            -0.92
+                                            + np.sqrt(
                                         0.92 * 0.92
                                         + 4
                                         * 0.92
                                         * (ATDPtot_n / atpi_weighted_mean - 1)
                                     )
-                                )
+                                    )
                             )  # adpi_weighted_mean  # 0.03
 
                     comm.Barrier()
@@ -526,7 +526,7 @@ def main():
                 bf_manager.get_static_flow()
 
             rss.append(
-                psutil.Process().memory_info().rss / (1024**2)
+                psutil.Process().memory_info().rss / (1024 ** 2)
             )  # memory consumption in MB
 
     ndamus.spike2file(os.getcwd() + '/' + prnt.file_path("out.dat"))

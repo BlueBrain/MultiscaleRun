@@ -35,6 +35,8 @@ setup_steps:
 
 setup_neurodamus_neocortex:
   extends: [.build]
+  needs:
+    - setup_py_neurodamus
   variables:
     SPACK_PACKAGE: neurodamus-neocortex
     SPACK_PACKAGE_SPEC: +ngv+metabolism
