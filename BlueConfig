@@ -7,7 +7,7 @@ Run Default
     CellLibraryFile /gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/data/base_circuit/All/nodes.h5
     MorphologyPath /gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj83/morphologies/fixed_ais_L23PC_20201210/ascii
     MorphologyType asc
-    METypePath /gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj34/sh_ngvm/emodels_atp_scan/emodels_atp_1p4
+    METypePath emodels_atp_1p4_patched
     MEComboInfoFile /gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj83/singlecell/fixed_L6_allBPC_thresholds/mecombo_emodel.tsv
 
     TargetFile ./user.target
@@ -16,8 +16,12 @@ Run Default
     CircuitTarget testNGVSSCX
     RunMode RR
     RNGMode UpdatedMCell
-    Duration 1000
+    Duration 10
     Dt 0.025
+
+    DetailedAxon 0
+    EnableReports 0
+    AutoInit 0
 }
 
 
