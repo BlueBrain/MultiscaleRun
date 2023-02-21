@@ -22,7 +22,7 @@ begintemplate cNAC_L6NGC
 public init, morphology, geom_nseg_fixed, geom_nsec, getCell, getCCell, setCCell, gid, getCell
 public connect2target, clear, ASCIIrpt
 public soma, dend, apic, axon, myelin, getThreshold
-create soma[1], dend[1], apic[1], axon[1], myelin[1]
+create soma[1], dend[1], apic[1], axon[1], stub_axon[1], myelin[1]
 public nSecAll, nSecSoma, nSecApical, nSecBasal, nSecMyelinated, nSecAxonalOrig, nSecAxonal
 public CellRef, synHelperList, synlist
 objref this, CellRef, segCounts, ASCIIrpt, synHelperList, synlist
@@ -65,7 +65,7 @@ $o2.threshold = -30
 }
 
 
-proc init(/* args: morphology_dir, morphology_name */) {
+proc init(/* args: morphology_dir, morphology_name, flags */) {  local keep_axon
 all = new SectionList()
 apical = new SectionList()
 axonal = new SectionList()
@@ -82,6 +82,11 @@ CellRef = this
 forall delete_section()
 
 gid = $1
+keep_axon = 0
+
+if (argtype(4) == 0) {        // we got flags
+    keep_axon = ($4 == 400)  // Specific to avoid mix with other optional args of other models
+}
 
 if(numarg() >= 3) {
 //print $s2, $s3
@@ -93,7 +98,7 @@ load_morphology($s2, "rp110125_L5-2_idA.asc")
 
 geom_nseg()
 indexSections()
-replace_axon()
+if (! keep_axon) { replace_axon() }
 insertChannel()
 biophys()
 re_init_rng()
@@ -178,27 +183,27 @@ this.geom_nsec() //To count all sections
 
 proc insertChannel() {
 forsec this.all {
-insert nakcc
-insert leak
-insert internal_ions
-insert nakpump
-pi0_p_ion = 4.1
-adpi0_adp_ion = 6.3e-3
-atpi0_atp_ion = 1.4
-po0_p_ion = 0
-adpo0_adp_ion = 0
-atpo0_atp_ion = 0
-nai0_na_ion = 10
-cai0_ca_ion = 5e-5
-nao0_na_ion = 140
-cao0_ca_ion = 1.5
-clo0_cl_ion = 130
-cli0_cl_ion = 6
-ko0_k_ion = 5
-ki0_k_ion = 140
+// insert nakcc
+// insert leak
+// insert internal_ions
+// insert nakpump
+// pi0_p_ion = 4.1
+// adpi0_adp_ion = 6.3e-3
+// atpi0_atp_ion = 1.4
+// po0_p_ion = 0
+// adpo0_adp_ion = 0
+// atpo0_atp_ion = 0
+// nai0_na_ion = 10
+// cai0_ca_ion = 5e-5
+// nao0_na_ion = 140
+// cao0_ca_ion = 1.5
+// clo0_cl_ion = 130
+// cli0_cl_ion = 6
+// ko0_k_ion = 5
+// ki0_k_ion = 140
 }
 forsec this.apical {
-insert kcc2
+// insert kcc2
 insert Ca_HVA2
 insert Ca_LVAst
 insert SK_E2
@@ -214,14 +219,14 @@ insert K_Pst
 insert K_Tst
 }
 forsec this.basal {
-insert kcc2
+// insert kcc2
 insert Ca_HVA2
 insert Ca_LVAst
 insert SK_E2
 insert Ih
 }
 forsec this.somatic {
-insert kcc2
+// insert kcc2
 insert Ca_HVA2
 insert Ca_LVAst
 insert SK_E2
@@ -290,26 +295,26 @@ cm = 0.02
 distribute_distance(CellRef.apical, "gIhbar_Ih", "(-0.8696 + 2.087*exp((%.17g)*0.0031))*4.9382200572942972e-06")
 distribute_distance(CellRef.basal, "gIhbar_Ih", "(-0.8696 + 2.087*exp((%.17g)*0.0031))*4.9382200572942972e-06")
 distribute_distance(CellRef.somatic, "gIhbar_Ih", "(-0.8696 + 2.087*exp((%.17g)*0.0031))*4.9382200572942972e-06")
-distribute_distance(CellRef.somatic,"gKCC_kcc2","(0.0 * %g + 1.0)*0.000070000000000")
-distribute_distance(CellRef.apical,"gKCC_kcc2","(0.0 * %g + 1.0)*0.000070000000000")
-distribute_distance(CellRef.basal,"gKCC_kcc2","(0.0 * %g + 1.0)*0.000070000000000")
-distribute_distance(CellRef.all,"g_leak","(0.0 * %g + 1.0)*0.000030000000000")
-distribute_distance(CellRef.axonal,"gNKCC_nakcc","(0.0 * %g + 1.0)*0.000002000000000")
-distribute_distance(CellRef.somatic,"gNKCC_nakcc","(0.0 * %g + 1.0)*0.000002000000000")
-distribute_distance(CellRef.apical,"gNKCC_nakcc","(0.0 * %g + 1.0)*0.000002000000000")
-distribute_distance(CellRef.basal,"gNKCC_nakcc","(0.0 * %g + 1.0)*0.000002000000000")
-distribute_distance(CellRef.axonal,"decay_internal_ions","(0.0 * %g + 1.0)*10.000000000000000")
-distribute_distance(CellRef.axonal,"gamma_internal_ions","(0.0 * %g + 1.0)*0.050000000000000")
-distribute_distance(CellRef.somatic,"decay_internal_ions","(0.0 * %g + 1.0)*10.000000000000000")
-distribute_distance(CellRef.somatic,"gamma_internal_ions","(0.0 * %g + 1.0)*0.050000000000000")
-distribute_distance(CellRef.apical,"decay_internal_ions","(0.0 * %g + 1.0)*15.000000000000000")
-distribute_distance(CellRef.apical,"gamma_internal_ions","(0.0 * %g + 1.0)*0.050000000000000")
-distribute_distance(CellRef.basal,"decay_internal_ions","(0.0 * %g + 1.0)*15.000000000000000")
-distribute_distance(CellRef.basal,"gamma_internal_ions","(0.0 * %g + 1.0)*0.050000000000000")
-distribute_distance(CellRef.axonal,"totalpump_nakpump","(0.0 * %g + 1.0)*0.00000000000400")
-distribute_distance(CellRef.somatic,"totalpump_nakpump","(0.0 * %g + 1.0)*0.000000000000400")
-distribute_distance(CellRef.apical,"totalpump_nakpump","(0.0 * %g + 1.0)*0.00000000000200")
-distribute_distance(CellRef.basal,"totalpump_nakpump","(0.0 * %g + 1.0)*0.00000000000200")
+// distribute_distance(CellRef.somatic,"gKCC_kcc2","(0.0 * %g + 1.0)*0.000070000000000")
+// distribute_distance(CellRef.apical,"gKCC_kcc2","(0.0 * %g + 1.0)*0.000070000000000")
+// distribute_distance(CellRef.basal,"gKCC_kcc2","(0.0 * %g + 1.0)*0.000070000000000")
+// distribute_distance(CellRef.all,"g_leak","(0.0 * %g + 1.0)*0.000030000000000")
+// distribute_distance(CellRef.axonal,"gNKCC_nakcc","(0.0 * %g + 1.0)*0.000002000000000")
+// distribute_distance(CellRef.somatic,"gNKCC_nakcc","(0.0 * %g + 1.0)*0.000002000000000")
+// distribute_distance(CellRef.apical,"gNKCC_nakcc","(0.0 * %g + 1.0)*0.000002000000000")
+// distribute_distance(CellRef.basal,"gNKCC_nakcc","(0.0 * %g + 1.0)*0.000002000000000")
+// distribute_distance(CellRef.axonal,"decay_internal_ions","(0.0 * %g + 1.0)*10.000000000000000")
+// distribute_distance(CellRef.axonal,"gamma_internal_ions","(0.0 * %g + 1.0)*0.050000000000000")
+// distribute_distance(CellRef.somatic,"decay_internal_ions","(0.0 * %g + 1.0)*10.000000000000000")
+// distribute_distance(CellRef.somatic,"gamma_internal_ions","(0.0 * %g + 1.0)*0.050000000000000")
+// distribute_distance(CellRef.apical,"decay_internal_ions","(0.0 * %g + 1.0)*15.000000000000000")
+// distribute_distance(CellRef.apical,"gamma_internal_ions","(0.0 * %g + 1.0)*0.050000000000000")
+// distribute_distance(CellRef.basal,"decay_internal_ions","(0.0 * %g + 1.0)*15.000000000000000")
+// distribute_distance(CellRef.basal,"gamma_internal_ions","(0.0 * %g + 1.0)*0.050000000000000")
+// distribute_distance(CellRef.axonal,"totalpump_nakpump","(0.0 * %g + 1.0)*0.00000000000400")
+// distribute_distance(CellRef.somatic,"totalpump_nakpump","(0.0 * %g + 1.0)*0.000000000000400")
+// distribute_distance(CellRef.apical,"totalpump_nakpump","(0.0 * %g + 1.0)*0.00000000000200")
+// distribute_distance(CellRef.basal,"totalpump_nakpump","(0.0 * %g + 1.0)*0.00000000000200")
 }
 
 func sec_count(/* SectionList */) { local nSec
@@ -361,6 +366,8 @@ nSec += 1
 
 proc replace_axon(){ local nSec, L_chunk, dist, i1, i2, count, L_target, chunkSize, L_real localobj diams, lens
 
+print "REPLACING AXON!"
+
 L_target = 60  // length of stub axon
 nseg0 = 5  // number of segments for each of the two axon sections
 
@@ -408,15 +415,15 @@ break
 }
 
 // get rid of the old axon
-forsec axonal{delete_section()}
-execute1("create axon[2]", CellRef)
+forsec axonal{ delete_section() }
+create stub_axon[2]
 
 L_real = 0
 count = 0
 
 // new axon dependant on old diameters
 for i=0,1{
-access axon[i]
+access stub_axon[i]
 L =  L_target/2
 nseg = nseg_total/2
 
@@ -439,8 +446,8 @@ v(0.0001) = i2
 }
 
 nSecAxonal = 2
-soma[0] connect axon[0](0), 1
-axon[0] connect axon[1](0), 1
+soma[0] connect stub_axon[0](0), 1
+stub_axon[0] connect stub_axon[1](0), 1
 
 create myelin[1]
 access myelin{
@@ -451,7 +458,7 @@ v(0.0001) = i3
 all.append()
 myelinated.append()
 }
-connect myelin(0), axon[1](1)
+connect myelin(0), stub_axon[1](1)
 }
 }
 
