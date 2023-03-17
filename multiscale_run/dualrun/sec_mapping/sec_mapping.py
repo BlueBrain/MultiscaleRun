@@ -48,8 +48,8 @@ def get_sec_mapping_collective_single_mesh(ndamus, mesh, attr1):
     rank = comm.Get_rank()
 
     # Init bounding box
-    n_bbox_min = np.array([float("inf"), float("inf"), float("inf")], dtype=float)
-    n_bbox_max = np.array([-float("inf"), -float("inf"), -float("inf")], dtype=float)
+    n_bbox_min = np.array([np.Inf, np.Inf, np.Inf], dtype=float)
+    n_bbox_max = np.array([-np.Inf, -np.Inf, -np.Inf], dtype=float)
 
     cell_manager = ndamus.circuits.base_cell_manager
 
@@ -125,11 +125,13 @@ def get_sec_mapping_collective_single_mesh(ndamus, mesh, attr1):
             "bounding box Neuron [um] : ",
             n_bbox_min_glo / micrometer2meter,
             n_bbox_max_glo / micrometer2meter,
+            flush=True,
         )
         print(
             "bounding box STEPS [um] : ",
             np.array(s_bbox_min) / micrometer2meter,
             np.array(s_bbox_max) / micrometer2meter,
+            flush=True,
         )
 
         # Should add tolerance to check bounding box
@@ -194,15 +196,16 @@ def get_sec_mapping_collective_partitioned_mesh(ndamus, mesh, attr1):
     with mesh.asLocal():
         s_bbox_min, s_bbox_max = mesh.bbox.min, mesh.bbox.max
 
-    print(
-        f"{rank} bounding box Neuron [um] : ",
-        n_bbox_min / micrometer2meter,
-        n_bbox_max / micrometer2meter,
+    # For small networks, some MPI tasks may get zero neurons. Therefore, the BB seems to span from -inf to inf
+    print(f"{rank} bounding box Neuron [um] : ",
+    n_bbox_min / micrometer2meter,
+    n_bbox_max / micrometer2meter,
+    flush=True,
     )
-    print(
-        f"{rank} bounding box STEPS [um] (local, per rank): ",
-        np.array(s_bbox_min) / micrometer2meter,
-        np.array(s_bbox_max) / micrometer2meter,
+    print(f"{rank} bounding box STEPS [um] (local, per rank): ",
+    np.array(s_bbox_min) / micrometer2meter,
+    np.array(s_bbox_max) / micrometer2meter,
+    flush=True,
     )
 
     # all MPI tasks process all the points/segments (STEPS side - naive approach as a first step)

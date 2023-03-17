@@ -14,6 +14,8 @@ variables:
     value: main
   NEURODAMUS_NEOCORTEX_BRANCH:
     value: main
+  BLOODFLOW_PATH:
+    value: main
 
 spack_setup:
   extends: [.spack_setup_ccache]

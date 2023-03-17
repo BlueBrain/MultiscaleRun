@@ -115,6 +115,14 @@ def main():
         if config.with_bloodflow:
             bf_manager = bloodflow_manager.MsrBloodflowManager(ndamus)
 
+
+            Nmat = neurodamus_utils.get_Nmat(ndamus, ntets, neurSecmap)
+            Mmat = bf_manager.get_Mmat(ntets)
+
+            #TODO use this matrix to connect bloodflow to metab
+            bfin2n = Nmat.tocsc().dot(Mmat.tocsc().transpose())
+            logging.info(f"bloodflow 2 neurons has {bfin2n.count_nonzero()}")
+
     log_stage("===============================================")
     log_stage("Running the selected solvers ...")
 
@@ -293,6 +301,8 @@ def main():
                     log_stage("prepare metabolism param")
                     failed_cells = set()
                     for c_gid, nc in neurodamus_utils.gen_ncs(gid_to_cell):
+                        print(cells_volumes)
+
                         logging.info(f"metabolism, processing c_gid: {c_gid}")
                         outs_r_to_met_factor = config.OUTS_R_TO_MET_FACTOR / (
                                 cells_volumes[c_gid] * SIM_END_coupling_interval

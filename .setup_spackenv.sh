@@ -27,12 +27,14 @@ fi
 if [ -d "spackenv" ]
 then
   echo "spackenv already set"
+  spack env activate -d spackenv
 else
+  echo "create spackenv"
   spack env create -d spackenv
-  sed -i '6 i\  concretization: together' spackenv/spack.yaml
+  spack env activate -d spackenv
+  spack config add concretizer:unify:true
 fi
 export SPACKENV_PATH=${PWD}/spackenv
-spack env activate -d spackenv
 
 if [[ -z "${CI}" ]]
 then
@@ -61,7 +63,10 @@ then
 fi
 
 echo "additional software"
-spack add py-psutil py-bluepysnap py-scipy py-pytest
+#TODO readd py-scipy once https://bbpteam.epfl.ch/project/issues/browse/BSD-330 is solved
+spack add py-psutil py-bluepysnap py-pytest
+
+
 
 spack install
 spack env deactivate

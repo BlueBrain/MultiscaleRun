@@ -6,11 +6,19 @@ from . import utils
 
 import logging
 import numpy as np
+from scipy.sparse import dok_matrix
 
 import os
 
 import config
 
+
+def gen_p3d_segs(nc):
+    for sec in nc.CCell.all:
+        if not sec.n3d():
+            continue
+        for seg in sec.allseg():
+            yield seg
 
 def get_cell_volumes(ndamus):
     return {
@@ -27,6 +35,22 @@ def get_cell_areas(ndamus):
         )
         for nc in ndamus.circuits.base_cell_manager.cells
     }
+
+
+def get_Nmat(ndamus, ntets, neurSecmap):
+    """ Nmat is a n_neuron_segments X n_tets sparse matrix. neuron segment area fraction per tet"""
+
+    nn = len(ndamus.circuits.base_cell_manager.cells)
+
+    Nmat = dok_matrix((nn, ntets))
+    for inc, nc in enumerate(neurSecmap):
+        for sec, tet2fraction_map in nc:
+            for seg, tet2fraction in zip(sec.allseg(), tet2fraction_map):
+                if tet2fraction:
+                    for tet, fract in tet2fraction:
+                        Nmat[inc, tet] += fract * seg.area()
+
+    return Nmat
 
 
 def release_sums(release):

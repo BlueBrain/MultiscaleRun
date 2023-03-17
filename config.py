@@ -315,8 +315,7 @@ def get_GLY_a_and_mito_vol_frac(c_gid):
 
 # paths
 bloodflow_path = load_from_env("BLOODFLOW_PATH", "bloodflow_src")
-bloodflow_params_path = os.path.join(bloodflow_path, "examples/data/params.yaml")
-
+bloodflow_params_path = os.path.join(os.getcwd(), "bloodflow_params.yaml")
 
 def print_config():
     if MPI_RANK == 0:
@@ -342,3 +341,11 @@ def print_config():
     """,
             flush=True,
         )
+
+
+##############################################
+# Conversion factors
+##############################################
+
+
+micrometer2meter = 1e-6

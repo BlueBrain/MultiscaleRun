@@ -1,0 +1,26 @@
+dataset: 'nodes'
+#dataset: 'rat_somatosensory_cortex_sonata'
+#dataset: 'ML20200201_full_point_vasc_cc'
+
+data_folder: '/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/sonata/networks/nodes/vasculature/'
+#data_folder: './data/sonata_graphs/'
+#data_folder: '/gpfs/bbp.cscs.ch/project/proj137/Mouse_vasculature_datasets/Full_graphs/sonata/'
+
+output_folder: 'output'
+
+n_workers: 1
+
+compliance: 4.05 # total arterial compliance in µl/(g.µm^-1.s^-2)^-1
+#vascular_resistance: 5.60e-8 # total systemic vascular resistance in g.(µm.s.µl)^-1
+blood_density: 1.024e-12 # plasma density in g.µm^-3
+blood_viscosity: 1.2e-6 # plasma viscosity in g.µm^-1.s^-1
+
+depth_ratio: 0.05  # 0.05 Portion of the vasculature where there are inputs, corresponds to the y-axis.
+max_nb_inputs: 3 # maximum number of inputs to inject flow/pressure into vasculature. Should be > 1.
+min_subgraph_size: 100 # number of connected nodes to filter sub-graph for input with enough nodes
+max_capillaries_diameter: 7. # 7., 4.9 mean, 2 for example and 3.5 for the biggest vasculature (µm)
+
+edge_scale: 2.
+node_scale: 20.
+
+p_min: 1.e-10
