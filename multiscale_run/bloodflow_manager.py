@@ -30,6 +30,7 @@ from bloodflow.entry_nodes import create_entry_nodes
 from bloodflow.report_writer import write_simulation_report
 from bloodflow.utils import set_edge_data
 from bloodflow.vtk_io import vtk_writer
+from bloodflow.PetscBinaryIO import get_conf
 
 import config
 
@@ -40,6 +41,13 @@ MPI_SIZE = MPI_COMM.Get_size()
 
 class MsrBloodflowManager:
     def __init__(self, ndamus):
+
+        # Sanity check!
+        import petsc4py
+        from petsc4py import PETSc
+        _, _, complexscalars = get_conf()
+        assert complexscalars, "* Use PETSc with complex number support *"
+
         self.ndamus = ndamus
 
         with open(config.bloodflow_params_path) as f:

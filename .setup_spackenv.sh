@@ -20,8 +20,8 @@ then
   spack load /${PY_NEURODAMUS_INSTALLED_HASH}
   echo "ndam neocortex from CI"
   spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
-  echo "steps from CI"
-  spack load /${STEPS_INSTALLED_HASH}
+  echo "load steps"
+  module load steps-complex/5.0.0a
 fi
 
 if [ -d "spackenv" ]
@@ -53,19 +53,23 @@ then
   spack add neurodamus-neocortex@develop+ngv+metabolism
 
   echo "add steps"
-  if [[ -z "${STEPS_BRANCH}" ]]
+  if [ "${STEPS_USE_MODULE}" -eq 1 ]
   then
-    export STEPS_BRANCH=master
+    module load steps-complex/5.0.0a
+  else
+    if [[ -z "${STEPS_BRANCH}" ]]
+    then
+      export STEPS_BRANCH=master
+    fi
+    lazy_clone HBP_STEPS git@github.com:CNS-OIST/HBP_STEPS.git $STEPS_BRANCH $UPDATE_STEPS
+    spack add steps@develop ^petsc+complex+int64+mpi
+    spack develop -p ${PWD}/HBP_STEPS --no-clone steps@develop
   fi
-  lazy_clone HBP_STEPS git@github.com:CNS-OIST/HBP_STEPS.git $STEPS_BRANCH $UPDATE_STEPS
-  spack add steps@develop
-  spack develop -p ${PWD}/HBP_STEPS --no-clone steps@develop
 fi
 
 echo "additional software"
 #TODO readd py-scipy once https://bbpteam.epfl.ch/project/issues/browse/BSD-330 is solved
 spack add py-psutil py-bluepysnap py-pytest
-
 
 
 spack install

@@ -19,6 +19,7 @@ export NEURODAMUS_NEOCORTEX_BRANCH=main
 
 export STEPS_BRANCH=master
 export UPDATE_STEPS=1
+export STEPS_USE_MODULE=1
 
 source .setup_bloodflow.sh
 source .setup_spackenv.sh
@@ -26,4 +27,3 @@ source .setup_python_venv.sh
 source .setup_julia.sh
 
 export OMP_NUM_THREADS=1
-
