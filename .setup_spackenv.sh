@@ -16,8 +16,6 @@ module load unstable gcc intel-oneapi-compilers hpe-mpi
 if [[ -n "${CI}" ]]
 then
   module load git
-  echo "ndam py from CI"
-  spack load /${PY_NEURODAMUS_INSTALLED_HASH}
   echo "ndam neocortex from CI"
   spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
   echo "load steps"

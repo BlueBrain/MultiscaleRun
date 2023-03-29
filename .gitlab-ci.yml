@@ -29,16 +29,9 @@ spack_setup:
 
 setup_neurodamus_neocortex:
   extends: [.build]
-  needs:
-    - setup_py_neurodamus
   variables:
     SPACK_PACKAGE: neurodamus-neocortex
     SPACK_PACKAGE_SPEC: +ngv+metabolism
-
-setup_py_neurodamus:
-  extends: [.build]
-  variables:
-    SPACK_PACKAGE: py-neurodamus
 
 .custom_build:
   stage: build
@@ -68,7 +61,6 @@ setup_spackenv:
   extends: [.custom_build]
   needs:
     - setup_neurodamus_neocortex
-    - setup_py_neurodamus
   variables:
     setup_file: .setup_spackenv.sh
     envvars: "envvars=(SPACKENV_PATH)"
@@ -101,7 +93,6 @@ setup_julia:
     - setup_julia
     - setup_python_venv
     - setup_neurodamus_neocortex
-    - setup_py_neurodamus
     - setup_bloodflow
   variables:
     bb5_exclusive: "full"
