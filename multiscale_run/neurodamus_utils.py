@@ -25,7 +25,7 @@ def get_cell_volumes(ndamus):
         int(nc.CCell.gid): sum(
             [val.volume() for sublist in nc.CCell.all for val in sublist.allseg()]
         )
-        for nc in ndamus.circuits.base_cell_manager.cells
+        for nc in ndamus.circuits.get_node_manager("All").cells
     }
 
 def get_cell_areas(ndamus):
@@ -33,14 +33,14 @@ def get_cell_areas(ndamus):
         int(nc.CCell.gid): sum(
             [val.area() for sublist in nc.CCell.all for val in sublist.allseg()]
         )
-        for nc in ndamus.circuits.base_cell_manager.cells
+        for nc in ndamus.circuits.get_node_manager("All").cells
     }
 
 
 def get_Nmat(ndamus, ntets, neurSecmap):
     """ Nmat is a n_neuron_segments X n_tets sparse matrix. neuron segment area fraction per tet"""
 
-    nn = len(ndamus.circuits.base_cell_manager.cells)
+    nn = len(ndamus.circuits.get_node_manager("All").cells)
 
     Nmat = dok_matrix((nn, ntets))
     for inc, nc in enumerate(neurSecmap):

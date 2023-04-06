@@ -45,8 +45,7 @@ def main():
     with timeit(name="initialization"):
 
         ndamus = Neurodamus(
-            config.blueconfig_path,
-            enable_reports=False,
+            config.sonata_path,
             logging_level=None,
             enable_coord_mapping=True,
             cleanup_atexit=False,
@@ -98,15 +97,15 @@ def main():
             logging.info(f"get volumes")
             cells_volumes = neurodamus_utils.get_cell_volumes(ndamus)
             gid_to_cell = {
-                int(nc.CCell.gid): nc for nc in ndamus.circuits.base_cell_manager.cells
+                int(nc.CCell.gid): nc for nc in ndamus.circuits.get_node_manager("All").cells
             }
-
             all_needs = comm.reduce(
                 {rank: set(gid_to_cell.keys())},
                 op=utils.join_dict,
                 root=0,
             )
             if rank == 0:
+                assert len([val for sublist in all_needs.values() for val in sublist]) > 0
                 all_needs.pop(0)
 
             ATDPtot_n = metabolism_utils.load_metabolism_data(Main)
@@ -122,6 +121,7 @@ def main():
             #TODO use this matrix to connect bloodflow to metab
             bfin2n = Nmat.tocsc().dot(Mmat.tocsc().transpose())
             logging.info(f"bloodflow 2 neurons has {bfin2n.count_nonzero()}")
+
 
     log_stage("===============================================")
     log_stage("Running the selected solvers ...")
@@ -224,7 +224,7 @@ def main():
                     )
                     for sgid, v in all_outs_r_gaba.items():
                         prnt.append_to_file(
-                            config.outs_glut_file_output, [idxm, sgid, v]
+                            config.outs_gaba_file_output, [idxm, sgid, v]
                         )
 
                     comm.Barrier()
@@ -298,31 +298,16 @@ def main():
                             )
                     comm.Barrier()
 
-                    log_stage("prepare metabolism param")
+
+                    log_stage(f"prepare metabolism param, len(c_gid) = {len(gid_to_cell)}")
+                    print(gid_to_cell)
                     failed_cells = set()
                     for c_gid, nc in neurodamus_utils.gen_ncs(gid_to_cell):
                         print(cells_volumes)
 
                         logging.info(f"metabolism, processing c_gid: {c_gid}")
-                        outs_r_to_met_factor = config.OUTS_R_TO_MET_FACTOR / (
-                                cells_volumes[c_gid] * SIM_END_coupling_interval
-                        )  # mM/ms
 
-                        if c_gid in config.exc_target_gids:
-                            outs_r_to_met = outs_r_to_met_factor * outs_r_glu.get(
-                                c_gid, 0.0
-                            )
-                            glutamatergic_gaba_scaling = 0.1
-                        elif c_gid in config.inh_target_gids:
-                            outs_r_to_met = outs_r_to_met_factor * outs_r_gaba.get(
-                                c_gid, 0.0
-                            )
-                            glutamatergic_gaba_scaling = 1.0
-                        else:
-                            prnt.append_to_file(
-                                config.wrong_gids_testing_file, c_gid, rank
-                            )
-                            continue
+
                         GLY_a, mito_scale = config.get_GLY_a_and_mito_vol_frac(c_gid)
 
                         # u0 = [-65.0, config.m0, *u0fromFile]
@@ -369,7 +354,7 @@ def main():
                                                    c_gid] - 140.0)  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
 
                         logging.info(
-                            f"------------------------ NDAM FOR METAB: {', '.join(str(i) for i in [vm[22], vm[23], vm[98], vm[95], um[(0, c_gid)][95], kis_mean[c_gid], outs_r_to_met])}"
+                            f"------------------------ NDAM FOR METAB: {', '.join(str(i) for i in [vm[22], vm[23], vm[98], vm[95], um[(0, c_gid)][95], kis_mean[c_gid]])}"
                         )
 
                         # Katta: "Polina suggested the following asserts as rule of thumb. In this way we detect
@@ -391,8 +376,6 @@ def main():
                             ina_density[c_gid],
                             ik_density[c_gid],
                             mito_scale,
-                            glutamatergic_gaba_scaling,
-                            outs_r_to_met,
                         ]
 
                         prob_metabo = de.ODEProblem(metabolism, vm, tspan_m, param)
@@ -533,7 +516,7 @@ def main():
 
             if (steps % config.dt_nrn2dt_bf == 0) and config.with_bloodflow:
                 bf_manager.sync(ndamus)
-                bf_manager.get_static_flow()
+                bf_manager.update_static_flow()
 
             rss.append(
                 psutil.Process().memory_info().rss / (1024 ** 2)

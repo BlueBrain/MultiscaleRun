@@ -1,6 +1,6 @@
 function metabolism!(du,u,p,t)
     
-    ina_density,ik_density,mito_scale,glutamatergic_gaba_scaling,outs_r_to_met  = @. p 
+    ina_density,ik_density,mito_scale  = @. p
     
 #     Pi_n0 = 20.0;  Pi_a0 = 20.0
 #     vV0 = 0.0237 # ml global_par_Compartment_9 0.02396 - in pdf # 0.0237 # - in Winter2017 matlab file  # 0.02 in Jolivet2015

@@ -117,7 +117,7 @@ pytests:
       - RESULTS/*
     expire_in: 3 days
   variables:
-    blueconfig_path: BlueConfig
+    sonata_path: simulation_config.json
     mesh_path: steps_meshes/mc2c/mc2c.msh
   script:
     - source .ci/load.sh

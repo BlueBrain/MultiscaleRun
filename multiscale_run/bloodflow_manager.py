@@ -35,9 +35,11 @@ from bloodflow.PetscBinaryIO import get_conf
 import config
 
 from mpi4py import MPI as MPI4PY
+
 MPI_COMM = MPI4PY.COMM_WORLD
 MPI_RANK = MPI_COMM.Get_rank()
 MPI_SIZE = MPI_COMM.Get_size()
+
 
 class MsrBloodflowManager:
     def __init__(self, ndamus):
@@ -57,7 +59,8 @@ class MsrBloodflowManager:
 
         # MPI_RANK == 0 has the graph
         if self.graph:
-            tmp = [self.graph.node_properties.x.to_numpy(), self.graph.node_properties.y.to_numpy(), self.graph.node_properties.z.to_numpy()]
+            tmp = [self.graph.node_properties.x.to_numpy(), self.graph.node_properties.y.to_numpy(),
+                   self.graph.node_properties.z.to_numpy()]
             tmp = np.array(tmp).transpose()
 
             self.v_bbox_min = tmp.min(axis=0)
@@ -77,7 +80,7 @@ class MsrBloodflowManager:
         self.get_input_flow()
 
         # Dictionary with keys the tet ids and entries vectors of triplets of blood vessel section_id, segment_id & intersection ratio
-        #self.tet_vasc_map = {}
+        # self.tet_vasc_map = {}
         # Dictionary with keys tuples of blood vessel section_id, segment_id and entries vectors of tets & intersection ratio
         self.vasc_tet_map = {}
         self.build_tetrahedra_vasculature_mapping()
@@ -86,7 +89,7 @@ class MsrBloodflowManager:
         def logs(*args, **kwargs):
             start = time.perf_counter()
             foo(*args, **kwargs)
-            mem = psutil.Process().memory_info().rss / 1024**2
+            mem = psutil.Process().memory_info().rss / 1024 ** 2
             logging.info(f"Memory in use: {mem}")
             stop = time.perf_counter()
             logging.info(f"stop stopwatch. Time passed: {stop - start}")
@@ -111,7 +114,7 @@ class MsrBloodflowManager:
         # According to the PETSc approach
         if MPI_RANK == 0:
             vasculature_path = self.get_manager(ndamus).circuit_conf["VasculaturePath"]
-            
+
             # Check consistency across configuration files
             h5_file = PurePath(self.params["data_folder"], self.params["dataset"] + ".h5")
             assert str(vasculature_path) == str(h5_file)
@@ -136,7 +139,7 @@ class MsrBloodflowManager:
         logging.info("end of input flow")
 
     @_logs
-    def get_static_flow(self):
+    def update_static_flow(self):
         logging.info("compute static flow")
         bloodflow.update_static_flow_pressure(self.graph, self.input_flow)
         logging.info("end of static flow pressure")
@@ -200,29 +203,29 @@ class MsrBloodflowManager:
             # be used (otherwise it hangs, i.e. if called by only one rank -MPI deadlock-).
             steps_mesh_whole = (TetMesh.LoadGmsh(path_to_whole_mesh, scale=1e-6))
 
-            start_node_coords = self.graph.node_properties.iloc[self.graph.edge_properties.loc[:, 'start_node']].to_numpy()[:,:3]
-            end_node_coords = self.graph.node_properties.iloc[self.graph.edge_properties.loc[:, 'end_node']].to_numpy()[:,:3]
-            
+            start_node_coords = self.graph.node_properties.iloc[
+                                    self.graph.edge_properties.loc[:, 'start_node']].to_numpy()[:, :3]
+            end_node_coords = self.graph.node_properties.iloc[self.graph.edge_properties.loc[:, 'end_node']].to_numpy()[
+                              :, :3]
+
             pts = np.empty((start_node_coords.shape[0] + end_node_coords.shape[0], 3), dtype=float)
             pts[0::2] = start_node_coords
             pts[1::2] = end_node_coords
-            pts *= config.micrometer2meter # Vasculature in um
+            pts *= config.micrometer2meter  # Vasculature in um
 
             res = steps_mesh_whole.intersectIndependentSegments(pts)
-
 
             num_segs = len(start_node_coords)
             for i in range(num_segs):
                 section_id = int(self.graph.edge_properties.iloc[i].section_id)
                 segment_id = int(self.graph.edge_properties.iloc[i].segment_id)
 
-                #for tet, rat in res[i]:
+                # for tet, rat in res[i]:
                 #    self.tet_vasc_map.setdefault(tet.idx, []).append((section_id, segment_id, rat))
-                
+
                 self.vasc_tet_map[(section_id, segment_id)] = [(tet.idx, rat) for tet, rat in res[i]]
 
         self.vasc_tet_map = MPI_COMM.bcast(self.vasc_tet_map, root=0)
-
 
     def get_Mmat(self, ntets):
         """ Nmat is a n_neuron_segments X n_tets sparse matrix. neuron segment area fraction per tet"""

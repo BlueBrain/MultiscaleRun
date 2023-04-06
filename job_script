@@ -27,7 +27,7 @@ source ./setup.sh
 
 #export results_path=RESULTS/STEPS4
 
-#export blueconfig_path=BlueConfig
+#export sonata_path=simulation_config.json
 
 #export steps_version=3
 #export steps_mesh_path=steps_meshes/mc2c/mc2c.msh
