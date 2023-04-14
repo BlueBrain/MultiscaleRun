@@ -48,7 +48,7 @@ def get_Nmat(ndamus, ntets, neurSecmap):
             for seg, tet2fraction in zip(sec.allseg(), tet2fraction_map):
                 if tet2fraction:
                     for tet, fract in tet2fraction:
-                        Nmat[inc, tet] += fract * seg.area()
+                        Nmat[inc, tet] += fract
 
     return Nmat
 

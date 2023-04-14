@@ -114,13 +114,14 @@ def main():
         if config.with_bloodflow:
             bf_manager = bloodflow_manager.MsrBloodflowManager(ndamus)
 
-
             Nmat = neurodamus_utils.get_Nmat(ndamus, ntets, neurSecmap)
-            Mmat = bf_manager.get_Mmat(ntets)
+            Mmat_flow = bf_manager.get_Mmat_flow(ntets)
+            Mmat_vol = bf_manager.get_Mmat_vol(ntets)
+            Tmat = steps_utils.get_Tmat(tetVol)
 
-            #TODO use this matrix to connect bloodflow to metab
-            bfin2n = Nmat.tocsc().dot(Mmat.tocsc().transpose())
-            logging.info(f"bloodflow 2 neurons has {bfin2n.count_nonzero()}")
+            bf2n_flow = Nmat.dot(Tmat).dot(Mmat_flow)
+            bf2n_vol = Nmat.dot(Tmat).dot(Mmat_vol)
+
 
 
     log_stage("===============================================")
@@ -517,6 +518,12 @@ def main():
             if (steps % config.dt_nrn2dt_bf == 0) and config.with_bloodflow:
                 bf_manager.sync(ndamus)
                 bf_manager.update_static_flow()
+                if rank == 0:
+                    bf_Fin = bf2n_flow.dot(bf_manager.graph.edge_properties["flow"].to_numpy())
+                    bf_vol = bf2n_vol.dot(bf_manager.graph.edge_properties.volume.to_numpy())
+                    print("TODO connect this to metab")
+                    print("Fin per gid:", bf_Fin)
+                    print("blood vol per gid:", bf_vol)
 
             rss.append(
                 psutil.Process().memory_info().rss / (1024 ** 2)

@@ -14,6 +14,7 @@ from steps.utils import *
 import config
 
 import multiscale_run.dualrun.sec_mapping.sec_mapping as sec_mapping
+from scipy.sparse import diags
 
 from . import utils
 
@@ -105,3 +106,10 @@ def init_steps(ndamus):
     )
 
     return steps_sim, neurSecmap, ntets, global_inds, index, tetVol
+
+def get_Tmat(tetVol):
+    tetVol= tetVol.astype(float)
+    mean = np.mean(tetVol)
+
+    return diags(np.reciprocal(tetVol) * mean)
+

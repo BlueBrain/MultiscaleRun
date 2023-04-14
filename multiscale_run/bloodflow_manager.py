@@ -227,15 +227,35 @@ class MsrBloodflowManager:
 
         self.vasc_tet_map = MPI_COMM.bcast(self.vasc_tet_map, root=0)
 
-    def get_Mmat(self, ntets):
-        """ Nmat is a n_neuron_segments X n_tets sparse matrix. neuron segment area fraction per tet"""
+    def get_Mmat_flow(self, ntets):
+        """ Mmat is a n_neuron_segments X n_tets sparse matrix. neuron segment area fraction per tet
+
+        flows has 1s for all the entry segments
+        """
 
         nsegs = len(self.vasc_tet_map)
-        Mmat = dok_matrix((nsegs, ntets))
+        Mmat = dok_matrix((ntets, nsegs))
 
         for i, v in enumerate(self.vasc_tet_map.values()):
-            l = v if i in self.entry_nodes else v[1:]
-            for tet, _ in l:
-                Mmat[i, tet] = 1
+            if len(v) and i in self.entry_nodes:
+                Mmat[v[0][0], i] = 1
+
+            for tet, ratio in v[1:]:
+                Mmat[tet, i] = 1
+
+        return Mmat
+
+    def get_Mmat_vol(self, ntets):
+        """ Mmat is a n_neuron_segments X n_tets sparse matrix. neuron segment area fraction per tet
+
+        flows has 1s for all the entry segments
+        """
+
+        nsegs = len(self.vasc_tet_map)
+        Mmat = dok_matrix((ntets, nsegs))
+
+        for i, v in enumerate(self.vasc_tet_map.values()):
+            for tet, ratio in v:
+                Mmat[tet, i] = ratio
 
         return Mmat
