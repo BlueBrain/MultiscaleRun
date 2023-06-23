@@ -12,8 +12,18 @@ variables:
     value: main
   NEURODAMUS_NEOCORTEX_BRANCH:
     value: main
-  BLOODFLOW_PATH:
-    value: main
+  # this it taken into account only if STEPS_USE_MODULE==0
+  STEPS_BRANCH:
+    value: master
+  STEPS_USE_MODULE:
+    value: 0
+
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - when: always
 
 spack_setup:
   extends: [.spack_setup_ccache]
@@ -27,11 +37,21 @@ spack_setup:
     bb5_cpus_per_task: 8 # ninja -j {this}
     bb5_memory: 76G # ~16*384/80
 
+setup_steps:
+  extends: [.build]
+  variables:
+    SPACK_PACKAGE: steps
+    SPACK_PACKAGE_SPEC: ^petsc+complex+int64+mpi
+  rules:
+    - if: $STEPS_USE_MODULE == "0" && $CI_PIPELINE_SOURCE == "merge_request_event"
+
 setup_neurodamus_neocortex:
   extends: [.build]
   variables:
     SPACK_PACKAGE: neurodamus-neocortex
-    SPACK_PACKAGE_SPEC: +ngv+metabolism
+    # TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
+    # SPACK_PACKAGE_SPEC: +ngv+metabolism
+    SPACK_PACKAGE_SPEC: +ngv+metabolism%intel ^neuron%intel
 
 .custom_build:
   stage: build
@@ -61,6 +81,7 @@ setup_spackenv:
   extends: [.custom_build]
   needs:
     - setup_neurodamus_neocortex
+    - setup_steps
   variables:
     setup_file: .setup_spackenv.sh
     envvars: "envvars=(SPACKENV_PATH)"
@@ -76,6 +97,7 @@ setup_python_venv:
     envvars: "envvars=(PYTHON_VENV_PATH)"
     envfile: python_venv_envs
 
+
 setup_julia:
   extends: [.custom_build]
   needs:
@@ -85,6 +107,11 @@ setup_julia:
     setup_file: .setup_julia.sh
     envvars: "envvars=(JULIA_DEPOT_PATH JULIA_PROJECT)"
     envfile: julia_envs
+  cache:
+    - key: julia_cache3
+      paths: 
+        - ${JULIA_DEPOT_PATH}
+        - ${JULIA_PROJECT}
 
 .test:
   stage: test
@@ -93,6 +120,7 @@ setup_julia:
     - setup_julia
     - setup_python_venv
     - setup_neurodamus_neocortex
+    - setup_steps
     - setup_bloodflow
   variables:
     bb5_exclusive: "full"
@@ -104,8 +132,13 @@ setup_julia:
 pytests:
   extends: [.test]
   script:
+  # this hangs if called on the folder
     - source .ci/load.sh
-    - pytest pytests
+    - python -mpytest tests/pytests/test_bloodflow.py
+    - python -mpytest tests/pytests/test_metabolism.py
+    - python -mpytest tests/pytests/test_neurodamus.py
+    - python -mpytest tests/pytests/test_steps.py
+    - python -mpytest tests/pytests/test_utils.py
 
 .nrun_test:
   extends: [.test]
@@ -123,15 +156,44 @@ pytests:
     - source .ci/load.sh
     - .ci/test.sh
 
-dualrun_test:
-  extends: [.nrun_test]
-  timeout: 2 hours
+integration_tests:
+  extends: [.test]
+  timeout: 10 minutes
   variables:
-    bb5_duration: "01:00:00"
-    bb5_ntasks: 16
+    bb5_duration: "00:10:00"
+    bb5_ntasks: 2
+    sonata_path: simulation_config.json
+    mesh_path: steps_meshes/mc2c/split_2/mc2c
+  script:
+    - source .ci/load.sh
+    - rm -rf cache && srun --overlap -n 2 python tests/integration_tests/test_connect_ndam2steps.py
+    - rm -rf cache && srun --overlap -n 2 python tests/integration_tests/test_ndam2steps_sync.py
+
+.dualrun_test:
+  extends: [.nrun_test]
+  timeout: 4 hours
+  variables:
     with_steps: 1
     with_metabolism: 0
     with_bloodflow: 0
+
+dualrun_test_n1:
+  extends: [.dualrun_test]
+  variables:
+    bb5_duration: "04:00:00"
+    bb5_ntasks: 1
+
+dualrun_test_n2:
+  extends: [.dualrun_test]
+  variables:
+    bb5_duration: "02:00:00"
+    bb5_ntasks: 2
+
+dualrun_test_n16:
+  extends: [.dualrun_test]
+  variables:
+    bb5_duration: "01:00:00"
+    bb5_ntasks: 16
 
 triplerun_test:
   extends: [.nrun_test]

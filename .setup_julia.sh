@@ -11,17 +11,19 @@ echo
 
 source $PYTHON_VENV_PATH/bin/activate
 
-module load unstable julia
+module load unstable
+module load julia
 
 export JULIA_DEPOT_PATH=${PWD}/.julia
 export JULIA_PROJECT=${PWD}/julia_environment
 
-if [ -d ".julia" ]
+if [ -d ${JULIA_DEPOT_PATH} ]
 then
   echo "julia packages already set"
 else
-  echo "setup julia"
-  mkdir .julia
+  echo "julia not found. Set up"
+  mkdir ${JULIA_DEPOT_PATH}
+
   if [ -d ${JULIA_PROJECT} ]
   then
     julia -e 'using Pkg; Pkg.instantiate(; verbose=true)'
@@ -35,3 +37,5 @@ else
     julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
   fi
 fi
+
+

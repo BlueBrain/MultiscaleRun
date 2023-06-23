@@ -2,12 +2,12 @@
 
 #SBATCH --job-name="mr_sjob"
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=32
+#SBATCH --ntasks-per-node=2
 
 #SBATCH --account=proj40
 #SBATCH --partition=prod
 #SBATCH --constraint=cpu
-#SBATCH --time=1:30:00
+#SBATCH --time=4:00:00
 
 #SBATCH --cpus-per-task=2
 #SBATCH --exclusive
@@ -18,7 +18,7 @@
 # add your favourite steps branch or leave it empty for master
 #export steps_branch=master
 
-source ./setup.sh
+echo "Y" | source setup.sh
 
 # parameters
 #export with_steps=1
@@ -29,28 +29,8 @@ source ./setup.sh
 
 #export sonata_path=simulation_config.json
 
-#export steps_version=3
 #export steps_mesh_path=steps_meshes/mc2c/mc2c.msh
 
 #export BLOODFLOW_PATH=bloodflow_src
-#special_path=special # uncomment this to override which special you want to use
 
-if [[ -z "${special_path}" ]]
-then
-  if [ -d "x86_64" ]
-  then
-    echo "use custom special"
-    special_path=x86_64/special
-  else
-
-    special_path=special
-  fi
-fi
-
-# Our approach is to map 1 core per MPI task.
-# Therefore, this strategy is not compatible with multi-threading.
-export JULIA_NUM_THREADS=1
-
-echo "special_path="$special_path
-
-time srun dplace $special_path -mpi -python main.py
+time srun --overlap dplace python main.py

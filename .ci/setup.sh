@@ -8,9 +8,12 @@ set -e
 
 . ${SPACK_ROOT}/share/spack/setup-env.sh
 source .utils.sh
-pushd $CI_BUILDS_DIR
-source molsys/multiscale_run/$setup_file
-popd
+
+export STARTING_DIR=${PWD}
+echo "STARTING_DIR=${STARTING_DIR}"
+ls -la
+
+source $setup_file
 
 echo "Put envvars variables in " $envfile.env
 # this is a trick because gitlab ci does not support array variables
@@ -19,6 +22,7 @@ eval $envvars
 for str in ${envvars[@]}; do
   eval temp=\$$str
   echo ${str}=${temp} >> ${envfile}.env
+  echo ${str}=${temp}
 done
 echo "Done"
 

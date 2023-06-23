@@ -17,12 +17,12 @@ class MsrPrinter:
     def file_path(self, file):
         return os.path.join(self.results_path, file)
 
-    def append_to_file(self, file, values, rank=None):
+    def append_to_file(self, file, values, rank=None, keys=[]):
         if rank is None:
             rank = 0
         else:
             file, ext = os.path.splitext(file)
-            file =  f"{file}_rank{rank}{ext}"
+            file = f"{file}_rank{rank}{ext}"
 
         if MPI4PY.COMM_WORLD.Get_rank() != rank:
             return
@@ -35,5 +35,7 @@ class MsrPrinter:
 
         if file not in self.files:
             self.files[file] = open(self.file_path(file), "a")
+            if len(keys):
+                self.files[file].write(keys)
 
         self.files[file].write(values)

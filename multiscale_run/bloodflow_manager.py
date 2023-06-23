@@ -1,15 +1,16 @@
 from vasculatureapi import PointVasculature
 
 import pickle
-import time
 import logging
+from collections import defaultdict
 import pandas as pd
 import numpy as np
-from scipy.sparse import dok_matrix
+from scipy import sparse
 import yaml
-import psutil
 from pathlib import Path
 from pathlib import PurePath
+
+from . import utils
 
 import neurodamus
 import libsonata
@@ -23,7 +24,6 @@ from steps.sim import *
 from steps.utils import *
 
 from bloodflow import bloodflow
-from bloodflow import utils
 from bloodflow.entry_nodes import METHODS
 from bloodflow.entry_nodes import compute_impedance_matrix
 from bloodflow.entry_nodes import create_entry_nodes
@@ -36,226 +36,133 @@ import config
 
 from mpi4py import MPI as MPI4PY
 
-MPI_COMM = MPI4PY.COMM_WORLD
-MPI_RANK = MPI_COMM.Get_rank()
-MPI_SIZE = MPI_COMM.Get_size()
+comm = MPI4PY.COMM_WORLD
+rank, size = comm.Get_rank(), comm.Get_size()
 
 
 class MsrBloodflowManager:
-    def __init__(self, ndamus):
-
+    def __init__(self, vasculature_path, params):
+        logging.info("init MsrBloodflowManager")
         # Sanity check!
         import petsc4py
         from petsc4py import PETSc
+
         _, _, complexscalars = get_conf()
         assert complexscalars, "* Use PETSc with complex number support *"
 
-        self.ndamus = ndamus
+        self.params = params
 
-        with open(config.bloodflow_params_path) as f:
-            self.params = yaml.full_load(f)
-
-        self.load_circuit(ndamus)
-
-        # MPI_RANK == 0 has the graph
-        if self.graph:
-            tmp = [self.graph.node_properties.x.to_numpy(), self.graph.node_properties.y.to_numpy(),
-                   self.graph.node_properties.z.to_numpy()]
-            tmp = np.array(tmp).transpose()
-
-            self.v_bbox_min = tmp.min(axis=0)
-            self.v_bbox_max = tmp.max(axis=0)
-
-            print(
-                "bounding box Vasculature [um] : ",
-                self.v_bbox_min,
-                self.v_bbox_max,
-                flush=True,
-            )
-        else:
-            self.v_bbox_min = None
-            self.v_bbox_max = None
+        self.graph = None
+        if rank == 0:
+            self.load_circuit(vasculature_path)
 
         self.get_entry_nodes()
         self.get_input_flow()
 
-        # Dictionary with keys the tet ids and entries vectors of triplets of blood vessel section_id, segment_id & intersection ratio
-        # self.tet_vasc_map = {}
-        # Dictionary with keys tuples of blood vessel section_id, segment_id and entries vectors of tets & intersection ratio
-        self.vasc_tet_map = {}
-        self.build_tetrahedra_vasculature_mapping()
+    @utils.logs_decorator
+    def get_seg_points(self, scale):
+        """Get a series disjoint segments described by the extreme points
 
-    def _logs(foo):
-        def logs(*args, **kwargs):
-            start = time.perf_counter()
-            foo(*args, **kwargs)
-            mem = psutil.Process().memory_info().rss / 1024 ** 2
-            logging.info(f"Memory in use: {mem}")
-            stop = time.perf_counter()
-            logging.info(f"stop stopwatch. Time passed: {stop - start}")
+        return: np.array(2*n_segments, 3)
+        """
+        if self.graph is None:
+            return np.array([])
 
-        return logs
+        start_node_coords = self.graph.node_properties.iloc[
+            self.graph.edge_properties.loc[:, "start_node"]
+        ].to_numpy()[:, :3]
+        end_node_coords = self.graph.node_properties.iloc[
+            self.graph.edge_properties.loc[:, "end_node"]
+        ].to_numpy()[:, :3]
+        pts = np.empty(
+            (start_node_coords.shape[0] + end_node_coords.shape[0], 3), dtype=float
+        )
+        pts[0::2] = start_node_coords
+        pts[1::2] = end_node_coords
+        pts *= scale  # we assume same scaling factor as the mesh
 
-    @_logs
+        return pts
+
+    def get_flows(self):
+        """Flow in each segment"""
+        return self.graph.edge_properties["flow"].to_numpy()
+
+    def get_vols(self):
+        """Volume in each segment"""
+        return self.graph.edge_properties.volume.to_numpy()
+
+    @utils.cache_decorator(
+        path=config.cache_path,
+        is_save=config.cache_save,
+        is_load=config.cache_load,
+        only_rank0=False,
+        field_names="entry_nodes",
+    )
+    @utils.logs_decorator
     def get_entry_nodes(self):
-        logging.info("compute entry nodes")
-        self.entry_nodes = create_entry_nodes(self.graph, self.params, method=METHODS.ERB_pairs)
+        """Bloodflow input nodes"""
+        # old_entry_nodes: [1039324, 919494, 589795]
+        self.entry_nodes = np.array(
+            create_entry_nodes(self.graph, self.params, method=METHODS.ERB_pairs)
+        )
         logging.info(f"entry nodes: {self.entry_nodes}")
 
-    @staticmethod
-    def get_manager(ndamus):
-        return ndamus.circuits.get_edge_manager(
-            "vasculature", "astrocytes", neurodamus.ngv.GlioVascularManager
+    @utils.logs_decorator
+    def load_circuit(self, vasculature_path):
+        # According to the PETSc approach
+
+        self.graph = PointVasculature.load_sonata(vasculature_path)
+
+        set_edge_data(self.graph)
+        self.graph.edge_properties.index = pd.MultiIndex.from_frame(
+            self.graph.edge_properties.loc[:, ["section_id", "segment_id"]]
         )
 
-    @_logs
-    def load_circuit(self, ndamus):
-        logging.info("loading circuit : vasculature")
-        # According to the PETSc approach
-        if MPI_RANK == 0:
-            vasculature_path = self.get_manager(ndamus).circuit_conf["VasculaturePath"]
-
-            # Check consistency across configuration files
-            h5_file = PurePath(self.params["data_folder"], self.params["dataset"] + ".h5")
-            assert str(vasculature_path) == str(h5_file)
-
-            self.graph = PointVasculature.load_sonata(vasculature_path)
-            set_edge_data(self.graph)
-            self.graph.edge_properties.index = pd.MultiIndex.from_frame(
-                self.graph.edge_properties.loc[:, ["section_id", "segment_id"]]
-            )
-        else:
-            self.graph = None
-        logging.info("end loading circuit : vasculature")
-
-    @_logs
+    @utils.logs_decorator
     def get_input_flow(self):
-        logging.info("compute input flow")
+        """ apply the input_v to entry nodes """
+
         self.input_flow = bloodflow.get_input_flow(
             self.graph,
             input_nodes=self.entry_nodes,
-            input_flows=len(self.entry_nodes) * [1.0],
+            input_flows=[self.params["input_v"]]*len(self.entry_nodes),
         )
-        logging.info("end of input flow")
 
-    @_logs
+    @utils.logs_decorator
     def update_static_flow(self):
-        logging.info("compute static flow")
+        """Given graph and input update flows and volumes for the quasi-static computation"""
         bloodflow.update_static_flow_pressure(self.graph, self.input_flow)
-        logging.info("end of static flow pressure")
 
-    @_logs
-    def sync(self, ndamus):
-        logging.info("syncing")
-        manager = self.get_manager(ndamus)
-        astro_ids = manager._astro_ids
+    @utils.logs_decorator
+    def set_radii(self, vasc_ids, radii):
+        """
+        Here we want to set the radii of the vasculature sections identified by
+        vasc_ids. The problem stems from the fact that in theory we could have repeating
+        indexes in vasc_ids. What radii do we set in that case?
+        
+        We assume that the astrocytes operate in series. Every astrocyte gets to control
+        a subpart of the segment of length l/n where n is the number of astrocytes
+        that act on the this particular segment. 
 
-        def get_vasc_ids(astro_id):
-            endfeet = manager._gliovascular.afferent_edges(astro_id)
-            astrocyte = manager._cell_manager.gid2cell[astro_id + manager._gid_offset]
-            if astrocyte.endfeet is None:
-                return []
-            if MPI_RANK == 0:
-                return self.graph.edge_properties.index[
-                    manager._gliovascular.source_nodes(endfeet)
-                ]
-            else:
-                return []
+        We want to maintain the same volume so:
 
-        def get_radii(astro_id):
-            astrocyte = manager._cell_manager.gid2cell[astro_id + manager._gid_offset]
-            if astrocyte.endfeet is None:
-                return []
-            return [sec(0.5).vascouplingB.Rad for sec in astrocyte.endfeet]
+        V_r_eq = V_r0 + V_r1 + ...
 
-        vasc_ids = [id for astro_id in astro_ids for id in get_vasc_ids(astro_id)]
-        radii = [r for astro_id in astro_ids for r in get_radii(astro_id)]
-
-        if MPI_RANK == 0:
-            self.graph.edge_properties.loc[vasc_ids, "radius"] = radii
-        logging.info("end syncing")
-
-    @_logs
-    def build_tetrahedra_vasculature_mapping(self):
-        # Only MPI task 0 will build the mapping between neurons and blood vessels/vasculature!
-        # Keep in mind that MPI task 0 holds the graph
-        # Once it is done, we broadcast the map
-        if MPI_RANK == 0:
-            # Make sure that we read the whole mesh
-            path_to_whole_mesh = config.steps_mesh_path
-            if config.steps_version == 4 and 'split' in config.steps_mesh_path:
-                path = Path(config.steps_mesh_path)
-                # Emulate this kind of dir hierarchy -> https://github.com/CNS-OIST/STEPS4ModelRelease/tree/main/caBurst/mesh
-                # twice because we give the mesh and not the folder
-                parent = path.parent.parent
-                files_list = [str(i) for i in list(parent.iterdir()) if i.is_file() and i.suffix == '.msh']
-
-                while len(files_list) == 0:
-                    parent = parent.parent
-                    files_list = [str(i) for i in list(parent.iterdir()) if i.is_file() and i.suffix == '.msh']
-
-                path_to_whole_mesh = files_list[0]
-
-            # The whole tet mesh and not the partitioned (use of the intersect method from STEPS3)
-            # Since vasculature network/graph is handled by MPI rank 0, the STEPS intersect method should be called
-            # only from MPI rank 0. Therefore, we need to load the whole mesh from rank 0 only!
-            # The DistMesh (STEPS4) must be called by all ranks and for this reason, the STEPS4 interface cannot
-            # be used (otherwise it hangs, i.e. if called by only one rank -MPI deadlock-).
-            steps_mesh_whole = (TetMesh.LoadGmsh(path_to_whole_mesh, scale=1e-6))
-
-            start_node_coords = self.graph.node_properties.iloc[
-                                    self.graph.edge_properties.loc[:, 'start_node']].to_numpy()[:, :3]
-            end_node_coords = self.graph.node_properties.iloc[self.graph.edge_properties.loc[:, 'end_node']].to_numpy()[
-                              :, :3]
-
-            pts = np.empty((start_node_coords.shape[0] + end_node_coords.shape[0], 3), dtype=float)
-            pts[0::2] = start_node_coords
-            pts[1::2] = end_node_coords
-            pts *= config.micrometer2meter  # Vasculature in um
-
-            res = steps_mesh_whole.intersectIndependentSegments(pts)
-
-            num_segs = len(start_node_coords)
-            for i in range(num_segs):
-                section_id = int(self.graph.edge_properties.iloc[i].section_id)
-                segment_id = int(self.graph.edge_properties.iloc[i].segment_id)
-
-                # for tet, rat in res[i]:
-                #    self.tet_vasc_map.setdefault(tet.idx, []).append((section_id, segment_id, rat))
-
-                self.vasc_tet_map[(section_id, segment_id)] = [(tet.idx, rat) for tet, rat in res[i]]
-
-        self.vasc_tet_map = MPI_COMM.bcast(self.vasc_tet_map, root=0)
-
-    def get_Mmat_flow(self, ntets):
-        """ Mmat is a n_neuron_segments X n_tets sparse matrix. neuron segment area fraction per tet
-
-        flows has 1s for all the entry segments
+            r_eq = sqrt(\sum_n r_i^2/n)
         """
 
-        nsegs = len(self.vasc_tet_map)
-        Mmat = dok_matrix((ntets, nsegs))
+        def eq_radii(v):
+            v = np.array(v)
+            """compute x from: 1/x^2 = \sum_n 1/(n*r_i^2)"""
+            return np.sqrt(v.dot(v)/len(v))
 
-        for i, v in enumerate(self.vasc_tet_map.values()):
-            if len(v) and i in self.entry_nodes:
-                Mmat[v[0][0], i] = 1
+        vasc_ids = [self.graph.edge_properties.index[i] for i in vasc_ids]
 
-            for tet, ratio in v[1:]:
-                Mmat[tet, i] = 1
+        # I did not find a more pythonic way of doing this. I am open to suggestions
+        d = defaultdict(list)
+        for k, v in zip(vasc_ids, radii):
+            d[k].append(v)
 
-        return Mmat
-
-    def get_Mmat_vol(self, ntets):
-        """ Mmat is a n_neuron_segments X n_tets sparse matrix. neuron segment area fraction per tet
-
-        flows has 1s for all the entry segments
-        """
-
-        nsegs = len(self.vasc_tet_map)
-        Mmat = dok_matrix((ntets, nsegs))
-
-        for i, v in enumerate(self.vasc_tet_map.values()):
-            for tet, ratio in v:
-                Mmat[tet, i] = ratio
-
-        return Mmat
+        d = {k: eq_radii(v) for k, v in d.items()}
+        # without interventions, d.keys() and d.values() are ordered in the samw way
+        self.graph.edge_properties.loc[list(d.keys()), "radius"] = list(d.values())

@@ -28,29 +28,15 @@ else
   git clone --recursive $repo $folder
   pushd $folder
   git checkout $branch
+  git status
   popd
 fi
 }
 
-# run and record results (mainly for the CI)
-ms_run () {
-  export results_path=./RESULTS/STEPS$1/
-  export steps_version=$1
-  echo "*******************************************************************************"
-  echo " *** STEPS$1 run *** "
-  echo "*******************************************************************************"
-  srun --overlap -n $bb5_ntasks dplace special -mpi -python main.py
 
-  echo "*******************************************************************************"
-  echo " *** Jupyter notebook *** "
-  echo "*******************************************************************************"
-  module load py-notebook
-
-  # execute the jupyter notebook and save the output as html file
-  jupyter-nbconvert \
-  --execute \
-  --to html \
-  --no-input \
-  --output-dir=$results_path \
-  postproc.ipynb
+set_default () {
+  var=$1
+  if [[ -z "${!var}" ]]; then
+    export $1=$2
+  fi
 }

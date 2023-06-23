@@ -10,16 +10,18 @@ echo
 echo "   ### spack env and additional repos"
 echo
 
-# Pramod's suggestion: `gcc` before `intel-oneapi-compilers`
-module load unstable gcc intel-oneapi-compilers hpe-mpi
+module load unstable
+module load gcc 
+module load intel-oneapi-compilers 
+module load hpe-mpi
 
 if [[ -n "${CI}" ]]
 then
   module load git
   echo "ndam neocortex from CI"
   spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
-  echo "load steps"
-  module load steps-complex/5.0.0a
+  
+
 fi
 
 if [ -d "spackenv" ]
@@ -37,10 +39,7 @@ export SPACKENV_PATH=${PWD}/spackenv
 if [[ -z "${CI}" ]]
 then
   echo "add ndam py"
-  if [[ -z "${PY_NEURODAMUS_BRANCH}" ]]
-  then
-    export PY_NEURODAMUS_BRANCH=main
-  fi
+
   lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH $UPDATE_NEURODAMUS
   # hack to remove the links to proj12 for the people that do not have access. Discussion in [BBPBGLIB-973]
   rm py-neurodamus/tests/simulations/v5_gapjunctions/gap_junctions
@@ -48,17 +47,25 @@ then
   spack develop -p ${PWD}/py-neurodamus --no-clone py-neurodamus@develop
 
   echo "add ndam neocortex"
-  spack add neurodamus-neocortex@develop+ngv+metabolism
+  # TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
+  # spack add neurodamus-neocortex@develop+ngv+metabolism
+  spack add neurodamus-neocortex@develop+ngv+metabolism%intel ^neuron%intel
+  
 
-  echo "add steps"
-  if [ "${STEPS_USE_MODULE}" -eq 1 ]
+
+fi
+
+if [ "${STEPS_USE_MODULE}" -eq 1 ]
+then
+  echo "steps from module"
+  module load steps-complex/5.0.0a
+else
+  if [[ -n "${CI}" ]]
   then
-    module load steps-complex/5.0.0a
+    echo "steps from CI"
+    spack load /${STEPS_INSTALLED_HASH}
   else
-    if [[ -z "${STEPS_BRANCH}" ]]
-    then
-      export STEPS_BRANCH=master
-    fi
+    echo "custom build steps"
     lazy_clone HBP_STEPS git@github.com:CNS-OIST/HBP_STEPS.git $STEPS_BRANCH $UPDATE_STEPS
     spack add steps@develop ^petsc+complex+int64+mpi
     spack develop -p ${PWD}/HBP_STEPS --no-clone steps@develop
@@ -66,8 +73,8 @@ then
 fi
 
 echo "additional software"
-#TODO readd py-scipy once https://bbpteam.epfl.ch/project/issues/browse/BSD-330 is solved
-spack add py-psutil py-bluepysnap py-pytest
+# TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
+spack add py-psutil py-bluepysnap ^neuron%intel py-pytest
 
 
 spack install

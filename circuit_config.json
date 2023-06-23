@@ -20,7 +20,8 @@
                     "astrocytes": {
                         "type": "astrocyte",
                         "morphologies_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/morphologies/astrocytes/h5",
-                        "biophysical_neuron_models_dir": "/gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj62/NGV/emodels"
+                        "biophysical_neuron_models_dir": "/gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj62/NGV/emodels",
+                        "microdomains_file": "PLACEHOLDER"
                     }
                 }
             },
@@ -28,7 +29,9 @@
                 "nodes_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/sonata/networks/nodes/vasculature/nodes.h5",
                 "populations": {
                     "vasculature": {
-                        "type": "vasculature"
+                        "type": "vasculature",
+                        "vasculature_file": "PLACEHOLDER",
+                        "vasculature_mesh": "PLACEHOLDER"
                     }
                 }
             }
@@ -54,7 +57,8 @@
                 "edges_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/sonata/networks/edges/gliovascular/edges.h5",
                 "populations": {
                     "gliovascular": {
-                        "type": "endfoot"
+                        "type": "endfoot",
+                        "endfeet_meshes_file" : "PLACEHOLDER"
                     }
                 }
             }

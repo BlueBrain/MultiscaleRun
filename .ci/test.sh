@@ -2,26 +2,35 @@
 
 set -e
 
-if [[ $nrun -eq 2 ]]
-then
-  sed -i 's/StimulusInject pInj/#StimulusInject pInj/g' $blueconfig_path
-fi
+export results_path=./RESULTS/
+echo "*******************************************************************************"
+echo " *** main.py run *** "
+echo "*******************************************************************************"
+srun --overlap -n $bb5_ntasks python main.py
 
-source .utils.sh
+echo "*******************************************************************************"
+echo " *** Jupyter notebook *** "
+echo "*******************************************************************************"
+module load py-notebook
 
-ms_run 3
-ms_run 4
+# execute the jupyter notebook and save the output as html file
+jupyter-nbconvert \
+--execute \
+--to html \
+--no-input \
+--output-dir=$results_path \
+postproc.ipynb
 
 echo "*******************************************************************************"
 echo " *** pytest *** "
 echo "*******************************************************************************"
 if [[ $nrun -eq 2 ]]
 then
-  pytest -v .ci/test_dualrun_results.py
+  pytest -mpytest -v tests/test_dualrun.py
 elif [[ $nrun -eq 3 ]]
 then
-  pytest -v .ci/test_triplerun_results.py
+  python -mpytest -v tests/test_triplerun.py
 elif [[ $nrun -eq 4 ]]
 then
-  pytest -v .ci/test_triplerun_results.py
+  pytest -mpytest -v tests/test_triplerun.py
 fi

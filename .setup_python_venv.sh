@@ -8,8 +8,8 @@
 echo
 echo "   ### python-venv"
 echo
-
-module load unstable python julia gcc hpe-mpi
+module load unstable
+module load python julia gcc hpe-mpi petsc-complex 
 
 export PYTHON_VENV_PATH=${PWD}/python-venv
 if [ -d "python-venv" ]
@@ -20,11 +20,6 @@ else
   python -m venv python-venv
   source python-venv/bin/activate
   python -m pip install --upgrade pip
-
-  # Blood Flow Solver-related
-  # deactivate pip install petsc & petsc4py, use module instead!
-  sed -i 's/"petsc"/#"petsc"/g' $BLOODFLOW_PATH/setup.py
-  sed -i 's/"petsc4py"/#"petsc4py"/g' $BLOODFLOW_PATH/setup.py
 fi
 
 pip install diffeqpy julia
