@@ -18,7 +18,10 @@ echo "   ### setup"
 echo "   It is suggested to allocate a node if it is the first time you run this script!"
 echo
 
-
+export HTTP_PROXY="http://bbpproxy.epfl.ch:80/"
+export HTTPS_PROXY="http://bbpproxy.epfl.ch:80/"
+export http_proxy="http://bbpproxy.epfl.ch:80/"
+export https_proxy="http://bbpproxy.epfl.ch:80/"
 
 module purge
 git pull

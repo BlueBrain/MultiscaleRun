@@ -74,7 +74,7 @@ fi
 
 echo "additional software"
 # TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
-spack add py-psutil py-bluepysnap ^neuron%intel py-pytest
+spack add py-psutil py-bluepysnap ^neuron%intel py-pytest py-jupyterlab
 
 
 spack install
