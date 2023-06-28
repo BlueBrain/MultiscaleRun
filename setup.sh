@@ -50,5 +50,3 @@ source .setup_julia.sh
 # Therefore, this strategy is not compatible with multi-threading.
 set_default OMP_NUM_THREADS 1
 export JULIA_NUM_THREADS=1
-
-

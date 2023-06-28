@@ -1,4 +1,4 @@
-from vasculatureapi import PointVasculature
+from vascpy import PointVasculature
 
 import pickle
 import logging
@@ -23,14 +23,8 @@ from steps.saving import *
 from steps.sim import *
 from steps.utils import *
 
-from bloodflow import bloodflow
-from bloodflow.entry_nodes import METHODS
-from bloodflow.entry_nodes import compute_impedance_matrix
-from bloodflow.entry_nodes import create_entry_nodes
-from bloodflow.report_writer import write_simulation_report
-from bloodflow.utils import set_edge_data
-from bloodflow.vtk_io import vtk_writer
-from bloodflow.PetscBinaryIO import get_conf
+from astrovascpy import bloodflow
+from astrovascpy.utils import set_edge_data, create_entry_largest_nodes
 
 import config
 
@@ -43,12 +37,6 @@ rank, size = comm.Get_rank(), comm.Get_size()
 class MsrBloodflowManager:
     def __init__(self, vasculature_path, params):
         logging.info("init MsrBloodflowManager")
-        # Sanity check!
-        import petsc4py
-        from petsc4py import PETSc
-
-        _, _, complexscalars = get_conf()
-        assert complexscalars, "* Use PETSc with complex number support *"
 
         self.params = params
 
@@ -57,7 +45,7 @@ class MsrBloodflowManager:
             self.load_circuit(vasculature_path)
 
         self.get_entry_nodes()
-        self.get_input_flow()
+        self.get_boundary_flows()
 
     @utils.logs_decorator
     def get_seg_points(self, scale):
@@ -101,16 +89,11 @@ class MsrBloodflowManager:
     @utils.logs_decorator
     def get_entry_nodes(self):
         """Bloodflow input nodes"""
-        # old_entry_nodes: [1039324, 919494, 589795]
-        self.entry_nodes = np.array(
-            create_entry_nodes(self.graph, self.params, method=METHODS.ERB_pairs)
-        )
+        self.entry_nodes = create_entry_largest_nodes(self.graph, self.params)
         logging.info(f"entry nodes: {self.entry_nodes}")
 
     @utils.logs_decorator
     def load_circuit(self, vasculature_path):
-        # According to the PETSc approach
-
         self.graph = PointVasculature.load_sonata(vasculature_path)
 
         set_edge_data(self.graph)
@@ -119,19 +102,18 @@ class MsrBloodflowManager:
         )
 
     @utils.logs_decorator
-    def get_input_flow(self):
+    def get_boundary_flows(self):
         """ apply the input_v to entry nodes """
 
-        self.input_flow = bloodflow.get_input_flow(
-            self.graph,
-            input_nodes=self.entry_nodes,
-            input_flows=[self.params["input_v"]]*len(self.entry_nodes),
-        )
+        input_flows = None
+        if self.entry_nodes is not None:
+            input_flows=[self.params["input_v"]]*len(self.entry_nodes)
+        self.boundary_flows = bloodflow.boundary_flows_A_based(graph=self.graph, entry_nodes=self.entry_nodes, input_flows=input_flows)
 
     @utils.logs_decorator
     def update_static_flow(self):
         """Given graph and input update flows and volumes for the quasi-static computation"""
-        bloodflow.update_static_flow_pressure(self.graph, self.input_flow)
+        bloodflow.update_static_flow_pressure(self.graph, self.boundary_flows)
 
     @utils.logs_decorator
     def set_radii(self, vasc_ids, radii):

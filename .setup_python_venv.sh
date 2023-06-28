@@ -9,7 +9,7 @@ echo
 echo "   ### python-venv"
 echo
 module load unstable
-module load python julia gcc hpe-mpi petsc-complex 
+module load python julia gcc hpe-mpi petsc
 
 export PYTHON_VENV_PATH=${PWD}/python-venv
 if [ -d "python-venv" ]
@@ -28,11 +28,11 @@ pip install diffeqpy julia
 echo "   ### python-venv : Blood Flow Solver setup"
 pushd $BLOODFLOW_PATH
 
-module load petsc-complex
-module load py-petsc4py-complex
+module load petsc
+module load py-petsc4py
 
 # Run it every time to account for any changes we introduce to the solver
-pip install --index-url https://bbpteam.epfl.ch/repository/devpi/bbprelman/dev/+simple/ -e .
+pip install -e .
 
 # Backend solver/library for the linear systems [BFS : Blood Flow Solver]
 # petsc or scipy

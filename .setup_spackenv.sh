@@ -20,8 +20,6 @@ then
   module load git
   echo "ndam neocortex from CI"
   spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
-  
-
 fi
 
 if [ -d "spackenv" ]
@@ -50,15 +48,12 @@ then
   # TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
   # spack add neurodamus-neocortex@develop+ngv+metabolism
   spack add neurodamus-neocortex@develop+ngv+metabolism%intel ^neuron%intel
-  
-
-
 fi
 
 if [ "${STEPS_USE_MODULE}" -eq 1 ]
 then
   echo "steps from module"
-  module load steps-complex/5.0.0a
+  module load steps/5.0.0a
 else
   if [[ -n "${CI}" ]]
   then
@@ -67,7 +62,7 @@ else
   else
     echo "custom build steps"
     lazy_clone HBP_STEPS git@github.com:CNS-OIST/HBP_STEPS.git $STEPS_BRANCH $UPDATE_STEPS
-    spack add steps@develop ^petsc+complex+int64+mpi
+    spack add steps@develop ^petsc+int64+mpi
     spack develop -p ${PWD}/HBP_STEPS --no-clone steps@develop
   fi
 fi

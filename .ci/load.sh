@@ -10,13 +10,13 @@ module load gcc
 module load intel-oneapi-compilers 
 module load hpe-mpi
 
-module load julia petsc-complex py-petsc4py-complex
+module load julia petsc py-petsc4py
 
 spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
 if [ "${STEPS_USE_MODULE}" -eq 1 ]
 then
   echo "steps from module"
-  module load steps-complex/5.0.0a
+  module load steps/5.0.0a
 else
   echo "steps from CI"
   spack load /${STEPS_INSTALLED_HASH}

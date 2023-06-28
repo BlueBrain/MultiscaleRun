@@ -258,6 +258,7 @@ bloodflow_params = {
     "node_scale": 20.0,
     "p_min": 1.0e-10,
     "input_v": 3.5e4, # input velocity. The input flow depends on the area
+    "vasc_axis": 1,  # vasculature axis corresponding to x, y, or z. Should be set to 0, 1, or 2.
 }
 
 

@@ -37,5 +37,3 @@ else
     julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
   fi
 fi
-
-
