@@ -260,12 +260,14 @@ class MsrNeurodamusManager:
         to_be_removed = [isegs for isegs in gen_to_be_removed_segs()]
         if conn_m is not None:
             conn_m.delete_rows("nsegXtetMat", to_be_removed)
+            conn_m.delete_cols("nXnsegMatBool", to_be_removed)
 
         to_be_removed = [
             inc
             for inc, nc in enumerate(self.ncs)
             if int(nc.CCell.gid) in self.removed_gids.keys()
         ]
+
         if conn_m is not None:
             conn_m.delete_rows("nXtetMat", to_be_removed)
             conn_m.delete_rows("nXnsegMatBool", to_be_removed)

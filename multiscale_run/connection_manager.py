@@ -84,6 +84,11 @@ class MsrConnectionManager:
         attr = getattr(self, m)
         setattr(self, m, utils.delete_rows_csr(attr, to_be_removed))
 
+    def delete_cols(self, m, to_be_removed):
+        """We need to remove rows in case of failed neurons"""
+        attr = getattr(self, m)
+        setattr(self, m, utils.delete_cols_csr(attr, to_be_removed))
+
     def ndam2steps_sync(self, ndam_m, steps_m, specs, DT):
         """use ndam to correct steps concentrations"""
         for s in specs:

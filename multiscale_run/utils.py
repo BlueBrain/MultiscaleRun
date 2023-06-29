@@ -116,6 +116,19 @@ def delete_rows_csr(mat, indices):
     mask[indices] = False
     return mat[mask]
 
+def delete_cols_csr(mat, indices):
+    """
+    Remove the rows denoted by ``indices`` form the CSR sparse matrix ``mat``.
+    """
+    if not isinstance(mat, sparse.csr_matrix):
+        raise ValueError(
+            f"works only for CSR format -- use .tocsr() first. Current type: {type(mat)}"
+        )
+    
+    all_cols = np.arange(mat.shape[1])
+    cols_to_keep = np.where(np.logical_not(np.in1d(all_cols, indices)))[0]
+    return mat[:, cols_to_keep]
+
 
 def rank_print(*args, **kwargs):
     print(f"rank {comm.Get_rank()}:", *args, **kwargs, flush=True)
