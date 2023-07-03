@@ -167,13 +167,13 @@ class MsrConnectionManager:
 
     def metab2ndam_sync(self, metab_m, ndam_m, i_metab):
         """metab concentrations for ndam"""
-
+            
         if len(ndam_m.ncs) == 0:
             return
 
         # u stands for Julia ODE var and m stands for metabolism
         atpi_weighted_mean = np.array(
-            [metab_m.um[(i_metab + 1, int(nc.CCell.gid))][22] for nc in ndam_m.ncs]
+            [metab_m.um[(i_metab + 1, int(nc.CCell.gid))][config.metab_vm_indexes["atpn"]] for nc in ndam_m.ncs]
         )  # 1.4
         # 0.5 * 1.2 + 0.5 * um[(idxm + 1, c_gid)][22] #um[(idxm+1,c_gid)][27]
 
@@ -189,7 +189,7 @@ class MsrConnectionManager:
         #                             140.0 - 1.33 * (um[(idxm + 1, c_gid)][6] - 10.0)
         #                         )  # 140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
 
-        ko_weighted_mean = np.array([metab_m.vm[95]] * len(ndam_m.ncs))  # 5
+        ko_weighted_mean = np.array([metab_m.vm[config.metab_vm_indexes["ko"]]] * len(ndam_m.ncs))  # 5
         #                         nai_weighted_mean = (
         #                             0.5 * 10.0 + 0.5 * um[(idxm + 1, c_gid)][6]
         #                         )  # 0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #um[(idxm+1,c_gid)][6]

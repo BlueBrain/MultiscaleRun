@@ -66,6 +66,16 @@
             "end_time": 2000.0,
             "file_name": "NaConcAllCmps.h5"
         },
+        "KConcAllCmps": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "ki",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "KConcAllCmps.h5"
+        },
         "ATPConcAllCmps": {
             "cells": "testNGVSSCX",
             "type": "compartment",

@@ -86,7 +86,7 @@ OUTS_R_TO_MET_FACTOR = 4000.0 * 1e3 / (AVOGADRO * 1e-15)
 # these dts are multiples of ndam dt. To get the full dt you need to multiply by DT
 n_DT_steps_per_update = {}
 if with_steps:
-   n_DT_steps_per_update["steps"] = 100
+    n_DT_steps_per_update["steps"] = 100
 
 if with_metabolism:
     n_DT_steps_per_update["metab"] = 10 if mr_debug else 4000
@@ -96,8 +96,6 @@ if with_bloodflow:
 
 # the multiscale run update happens with the largest DT that syncs everything else
 n_DT_steps_per_update["mr"] = np.gcd.reduce(list(n_DT_steps_per_update.values()))
-
-
 
 
 class Mesh:
@@ -165,20 +163,29 @@ class Volsys:
 ##############################################
 # Triplerun related
 ##############################################
-
+metabolism_type = ["cns", "main"][0]  # CHOOSE HERE FOR METABOLISM VERSION
 
 # paths
 metabolism_path = "metabolismndam_reduced"
 path_to_metab_jl = os.path.join(metabolism_path, "sim/metabolism_unit_models")
 
 # files
-julia_code_file_name = "metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl"  # "metabolism_model_21nov22_withEphysCurrNdam_noSB.jl" #"metabolism_model_21nov22_noEphys_noSB.jl","metabolism_model_21nov22_withEphysNoCurrNdam_noSB.jl",
+match metabolism_type:
+    case "cns":
+        julia_code_file_name = "met4cns.jl"  # < reduced for CNS
+        u0_file = os.path.join(path_to_metab_jl, "u0_Calv_ATP_1p4_Nai10.csv")
+        metab_vm_indexes = {"atpn": 28, "adpn": 30, "nai": 7, "ko": 8}
+    case "main":
+        julia_code_file_name = "metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl"  # <main met
+        u0_file = os.path.join(
+            path_to_metab_jl, "u0steady_22nov22.csv"
+        )  # file created from /gpfs/bbp.cscs.ch/project/proj34/metabolismndam/optimiz_unit/enzymes/enzymes_preBigg/COMBO/MODEL_17Nov22.ipynb
+        metab_vm_indexes = {"atpn": 22, "adpn": 23, "nai": 98, "ko": 95}
+
+
 julia_code_file = os.path.join(
     path_to_metab_jl, julia_code_file_name
 )  # file created based on /gpfs/bbp.cscs.ch/project/proj34/metabolismndam/optimiz_unit/enzymes/enzymes_preBigg/COMBO/MODEL_17Nov22.ipynb
-u0_file = os.path.join(
-    path_to_metab_jl, "u0steady_22nov22.csv"
-)  # file created from /gpfs/bbp.cscs.ch/project/proj34/metabolismndam/optimiz_unit/enzymes/enzymes_preBigg/COMBO/MODEL_17Nov22.ipynb
 
 
 ins_glut_file_output = f"dis_ins_r_glut_{timestr}.csv"
@@ -257,7 +264,7 @@ bloodflow_params = {
     "edge_scale": 2.0,
     "node_scale": 20.0,
     "p_min": 1.0e-10,
-    "input_v": 3.5e4, # input velocity. The input flow depends on the area
+    "input_v": 3.5e4,  # input velocity. The input flow depends on the area
     "vasc_axis": 1,  # vasculature axis corresponding to x, y, or z. Should be set to 0, 1, or 2.
 }
 

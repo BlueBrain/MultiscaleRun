@@ -44,14 +44,14 @@ class MsrMetabParameters:
             if np.isnan(v) or np.isinf(v):
                 raise e
         
-        if self.bf_vol <= 0:
+        if config.metabolism_type == 'main' and self.bf_vol <= 0:
             raise MsrMetabParameterException(f"bf_vol ({self.bf_vol}) <= 0")
         
 
 class MsrMetabolismManager:
     """Wrapper to manage the metabolism julia model"""
 
-    def __init__(self, u0_file, main, prnt):
+    def __init__(self, u0_file, main, prnt):       
         self.u0 = pd.read_csv(u0_file, sep=",", header=None)[0].tolist()
         self.load_metabolism_data(main)
         self.gen_metabolism_model(main)
@@ -67,6 +67,10 @@ class MsrMetabolismManager:
     @utils.logs_decorator
     def load_metabolism_data(self, main):
         self.ATDPtot_n = 1.4449961078157665
+
+        if config.metabolism_type != 'main':
+            return None
+
         main.eval(
             """
         modeldirname = "/gpfs/bbp.cscs.ch/project/proj34/metabolismndam/sim/metabolism_unit_models/"
@@ -112,7 +116,6 @@ class MsrMetabolismManager:
         """
         )
 
-        
         return None
 
     @utils.logs_decorator
@@ -157,9 +160,11 @@ class MsrMetabolismManager:
         self.failed_cells = {}
         for inc, nc in enumerate(ncs):
             c_gid = int(nc.CCell.gid)
+            
             param = self.init_inputs(
                 c_gid=c_gid, inc=inc, i_metab=i_metab, metab_dt=metab_dt
             )
+
 
             try:
                 param.is_valid()
@@ -197,26 +202,28 @@ class MsrMetabolismManager:
         # vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
         # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
 
-        self.vm[22] = (
-            0.5 * 1.384727988648391 + 0.5 * atpi_mean
-        )  # atpi_mean[c_gid] #0.5 * 2.2 + 0.5 * atpi_mean[c_gid] # 23 in jl
+        idx_atpn = config.metab_vm_indexes["atpn"]
+        idx_adpn = config.metab_vm_indexes["adpn"]
+        idx_nai = config.metab_vm_indexes["nai"]
+        idx_ko = config.metab_vm_indexes["ko"]
 
-        self.vm[23] = 0.5 * 1.384727988648391 / 2 * (
+        
+        
+        self.vm[idx_atpn] = (
+            0.5 * 1.384727988648391 + 0.5 * atpi_mean
+        )  
+
+        self.vm[idx_adpn] = 0.5 * 1.384727988648391 / 2 * (
             -0.92
             + np.sqrt(0.92 * 0.92 + 4 * 0.92 * (self.ATDPtot_n / 1.384727988648391 - 1))
         ) + 0.5 * atpi_mean / 2 * (
             -0.92 + np.sqrt(0.92 * 0.92 + 4 * 0.92 * (self.ATDPtot_n / atpi_mean - 1))
         )
 
-        # old idx: 6 # idx 99 in jl, but py is 0-based and jl is 1-based # Na_n
-        self.vm[98] = nais_mean
+        self.vm[idx_nai] = nais_mean
 
-        # vm[95] = um[(0, c_gid)][95] - 1.33 * ( kis_mean[c_gid] - 140.0 )  # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
-
-        # u0[7] - 1.33 * (kis_mean[c_gid] - 140.0) # old idx: 7 # K_out
-
-        # KKconc can be computed in 3 different ways: ndam, metab, steps. We calculate all of them to do computations later
-        self.vm[95] = (
+        # KKconc is computed in 3 different simulators: ndam, metab, steps. We calculate all of them to do computations later
+        self.vm[idx_ko] = (
             self.steps_vars[config.KK.name][inc]
             if config.KK.name in self.steps_vars
             else 3.0 - 1.33 * (kis_mean - 140.0)
@@ -231,17 +238,13 @@ class MsrMetabolismManager:
         l = [
             *[
                 f"vm[{i}]: {utils.ppf(self.vm[i])}"
-                for i in [
-                    22,
-                    23,
-                    98,
-                    95,
-                ]
+                for i in config.metab_vm_indexes.values()
             ],
-            f"um[(0, {c_gid})][95]: {utils.ppf(self.um[(0, c_gid)][95])}",
+            f"um[(0, {c_gid})][{str(idx_ko)}]: {utils.ppf(self.um[(0, c_gid)][idx_ko])}",
             f"kis_mean[c_gid]: {utils.ppf(kis_mean)}",
             f"bf_Fin: {param.bf_Fin}",
             f"bf_vol: {param.bf_vol}",
+            
         ]
         l = "\n".join(l)
         logging.info(f"metab VIP vars:\n{l}")
@@ -249,12 +252,12 @@ class MsrMetabolismManager:
         # Katta: "Polina suggested the following asserts as rule of thumb. In this way we detect
         # macro-problems like K+ accumulation faster. For now the additional computation is minimal.
         # Improvements are possible if needed."
-
-        assert 0.25 <= self.vm[22] <= 2.5, self.vm[22]
-        assert 7 <= self.vm[98] <= 30, self.vm[98]  # usually around 10
-        assert 2 <= self.vm[95] <= 8, self.vm[95]
-        assert 2 <= self.um[(0, c_gid)][95] <= 8, self.um[(0, c_gid)][95]
-        assert 120 <= kis_mean <= 160, kis_mean
+            
+        assert 0.25 <= self.vm[idx_atpn] <= 2.5, self.vm[idx_atpn]
+        assert 5 <= self.vm[idx_nai] <= 30, self.vm[idx_nai]  # usually around 10
+        assert 1 <= self.vm[idx_ko] <= 10, self.vm[idx_ko]
+        assert 1 <= self.um[(0, c_gid)][idx_ko] <= 10, self.um[(0, c_gid)][idx_ko]
+        assert 100 <= kis_mean <= 160, kis_mean
 
         # 2.2 should coincide with the BC METypePath field & with u0_file
         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model

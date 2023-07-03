@@ -19,7 +19,7 @@ HBP_STEPS/
 spackenv/
 !.setup_*
 .julia/
-RESULTS/
+RESULTS*/
 bloodflow_src/
 bluepy-configfile/
 input_flow.pkl
