@@ -16,12 +16,11 @@ from steps.saving import *
 from steps.sim import *
 from steps.utils import *
 
-import config
-
 from scipy import sparse
 
 
 from . import utils
+config = utils.load_config()
 
 
 class MsrStepsManager:

@@ -1,4 +1,9 @@
-import os
+import os, sys
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
+sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
+from multiscale_run import utils
+
 import time
 
 import numpy as np
@@ -28,37 +33,35 @@ class ConfigError(Exception):
     pass
 
 
-def load_from_env(env_name, default):
-    """Either load from environment or set with default (env takes priority)"""
-    var = os.getenv(env_name)
-
-    if isinstance(default, bool):
-        return bool(int(var)) if var is not None else default
-    elif isinstance(default, int):
-        return int(var) if var is not None else default
-    else:
-        return var if var is not None else default
-
-
 ##############################################
 # base flags and paths
 ##############################################
 
-mr_debug = load_from_env("mr_debug", False)
+mr_debug = utils.load_from_env("mr_debug", False)
 logging.basicConfig(level=logging.DEBUG if mr_debug else logging.INFO)
 
-with_steps = load_from_env("with_steps", True)
-with_metabolism = load_from_env("with_metabolism", True)
-with_bloodflow = load_from_env("with_bloodflow", True)
+with_steps = utils.load_from_env("with_steps", True)
+with_metabolism = utils.load_from_env("with_metabolism", True)
+with_bloodflow = utils.load_from_env("with_bloodflow", True)
 
-results_path = load_from_env("results_path", "RESULTS")
+results_path = utils.load_from_env("results_path", "RESULTS")
 
-sonata_path = load_from_env(
-    "sonata_path", "simulation_config.json"
-)  # if not mr_debug else "debug_data/simulation_config.json"
+# If you want to change paths, use bash: "export sonata_path=mypath"
+# and put mesh and mr config file in the same folder. Otherwise the program
+# looks in the parent folder. If not found it fails.
+
+# Do not change this directly, pls
+sonata_path = utils.get_sonata_path()
+
+# Do not change this directly, pls
+config_path = utils.get_config_path()
+
+
+# You can change this considering that we are searcing in the folder of the 
+# sonata_path first and its parent if not found
 
 # in case of unsplit mesh it auto-splits
-steps_mesh_path = load_from_env("steps_mesh_path", "steps_meshes/mc2c")
+steps_mesh_path = utils.search_path("mesh/mc2c/mc2c.msh")
 
 ##############################################
 # caching
@@ -248,7 +251,7 @@ def get_GLY_a_and_mito_vol_frac(c_gid):
 ##############################################
 # Quadrun related
 ##############################################
-bloodflow_path = load_from_env("BLOODFLOW_PATH", "bloodflow_src")
+bloodflow_path = utils.load_from_env("BLOODFLOW_PATH", "bloodflow_src")
 bloodflow_params = {
     # paths
     "output_folder": "RESULTS/bloodflow",
@@ -285,8 +288,8 @@ def print_config():
 
     results_path: {results_path}
 
+    config_path: {config_path}
     sonata_path: {sonata_path}
-    
     steps_mesh_path: {steps_mesh_path}
 
     BLOODFLOW_PATH: {bloodflow_path}

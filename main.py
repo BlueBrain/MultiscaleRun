@@ -39,7 +39,8 @@ from multiscale_run import (
     printer,
 )
 
-import config
+
+config = utils.load_config()
 
 
 def main():
@@ -66,9 +67,7 @@ def main():
         if config.with_steps:
             steps_m = steps_manager.MsrStepsManager(config.steps_mesh_path)
             conn_m.connect_ndam2steps(ndam_m=ndam_m, steps_m=steps_m)
-
-            ndam_m.get_seg_points(steps_m.msh._scale)
-
+            
         if config.with_metabolism:
             metab_m = metabolism_manager.MsrMetabolismManager(
                 u0_file=config.u0_file, main=Main, prnt=prnt

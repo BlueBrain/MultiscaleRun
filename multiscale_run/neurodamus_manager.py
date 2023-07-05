@@ -4,6 +4,7 @@ from mpi4py import MPI as MPI4PY
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 from . import utils
+config = utils.load_config()
 
 import logging
 import neurodamus
@@ -13,7 +14,6 @@ import steps
 
 import os
 
-import config
 
 
 class MsrNeurodamusManager:

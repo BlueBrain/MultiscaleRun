@@ -5,6 +5,7 @@ comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
 from . import utils
+config = utils.load_config()
 
 import logging
 import neurodamus
@@ -13,8 +14,6 @@ from scipy import sparse
 import steps
 
 import os
-
-import config
 
 
 class MsrConnectionManager:

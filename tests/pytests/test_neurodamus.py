@@ -13,12 +13,12 @@ comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
 from multiscale_run import utils, neurodamus_manager
+config = utils.load_config()
 
 import logging
 
 from diffeqpy import de
 
-import config
 
 
 def test_init():

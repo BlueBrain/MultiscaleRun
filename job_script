@@ -18,18 +18,20 @@
 # add your favourite steps branch or leave it empty for master
 #export steps_branch=master
 
-echo "Y" | source setup.sh
+export IS_SPACK_UPDATED=1
+source setup.sh
+unset IS_SPACK_UPDATED
 
 # parameters
 #export with_steps=1
 #export with_metabolism=1
 #export with_bloodflow=0
 
-#export results_path=RESULTS/STEPS4
+#export results_path=RESULTS
 
-#export sonata_path=simulation_config.json
+#export sonata_path=configs/rat_old/simulation_config.json
 
-#export steps_mesh_path=steps_meshes/mc2c/mc2c.msh
+#export steps_mesh_path=mesh/mc2c/mc2c.msh
 
 #export BLOODFLOW_PATH=bloodflow_src
 

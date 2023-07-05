@@ -2,9 +2,9 @@
 
 import logging
 
-import config
-
 from . import utils
+config = utils.load_config()
+
 import neurodamus
 import numpy as np
 import pandas as pd

@@ -26,7 +26,8 @@ from steps.utils import *
 from astrovascpy import bloodflow
 from astrovascpy.utils import set_edge_data, create_entry_largest_nodes
 
-import config
+from multiscale_run import utils
+config = utils.load_config()
 
 from mpi4py import MPI as MPI4PY
 

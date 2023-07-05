@@ -7,7 +7,8 @@ import pickle
 import time
 import psutil
 
-import config
+import importlib.util
+import sys
 
 from mpi4py import MPI as MPI4PY
 
@@ -226,3 +227,72 @@ def logs_decorator(foo):
 def ppf(n):
     return f"{n:.3}"
 
+def load_from_env(env_name, default):
+    """Either load from environment or set with default (env takes priority)"""
+    var = os.getenv(env_name)
+
+    if isinstance(default, bool):
+        return bool(int(var)) if var is not None else default
+    elif isinstance(default, int):
+        return int(var) if var is not None else default
+    else:
+        return var if var is not None else default
+
+def path_exists(path):
+    """ Less strict that os.path.exits we return true also if multiple files match the path """
+    d, f = os.path.split(path)
+    if not os.path.exists(d):
+        return False
+    
+    return any(filename for filename in os.listdir(d) if filename.startswith(f))
+
+
+def select_file(d, name=None):
+    """Check that the file exists. If not use fallback. If not, try 1 directory up. Not resursive"""
+    if name is None:
+        d, name = os.path.split(d)
+
+    path = os.path.normpath(os.path.join(d, name))
+    
+    if path_exists(path):
+        return path
+    
+    d, _ = os.path.split(d)
+    path = os.path.normpath(os.path.join(d, name))
+    if path_exists(path):
+        return path
+    
+    return None
+
+def get_sonata_path():
+    """ Sonata path. All the config searches are based on this path """
+    path = load_from_env("sonata_path", "configs/rat_old/simulation_config.json")
+    f = select_file(path)
+    assert f is not None, f"sonata_path: {path} not found!"
+    return f
+
+def search_path(name):
+    """ Search config file (or folder) based on the sonata path """
+    sonata_path = get_sonata_path()
+    d, _ = os.path.split(sonata_path)
+    f = select_file(d, name)
+    assert f is not None, f"path: `{os.path.join(d, name)}` not found!"
+    return f
+
+def get_config_path():
+    """ Convenience function to get the config file """
+    return search_path("mr_config.py")
+
+
+def load_config():
+    """ Dynamic import of config file. "smart" search based on sonata_path """
+
+    # Find config file
+    config_file = get_config_path()
+
+    # Load it dinalically
+    spec = importlib.util.spec_from_file_location("config", config_file)
+    foo = importlib.util.module_from_spec(spec)
+    sys.modules["config"] = foo
+    spec.loader.exec_module(foo)
+    return sys.modules["config"]

@@ -150,8 +150,7 @@ pytests:
       - RESULTS/*
     expire_in: 3 days
   variables:
-    sonata_path: simulation_config.json
-    mesh_path: steps_meshes/mc2c/mc2c.msh
+    sonata_path: configs/rat_old/simulation_config.json
   script:
     - source .ci/load.sh
     - .ci/test.sh
@@ -162,8 +161,6 @@ integration_tests:
   variables:
     bb5_duration: "00:10:00"
     bb5_ntasks: 2
-    sonata_path: simulation_config.json
-    mesh_path: steps_meshes/mc2c/split_2/mc2c
   script:
     - source .ci/load.sh
     - rm -rf cache && srun --overlap -n 2 python tests/integration_tests/test_connect_ndam2steps.py
@@ -188,6 +185,7 @@ dualrun_test_n2:
   variables:
     bb5_duration: "02:00:00"
     bb5_ntasks: 2
+    mesh_path: mesh/mc2c/mc2c.msh
 
 dualrun_test_n16:
   extends: [.dualrun_test]

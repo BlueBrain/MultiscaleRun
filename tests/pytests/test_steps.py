@@ -13,10 +13,9 @@ comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
 from multiscale_run import steps_manager, utils
+config = utils.load_config()
 
 import numpy as np
-
-import config
 
 
 def gen_segments_in_bbox(msh):

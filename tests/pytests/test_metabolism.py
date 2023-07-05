@@ -2,9 +2,11 @@ import sys, os, glob
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
 
-import config
 
-from multiscale_run import printer, metabolism_manager
+
+from multiscale_run import printer, metabolism_manager, utils
+config = utils.load_config()
+
 from julia import Main
 
 

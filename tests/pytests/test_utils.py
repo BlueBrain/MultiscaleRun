@@ -107,7 +107,28 @@ def test_timestamps():
     assert list(utils.timesteps(10, 1)) == list(range(1, 11, 1))
     assert list(utils.timesteps(10, 0.9)) == [i * 0.9 for i in range(1, 12, 1)]
 
+def test_select_file():
+    assert utils.select_file("bau.txt") is None
+    assert utils.select_file("miao/bau.txt") is None
+    s = "tests/pytests/test_folder/test_folder2/simple_file.txt"
+    assert utils.select_file(s) == s, utils.select_file(s)
+    s = "tests/pytests/test_folder/test_folder2/fallback_file.txt"
+    assert utils.select_file(s) == "tests/pytests/test_folder/fallback_file.txt"
+    s = "tests/pytests/test_folder"
+    assert utils.select_file(s) == s
+    assert utils.select_file("bau", s) == s
+
+def test_load_config():
+    config = utils.load_config()
+    config.print_config()
+
+def test_get_paths():
+    utils.get_sonata_path()
+    assert utils.search_path("mr_config.py") == "configs/mr_config.py"
 
 if __name__ == "__main__":
     test_cache_decor()
     test_logs_decorator()
+    test_select_file()
+    test_load_config()
+    test_get_paths()

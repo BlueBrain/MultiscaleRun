@@ -3,8 +3,7 @@ import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
 
 from multiscale_run import utils, bloodflow_manager
-
-import config
+config = utils.load_config()
 
 
 def test_init():

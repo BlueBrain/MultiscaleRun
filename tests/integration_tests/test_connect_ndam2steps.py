@@ -18,8 +18,7 @@ rank, size = comm.Get_rank(), comm.Get_size()
 import logging
 
 from multiscale_run import utils, steps_manager, neurodamus_manager, connection_manager
-
-import config
+config = utils.load_config()
 
 import numpy as np
 

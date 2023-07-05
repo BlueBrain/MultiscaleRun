@@ -4,6 +4,13 @@ while true; do
 
 read -p "Is your spack updated? (y/n) " yn
 
+
+if [[ $IS_SPACK_UPDATED -eq 0 ]]
+then
+while true; do
+
+read -p "Is your spack updated? (y/n) " yn
+
 case $yn in 
 	[yY] ) echo ok, we will proceed;
 		break;;
@@ -12,6 +19,7 @@ case $yn in
 	* ) echo invalid response;;
 esac
 done
+fi
 
 echo
 echo "   ### setup"

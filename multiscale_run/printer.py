@@ -1,7 +1,9 @@
 from mpi4py import MPI as MPI4PY
 import os
 from pathlib import Path
-import config
+
+from . import utils
+config = utils.load_config()
 
 
 class MsrPrinter:
