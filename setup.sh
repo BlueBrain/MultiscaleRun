@@ -1,10 +1,5 @@
 #!/bin/bash
 
-while true; do
-
-read -p "Is your spack updated? (y/n) " yn
-
-
 if [[ $IS_SPACK_UPDATED -eq 0 ]]
 then
 while true; do
@@ -58,3 +53,4 @@ source .setup_julia.sh
 # Therefore, this strategy is not compatible with multi-threading.
 set_default OMP_NUM_THREADS 1
 export JULIA_NUM_THREADS=1
+

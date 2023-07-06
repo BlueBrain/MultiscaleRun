@@ -151,6 +151,7 @@ def cache_decorator(path, is_save, is_load, field_names, only_rank0=False):
         file_names = field_names
     else:
         file_names = [f"{i}_rank{rank}" for i in field_names]
+        path = os.path.join(path, f"n{size}")
 
 
     np.testing.assert_equal(len(field_names), len(file_names))

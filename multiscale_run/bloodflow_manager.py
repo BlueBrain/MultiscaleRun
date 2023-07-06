@@ -80,13 +80,6 @@ class MsrBloodflowManager:
         """Volume in each segment"""
         return self.graph.edge_properties.volume.to_numpy()
 
-    @utils.cache_decorator(
-        path=config.cache_path,
-        is_save=config.cache_save,
-        is_load=config.cache_load,
-        only_rank0=False,
-        field_names="entry_nodes",
-    )
     @utils.logs_decorator
     def get_entry_nodes(self):
         """Bloodflow input nodes"""

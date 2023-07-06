@@ -8,7 +8,7 @@
     "node_sets_file": "node_sets.json",
     "node_set": "testNGVSSCX_AstroMini",
     "output": {
-        "output_dir": "./RESULTS"
+        "output_dir": "./../../RESULTS"
     },
     "conditions": {
         "v_init": -65

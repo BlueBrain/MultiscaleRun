@@ -25,8 +25,8 @@ class MsrConnectionManager:
 
     @utils.cache_decorator(
         path=config.cache_path,
-        is_save=config.cache_save,
-        is_load=config.cache_load,
+        is_save=False, #deactivated, not critical atm
+        is_load=False, #deactivated, not critical atm
         only_rank0=False,
         field_names=["nXtetMat", "nsegXtetMat", "nXnsegMatBool"],
     )

@@ -97,6 +97,45 @@ class MsrStepsManager:
         )
         self.sim.newRun()
 
+    def bbox(self):
+        return np.array(self.msh.bbox.min.tolist()), np.array(self.msh.bbox.max.tolist())
+
+
+    def pts_stats(self, pts):
+        """ It returns n points inside, n points """
+
+        bbox_min, bbox_max = self.bbox()
+    
+        npts = sum([i.shape[0] for i in pts])
+
+        n_inside = sum(
+            [
+                sum(
+                    (pt[:, 0] >= bbox_min[0])
+                    & (pt[:, 0] <= bbox_max[0])
+                    & (pt[:, 1] >= bbox_min[1])
+                    & (pt[:, 1] <= bbox_max[1])
+                    & (pt[:, 2] >= bbox_min[2])
+                    & (pt[:, 2] <= bbox_max[2])
+                )
+                for pt in pts
+            ]
+        )
+
+        return n_inside, npts
+    
+
+    @staticmethod
+    def pts_bbox(pts):
+        min0 = [float("Inf"), float("Inf"), float("Inf")]
+        max0 = [-float("Inf"), -float("Inf"), -float("Inf")]
+        for seg in pts:
+            max0 = np.maximum(max0, np.max(seg, 0))
+            min0 = np.minimum(min0, np.min(seg, 0))
+
+        return min0, max0
+
+
     @utils.logs_decorator
     def get_tetXtetMat(self):
         """Diagonal matrix that gives a measure of how "dispersed" a species is in a tet compared to the average tet
@@ -104,11 +143,11 @@ class MsrStepsManager:
         We assume that the dispersion is linearly related to volume
         Used to translate species from bloodflow to metabolism
         """
-        return sparse.diags(np.reciprocal(self.tet_vols) * np.mean(self.tet_vols))
+        return sparse.diags(np.reciprocal(self.tet_vols) * np.mean(self.tet_vols), format="csr")
 
     def get_tetXtetInvMmat(self):
         """Inverse of Tmat. Used for debugging"""
-        return sparse.diags(self.tet_vols * (1 / np.mean(self.tet_vols)))
+        return sparse.diags(self.tet_vols * (1 / np.mean(self.tet_vols)), format="csr")
 
     @utils.logs_decorator
     def get_nsegXtetMat(self, local_pts):
@@ -123,6 +162,14 @@ class MsrStepsManager:
 
         Intersect returns a list of lists of (tet, ratio) intersections
         """
+
+        n_inside, npts = self.pts_stats(local_pts)
+
+        logging.info(f"mesh box: {self.bbox()}")
+        utils.rank_print(f"neuron pts box: {MsrStepsManager.pts_bbox(local_pts)}, n_inside/npts: {n_inside}/{npts}")
+
+        assert n_inside == npts, f"n inside ({n_inside}) != n pts ({npts})"
+
 
         with self.msh.asLocal():
             for i in range(comm.Get_size()):
@@ -187,6 +234,14 @@ class MsrStepsManager:
 
         Intersect returns a list of lists of (tet, ratio) intersections
         """
+
+        n_inside, npts = self.pts_stats([pts])
+
+        logging.info(f"mesh box: {self.bbox()}")
+        utils.rank_print(f"vasculature pts box: {MsrStepsManager.pts_bbox(pts)}, n_inside/npts: {n_inside}/{npts}")
+
+        assert n_inside > npts*0.5, f"n inside ({n_inside}) <= n pts * 0.5 ({npts})"
+
 
         with self.msh.asLocal():
             # list of (tet_id, ratio) lists

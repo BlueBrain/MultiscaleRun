@@ -38,8 +38,6 @@ from multiscale_run import (
     connection_manager,
     printer,
 )
-
-
 config = utils.load_config()
 
 

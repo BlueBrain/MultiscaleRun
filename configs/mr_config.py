@@ -67,7 +67,7 @@ steps_mesh_path = utils.search_path("mesh/mc2c/mc2c.msh")
 # caching
 ##############################################
 
-cache_path = "cache"
+cache_path = os.path.join(os.path.split(sonata_path)[0], "cache")
 cache_save = True
 cache_load = True
 

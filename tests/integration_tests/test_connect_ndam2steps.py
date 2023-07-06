@@ -37,7 +37,10 @@ def check_mats_shape(ndam_m, conn_m, steps_m, nshape=None, segshape=None):
         )
         for nc in ndam_m.ncs
     }
-    np.testing.assert_equal(conn_m.nXtetMat.shape[0], len(ndam_m.ncs))
+    nn = len(ndam_m.ncs)
+    nseg = sum([v for k, v in d.items() if k not in ndam_m.removed_gids])
+    
+    np.testing.assert_equal(conn_m.nXtetMat.shape[0], nn)
     np.testing.assert_equal(conn_m.nXtetMat.shape[1], steps_m.ntets)
     np.testing.assert_equal(
         conn_m.nsegXtetMat.shape[0],
@@ -53,6 +56,8 @@ def check_mats_shape(ndam_m, conn_m, steps_m, nshape=None, segshape=None):
 
     np.testing.assert_equal(conn_m.nXnsegMatBool.shape[0], len(ndam_m.ncs))
     np.testing.assert_equal(conn_m.nXnsegMatBool.shape[1], sum([v for k, v in d.items() if k not in ndam_m.removed_gids]))
+
+    np.testing.assert_equal(conn_m.nXnsegMatBool.shape, (nn, nseg))
 
 
 @utils.logs_decorator
