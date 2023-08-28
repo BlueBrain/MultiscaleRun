@@ -194,11 +194,11 @@ class MsrStepsManager:
                         [
                             ratio,
                             iseg + ps[isec],
-                            tet.toGlobal().idx,
+                            global_tet_idx,
                         ]
                         for isec, sec in enumerate(pts)
-                        for iseg, seg in enumerate(self.msh.intersect(sec))
-                        for tet, ratio in seg
+                        for iseg, seg in enumerate(self.msh.intersect(sec, raw=True, toGlobal=True))
+                        for global_tet_idx, ratio in seg
                     ]
                 )
 
