@@ -2,7 +2,7 @@
 
 #SBATCH --job-name="mr_sjob"
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=2
+#SBATCH --ntasks-per-node=32
 
 #SBATCH --account=proj40
 #SBATCH --partition=prod
@@ -34,5 +34,7 @@ unset IS_SPACK_UPDATED
 #export steps_mesh_path=mesh/mc2c/mc2c.msh
 
 #export BLOODFLOW_PATH=bloodflow_src
+
+
 
 time srun --overlap dplace python main.py

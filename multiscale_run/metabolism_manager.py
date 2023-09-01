@@ -3,6 +3,7 @@
 import logging
 
 from . import utils
+
 config = utils.load_config()
 
 import neurodamus
@@ -15,11 +16,14 @@ from mpi4py import MPI as MPI4PY
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
+
 class MsrMetabParameterException(Exception):
     pass
 
+
 class MsrMetabParameters:
-    """ Class that holds the parameters for metabolism in the l order """
+    """Class that holds the parameters for metabolism in the l order"""
+
     l = ["ina_density", "ik_density", "mito_scale", "bf_Fin", "bf_Fout", "bf_vol"]
 
     def __init__(self):
@@ -31,7 +35,6 @@ class MsrMetabParameters:
             yield getattr(self, i)
 
     def is_valid(self):
-
         for k, v in self.__dict__.items():
             e = MsrMetabParameterException(f"{k}: {v} is invalid")
             if v is None:
@@ -40,18 +43,18 @@ class MsrMetabParameters:
                 float(v)
             except:
                 raise e
-            
+
             if np.isnan(v) or np.isinf(v):
                 raise e
-        
-        if config.metabolism_type == 'main' and self.bf_vol <= 0:
+
+        if config.metabolism_type == "main" and self.bf_vol <= 0:
             raise MsrMetabParameterException(f"bf_vol ({self.bf_vol}) <= 0")
-        
+
 
 class MsrMetabolismManager:
     """Wrapper to manage the metabolism julia model"""
 
-    def __init__(self, u0_file, main, prnt):       
+    def __init__(self, u0_file, main, prnt):
         self.u0 = pd.read_csv(u0_file, sep=",", header=None)[0].tolist()
         self.load_metabolism_data(main)
         self.gen_metabolism_model(main)
@@ -68,7 +71,7 @@ class MsrMetabolismManager:
     def load_metabolism_data(self, main):
         self.ATDPtot_n = 1.4449961078157665
 
-        if config.metabolism_type != 'main':
+        if config.metabolism_type != "main":
             return None
 
         main.eval(
@@ -160,18 +163,16 @@ class MsrMetabolismManager:
         self.failed_cells = {}
         for inc, nc in enumerate(ncs):
             c_gid = int(nc.CCell.gid)
-            
+
             param = self.init_inputs(
                 c_gid=c_gid, inc=inc, i_metab=i_metab, metab_dt=metab_dt
             )
-
 
             try:
                 param.is_valid()
             except MsrMetabParameterException as e:
                 self.failed_cells[c_gid] = str(e)
                 continue
-
 
             self._advance_gid(c_gid=c_gid, i_metab=i_metab, param=param)
 
@@ -207,11 +208,7 @@ class MsrMetabolismManager:
         idx_nai = config.metab_vm_indexes["nai"]
         idx_ko = config.metab_vm_indexes["ko"]
 
-        
-        
-        self.vm[idx_atpn] = (
-            0.5 * 1.384727988648391 + 0.5 * atpi_mean
-        )  
+        self.vm[idx_atpn] = 0.5 * 1.384727988648391 + 0.5 * atpi_mean
 
         self.vm[idx_adpn] = 0.5 * 1.384727988648391 / 2 * (
             -0.92
@@ -244,7 +241,6 @@ class MsrMetabolismManager:
             f"kis_mean[c_gid]: {utils.ppf(kis_mean)}",
             f"bf_Fin: {param.bf_Fin}",
             f"bf_vol: {param.bf_vol}",
-            
         ]
         l = "\n".join(l)
         logging.info(f"metab VIP vars:\n{l}")
@@ -252,7 +248,7 @@ class MsrMetabolismManager:
         # Katta: "Polina suggested the following asserts as rule of thumb. In this way we detect
         # macro-problems like K+ accumulation faster. For now the additional computation is minimal.
         # Improvements are possible if needed."
-            
+
         assert 0.25 <= self.vm[idx_atpn] <= 2.5, self.vm[idx_atpn]
         assert 5 <= self.vm[idx_nai] <= 30, self.vm[idx_nai]  # usually around 10
         assert 1 <= self.vm[idx_ko] <= 10, self.vm[idx_ko]
@@ -263,7 +259,6 @@ class MsrMetabolismManager:
         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
 
-        
         self.prnt.append_to_file(
             config.param_out_file,
             [c_gid, i_metab, *list(param)],
@@ -271,4 +266,3 @@ class MsrMetabolismManager:
         )
 
         return param
-

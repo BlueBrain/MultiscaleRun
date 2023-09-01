@@ -4,6 +4,7 @@ from mpi4py import MPI as MPI4PY
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 from . import utils
+
 config = utils.load_config()
 
 import logging
@@ -15,13 +16,17 @@ import steps
 import os
 
 
-
 class MsrNeurodamusManager:
     """Handles neurodamus and keep track of what neurons are working"""
 
     def __init__(self, sonata_path):
         logging.info("instantiate ndam")
-        self.ndamus = neurodamus.Neurodamus(sonata_path,logging_level=None,enable_coord_mapping=True,cleanup_atexit=False,)
+        self.ndamus = neurodamus.Neurodamus(
+            sonata_path,
+            logging_level=None,
+            enable_coord_mapping=True,
+            cleanup_atexit=False,
+        )
         logging.info("ndam sim init")
         self.ndamus.sim_init()
         logging.info("ndam is ready")
@@ -65,8 +70,7 @@ class MsrNeurodamusManager:
         self.astrocyte_manager = [
             i
             for i in self.ndamus.circuits.all_node_managers()
-            if isinstance(i, neurodamus.ngv.AstrocyteManager)
-            and i.total_cells > 0
+            if isinstance(i, neurodamus.ngv.AstrocyteManager) and i.total_cells > 0
         ][0]
 
         self.glio_vascular_manager = self.ndamus.circuits.get_edge_manager(
@@ -186,7 +190,7 @@ class MsrNeurodamusManager:
         # in one simple array
         ps = [0, *np.cumsum([len(i) - 1 for i in pts])]
 
-        # data is always a nX3 array: 
+        # data is always a nX3 array:
         # col[0] is the ratio (dimensionless).
         # col[1] is the row at which it should be added in the sparse matrix
         # col[2] is the col at which it should be added in the sparse matrix
@@ -221,9 +225,11 @@ class MsrNeurodamusManager:
             for inc, nc in enumerate(self.ncs):
                 for isec, _ in enumerate(self._gen_secs(nc)):
                     itot += 1
-                    yield self.nc_vols[inc][1][isec] / self.nc_vols[inc][0], inc, itot - 1
+                    yield self.nc_vols[inc][1][isec] / self.nc_vols[inc][
+                        0
+                    ], inc, itot - 1
 
-        # data is always a nX3 array: 
+        # data is always a nX3 array:
         # col[0] is the ratio (dimensionless).
         # col[1] is the row at which it should be added in the sparse matrix
         # col[2] is the col at which it should be added in the sparse matrix
@@ -246,7 +252,6 @@ class MsrNeurodamusManager:
         We can also pass None to skip this part but it needs to be put to None explicitly to make sure that
         the operator knows what they are doing
         """
-
 
         def gen_to_be_removed_segs():
             i = 0
@@ -280,7 +285,6 @@ class MsrNeurodamusManager:
             raise utils.MrException(
                 f"All the gids of this rank were removed. This probably requires attention\nRemoved gids: {', '.join(str(i) for i in self.removed_gids)}"
             )
-        
 
     def _update_attr(self, v, to_be_removed):
         """update class attribute assuming it is a list"""

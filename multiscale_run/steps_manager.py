@@ -20,6 +20,7 @@ from scipy import sparse
 
 
 from . import utils
+
 config = utils.load_config()
 
 
@@ -98,14 +99,15 @@ class MsrStepsManager:
         self.sim.newRun()
 
     def bbox(self):
-        return np.array(self.msh.bbox.min.tolist()), np.array(self.msh.bbox.max.tolist())
-
+        return np.array(self.msh.bbox.min.tolist()), np.array(
+            self.msh.bbox.max.tolist()
+        )
 
     def pts_stats(self, pts):
-        """ It returns n points inside, n points """
+        """It returns n points inside, n points"""
 
         bbox_min, bbox_max = self.bbox()
-    
+
         npts = sum([i.shape[0] for i in pts])
 
         n_inside = sum(
@@ -123,7 +125,6 @@ class MsrStepsManager:
         )
 
         return n_inside, npts
-    
 
     @staticmethod
     def pts_bbox(pts):
@@ -135,7 +136,6 @@ class MsrStepsManager:
 
         return min0, max0
 
-
     @utils.logs_decorator
     def get_tetXtetMat(self):
         """Diagonal matrix that gives a measure of how "dispersed" a species is in a tet compared to the average tet
@@ -143,7 +143,9 @@ class MsrStepsManager:
         We assume that the dispersion is linearly related to volume
         Used to translate species from bloodflow to metabolism
         """
-        return sparse.diags(np.reciprocal(self.tet_vols) * np.mean(self.tet_vols), format="csr")
+        return sparse.diags(
+            np.reciprocal(self.tet_vols) * np.mean(self.tet_vols), format="csr"
+        )
 
     def get_tetXtetInvMmat(self):
         """Inverse of Tmat. Used for debugging"""
@@ -166,10 +168,11 @@ class MsrStepsManager:
         n_inside, npts = self.pts_stats(local_pts)
 
         logging.info(f"mesh box: {self.bbox()}")
-        utils.rank_print(f"neuron pts box: {MsrStepsManager.pts_bbox(local_pts)}, n_inside/npts: {n_inside}/{npts}")
+        utils.rank_print(
+            f"neuron pts box: {MsrStepsManager.pts_bbox(local_pts)}, n_inside/npts: {n_inside}/{npts}"
+        )
 
         assert n_inside == npts, f"n inside ({n_inside}) != n pts ({npts})"
-
 
         with self.msh.asLocal():
             for i in range(comm.Get_size()):
@@ -185,7 +188,7 @@ class MsrStepsManager:
                 # in one simple array
                 ps = [0, *np.cumsum([len(i) - 1 for i in pts])]
 
-                # data is always a nX3 array: 
+                # data is always a nX3 array:
                 # col[0] is the ratio (dimensionless).
                 # col[1] is the row at which it should be added in the sparse matrix
                 # col[2] is the col at which it should be added in the sparse matrix
@@ -197,7 +200,9 @@ class MsrStepsManager:
                             global_tet_idx,
                         ]
                         for isec, sec in enumerate(pts)
-                        for iseg, seg in enumerate(self.msh.intersect(sec, raw=True, toGlobal=True))
+                        for iseg, seg in enumerate(
+                            self.msh.intersect(sec, raw=True, local=False)
+                        )
                         for global_tet_idx, ratio in seg
                     ]
                 )
@@ -237,36 +242,41 @@ class MsrStepsManager:
 
         n_inside, npts = self.pts_stats([pts])
 
-        logging.info(f"mesh box: {self.bbox()}")
-        utils.rank_print(f"vasculature pts box: {MsrStepsManager.pts_bbox(pts)}, n_inside/npts: {n_inside}/{npts}")
-
-        assert n_inside > npts*0.5, f"n inside ({n_inside}) <= n pts * 0.5 ({npts})"
-
+        if n_inside < npts * 0.5:
+            comm.Abort(f"n inside ({n_inside}) < n pts * 0.5 ({npts})")
 
         with self.msh.asLocal():
             # list of (tet_id, ratio) lists
-            l = self.msh.intersectIndependentSegments(pts)
+            l = self.msh.intersectIndependentSegments(pts, raw=True, local=False)
             np.testing.assert_equal(2 * len(l), pts.shape[0])
 
-            # data is always a nX3 array: 
+            # data is always a nX3 array:
             # col[0] is the ratio (dimensionless).
             # col[1] is the row at which it should be added in the sparse matrix
             # col[2] is the col at which it should be added in the sparse matrix
+
             data = np.array(
                 [
-                    [ratio, tet.toGlobal().idx, idx]
+                    [ratio, tet_global_idx, idx]
                     for idx, q in enumerate(l)
-                    for tet, ratio in q
+                    for tet_global_idx, ratio in q
                 ]
             )
+
             # 0 is the invalid value. Summing of invalid and valid values gives the index given that only one tet reports a non-0 value
             # the +1 is for testing that everything is ok
+
             starting_tets = np.array(
                 [
-                    q[0][0].toGlobal().idx
-                    if len(q) and q[0][0].containsPoint(pts[idx * 2, :])
+                    tet_global_idx[0][0]
+                    if len(tet_global_idx)
+                    and steps.geom.TetReference(
+                        tet_global_idx[0][0], mesh=self.msh, local=False
+                    )
+                    .toLocal()
+                    .containsPoint(pts[idx * 2, :])
                     else 0
-                    for idx, q in enumerate(l)
+                    for idx, tet_global_idx in enumerate(l)
                 ]
             )
 
@@ -287,6 +297,7 @@ class MsrStepsManager:
             )
 
             st = np.sum(np.array(starting_tets), axis=0)
+
         return mat, st
 
     def get_tet_counts(self, species, idxs=None):

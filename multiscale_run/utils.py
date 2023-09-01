@@ -117,6 +117,7 @@ def delete_rows_csr(mat, indices):
     mask[indices] = False
     return mat[mask]
 
+
 def delete_cols_csr(mat, indices):
     """
     Remove the rows denoted by ``indices`` form the CSR sparse matrix ``mat``.
@@ -125,7 +126,7 @@ def delete_cols_csr(mat, indices):
         raise ValueError(
             f"works only for CSR format -- use .tocsr() first. Current type: {type(mat)}"
         )
-    
+
     all_cols = np.arange(mat.shape[1])
     cols_to_keep = np.where(np.logical_not(np.in1d(all_cols, indices)))[0]
     return mat[:, cols_to_keep]
@@ -147,33 +148,41 @@ def cache_decorator(path, is_save, is_load, field_names, only_rank0=False):
     if isinstance(field_names, str):
         field_names = [field_names]
 
-    if only_rank0:    
+    if only_rank0:
         file_names = field_names
     else:
         file_names = [f"{i}_rank{rank}" for i in field_names]
         path = os.path.join(path, f"n{size}")
-
 
     np.testing.assert_equal(len(field_names), len(file_names))
     np.testing.assert_array_less([0], [len(field_names)])
 
     def decorator_add_field_method(method):
         def wrapper(self, *args, **kwargs):
-            fn_pnz = [os.path.join(path, i+".npz") for i in file_names if os.path.exists(os.path.join(path, i+".npz"))]
-            fn_pickle = [os.path.join(path, i+".pickle") for i in file_names if os.path.exists(os.path.join(path, i+".pickle"))]
+            fn_pnz = [
+                os.path.join(path, i + ".npz")
+                for i in file_names
+                if os.path.exists(os.path.join(path, i + ".npz"))
+            ]
+            fn_pickle = [
+                os.path.join(path, i + ".pickle")
+                for i in file_names
+                if os.path.exists(os.path.join(path, i + ".pickle"))
+            ]
 
             fn = [*fn_pnz, *fn_pickle]
             for i in file_names:
-                os.path.exists(os.path.join(path, i+".npz"))
+                os.path.exists(os.path.join(path, i + ".npz"))
 
             if len(fn) > len(file_names):
-                raise FileNotFoundError("some files appear as pikle and npz, it is ambiguous")
+                raise FileNotFoundError(
+                    "some files appear as pikle and npz, it is ambiguous"
+                )
 
-            all_files_are_present = (len(fn) == len(file_names))
+            all_files_are_present = len(fn) == len(file_names)
 
             if is_load and all_files_are_present:
                 for field, full_path in zip(field_names, fn):
-
                     if not (rank == 0 or "rank" in full_path):
                         setattr(self, field, None)
                         continue
@@ -201,9 +210,9 @@ def cache_decorator(path, is_save, is_load, field_names, only_rank0=False):
                         logging.info(f"save {field} to {full_path}")
                         obj = getattr(self, field)
                         if isinstance(obj, sparse.csr_matrix):
-                            sparse.save_npz(full_path+".npz", obj)
+                            sparse.save_npz(full_path + ".npz", obj)
                         else:
-                            with open(full_path+".pickle", "wb") as f:
+                            with open(full_path + ".pickle", "wb") as f:
                                 pickle.dump(obj, f)
 
         return wrapper
@@ -228,6 +237,7 @@ def logs_decorator(foo):
 def ppf(n):
     return f"{n:.3}"
 
+
 def load_from_env(env_name, default):
     """Either load from environment or set with default (env takes priority)"""
     var = os.getenv(env_name)
@@ -239,12 +249,13 @@ def load_from_env(env_name, default):
     else:
         return var if var is not None else default
 
+
 def path_exists(path):
-    """ Less strict that os.path.exits we return true also if multiple files match the path """
+    """Less strict that os.path.exits we return true also if multiple files match the path"""
     d, f = os.path.split(path)
     if not os.path.exists(d):
         return False
-    
+
     return any(filename for filename in os.listdir(d) if filename.startswith(f))
 
 
@@ -254,39 +265,42 @@ def select_file(d, name=None):
         d, name = os.path.split(d)
 
     path = os.path.normpath(os.path.join(d, name))
-    
+
     if path_exists(path):
         return path
-    
+
     d, _ = os.path.split(d)
     path = os.path.normpath(os.path.join(d, name))
     if path_exists(path):
         return path
-    
+
     return None
 
+
 def get_sonata_path():
-    """ Sonata path. All the config searches are based on this path """
+    """Sonata path. All the config searches are based on this path"""
     path = load_from_env("sonata_path", "configs/rat_old/simulation_config.json")
     f = select_file(path)
     assert f is not None, f"sonata_path: {path} not found!"
     return f
 
+
 def search_path(name):
-    """ Search config file (or folder) based on the sonata path """
+    """Search config file (or folder) based on the sonata path"""
     sonata_path = get_sonata_path()
     d, _ = os.path.split(sonata_path)
     f = select_file(d, name)
     assert f is not None, f"path: `{os.path.join(d, name)}` not found!"
     return f
 
+
 def get_config_path():
-    """ Convenience function to get the config file """
+    """Convenience function to get the config file"""
     return search_path("mr_config.py")
 
 
 def load_config():
-    """ Dynamic import of config file. "smart" search based on sonata_path """
+    """Dynamic import of config file. "smart" search based on sonata_path"""
 
     # Find config file
     config_file = get_config_path()

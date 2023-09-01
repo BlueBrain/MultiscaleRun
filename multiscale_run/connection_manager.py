@@ -5,6 +5,7 @@ comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
 from . import utils
+
 config = utils.load_config()
 
 import logging
@@ -22,11 +23,10 @@ class MsrConnectionManager:
     For maximum efficiency matrices are cached with: cache_decorator
     """
 
-
     @utils.cache_decorator(
         path=config.cache_path,
-        is_save=False, #deactivated, not critical atm
-        is_load=False, #deactivated, not critical atm
+        is_save=False,  # deactivated, not critical atm
+        is_load=False,  # deactivated, not critical atm
         only_rank0=False,
         field_names=["nXtetMat", "nsegXtetMat", "nXnsegMatBool"],
     )
@@ -75,8 +75,6 @@ class MsrConnectionManager:
             self.tetXtetMat = steps_m.get_tetXtetMat()
             self.tetXbfVolsMat = mat
             self.tetXbfFlowsMat = flowsMat
-
-
 
     def delete_rows(self, m, to_be_removed):
         """We need to remove rows in case of failed neurons"""
@@ -152,12 +150,22 @@ class MsrConnectionManager:
         Fin, vol = None, None
         if rank == 0:
             # 1e-12 to pass from um^3 to ml
-            # 500 is 1/0.0002 (1/0.2%) since we discussed that the vasculature is only 0.2% of the total 
+            # 500 is 1/0.0002 (1/0.2%) since we discussed that the vasculature is only 0.2% of the total
             # and it is not clear to what the winter paper is referring too exactly for volume and flow
             # given that we are sure that we are not double counting on a tet Fin and Fout, we can use
             # and abs value to have always positive input flow
-            Fin = self.nXtetMat.dot(np.abs(self.tetXbfFlowsMat.dot(bf_m.get_flows())))*1e-12*500
-            vol = self.nXtetMat.dot(self.tetXtetMat.dot(self.tetXbfVolsMat.dot(bf_m.get_vols())))*1e-12*500
+            Fin = (
+                self.nXtetMat.dot(np.abs(self.tetXbfFlowsMat.dot(bf_m.get_flows())))
+                * 1e-12
+                * 500
+            )
+            vol = (
+                self.nXtetMat.dot(
+                    self.tetXtetMat.dot(self.tetXbfVolsMat.dot(bf_m.get_vols()))
+                )
+                * 1e-12
+                * 500
+            )
 
         Fin = comm.bcast(Fin, root=0)
         vol = comm.bcast(vol, root=0)
@@ -166,13 +174,18 @@ class MsrConnectionManager:
 
     def metab2ndam_sync(self, metab_m, ndam_m, i_metab):
         """metab concentrations for ndam"""
-            
+
         if len(ndam_m.ncs) == 0:
             return
 
         # u stands for Julia ODE var and m stands for metabolism
         atpi_weighted_mean = np.array(
-            [metab_m.um[(i_metab + 1, int(nc.CCell.gid))][config.metab_vm_indexes["atpn"]] for nc in ndam_m.ncs]
+            [
+                metab_m.um[(i_metab + 1, int(nc.CCell.gid))][
+                    config.metab_vm_indexes["atpn"]
+                ]
+                for nc in ndam_m.ncs
+            ]
         )  # 1.4
         # 0.5 * 1.2 + 0.5 * um[(idxm + 1, c_gid)][22] #um[(idxm+1,c_gid)][27]
 
@@ -188,7 +201,9 @@ class MsrConnectionManager:
         #                             140.0 - 1.33 * (um[(idxm + 1, c_gid)][6] - 10.0)
         #                         )  # 140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
 
-        ko_weighted_mean = np.array([metab_m.vm[config.metab_vm_indexes["ko"]]] * len(ndam_m.ncs))  # 5
+        ko_weighted_mean = np.array(
+            [metab_m.vm[config.metab_vm_indexes["ko"]]] * len(ndam_m.ncs)
+        )  # 5
         #                         nai_weighted_mean = (
         #                             0.5 * 10.0 + 0.5 * um[(idxm + 1, c_gid)][6]
         #                         )  # 0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #um[(idxm+1,c_gid)][6]

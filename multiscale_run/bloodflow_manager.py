@@ -27,6 +27,7 @@ from astrovascpy import bloodflow
 from astrovascpy.utils import set_edge_data, create_entry_largest_nodes
 
 from multiscale_run import utils
+
 config = utils.load_config()
 
 from mpi4py import MPI as MPI4PY
@@ -97,12 +98,14 @@ class MsrBloodflowManager:
 
     @utils.logs_decorator
     def get_boundary_flows(self):
-        """ apply the input_v to entry nodes """
+        """apply the input_v to entry nodes"""
 
         input_flows = None
         if self.entry_nodes is not None:
-            input_flows=[self.params["input_v"]]*len(self.entry_nodes)
-        self.boundary_flows = bloodflow.boundary_flows_A_based(graph=self.graph, entry_nodes=self.entry_nodes, input_flows=input_flows)
+            input_flows = [self.params["input_v"]] * len(self.entry_nodes)
+        self.boundary_flows = bloodflow.boundary_flows_A_based(
+            graph=self.graph, entry_nodes=self.entry_nodes, input_flows=input_flows
+        )
 
     @utils.logs_decorator
     def update_static_flow(self):
@@ -115,10 +118,10 @@ class MsrBloodflowManager:
         Here we want to set the radii of the vasculature sections identified by
         vasc_ids. The problem stems from the fact that in theory we could have repeating
         indexes in vasc_ids. What radii do we set in that case?
-        
+
         We assume that the astrocytes operate in series. Every astrocyte gets to control
         a subpart of the segment of length l/n where n is the number of astrocytes
-        that act on the this particular segment. 
+        that act on the this particular segment.
 
         We want to maintain the same volume so:
 
@@ -130,7 +133,7 @@ class MsrBloodflowManager:
         def eq_radii(v):
             v = np.array(v)
             """compute x from: 1/x^2 = \sum_n 1/(n*r_i^2)"""
-            return np.sqrt(v.dot(v)/len(v))
+            return np.sqrt(v.dot(v) / len(v))
 
         vasc_ids = [self.graph.edge_properties.index[i] for i in vasc_ids]
 

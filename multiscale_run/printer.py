@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from . import utils
+
 config = utils.load_config()
 
 

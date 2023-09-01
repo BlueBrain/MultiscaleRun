@@ -78,7 +78,6 @@ def main():
             )
             conn_m.connect_bf2steps(bf_m=bf_m, steps_m=steps_m)
 
-
     log_stage("===============================================")
     log_stage("Running the selected solvers ...")
 
