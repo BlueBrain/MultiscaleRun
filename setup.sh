@@ -35,10 +35,9 @@ set_default BLOODFLOW_BRANCH main
 set_default UPDATE_BLOODFLOW 1
 
 set_default PY_NEURODAMUS_BRANCH main
-set_default  UPDATE_NEURODAMUS 1
-
-# this is completely handled by spack. We keep it updated for now
 set_default NEURODAMUS_NEOCORTEX_BRANCH main
+set_default  UPDATE_PY_NEURODAMUS 1
+set_default  PY_NEURODAMUS_USE_MODULE 1
 
 set_default STEPS_BRANCH master
 set_default UPDATE_STEPS 1

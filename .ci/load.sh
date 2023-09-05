@@ -12,7 +12,14 @@ module load hpe-mpi
 
 module load julia petsc py-petsc4py
 
-spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
+if [ "${NEURODAMUS_NEOCORTEX_USE_MODULE}" -eq 1 ]
+then
+  echo "neurodamus neocortex from module"
+  module load neurodamus-neocortex-multiscale
+else
+  spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
+fi
+
 if [ "${STEPS_USE_MODULE}" -eq 1 ]
 then
   echo "steps from module"
@@ -21,6 +28,7 @@ else
   echo "steps from CI"
   spack load /${STEPS_INSTALLED_HASH}
 fi
+
 spack env activate -d $SPACKENV_PATH
 source $PYTHON_VENV_PATH/bin/activate
 

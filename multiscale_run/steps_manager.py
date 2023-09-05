@@ -181,6 +181,7 @@ class MsrStepsManager:
                 if i == rank:
                     pts = local_pts
 
+                # Chritos and Katta: We tried to use Bcast but there was no significant speed-up
                 pts = comm.bcast(pts, root=i)
 
                 # this is an array of partial sums (ps) to get the
@@ -207,6 +208,7 @@ class MsrStepsManager:
                     ]
                 )
 
+                # Chritos and Katta: We tried to use Gather but there was no significant speed-up
                 data = comm.gather(data, root=i)
 
                 if i == rank:

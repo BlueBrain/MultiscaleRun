@@ -336,15 +336,18 @@ class MsrNeurodamusManager:
         astro_ids = manager._astro_ids
 
         def gen_vasc_ids(astro_id):
-            endfeet = manager._gliovascular.afferent_edges(astro_id)
+            # libsonata is 0 based
+            endfeet = manager._gliovascular.afferent_edges(astro_id-1)
             astrocyte = manager._cell_manager.gid2cell[astro_id + manager._gid_offset]
 
             if astrocyte.endfeet is None:
                 return
+
             for i in manager._gliovascular.source_nodes(endfeet):
                 if i is None:
                     continue
-                yield i
+                # neurodamus is 1 based
+                yield i+1
 
         def gen_radii(astro_id):
             astrocyte = manager._cell_manager.gid2cell[astro_id + manager._gid_offset]

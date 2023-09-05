@@ -8,15 +8,16 @@ default:
   tags: [bb5_map]
 
 variables:
-  PY_NEURODAMUS_BRANCH:
-    value: main
-  NEURODAMUS_NEOCORTEX_BRANCH:
-    value: main
   # this it taken into account only if STEPS_USE_MODULE==0
-  STEPS_BRANCH:
-    value: master
-  STEPS_USE_MODULE:
-    value: 0
+  STEPS_BRANCH: master
+  STEPS_USE_MODULE: 1
+  # this it taken into account only if PY_NEURODAMUS_USE_MODULE==0
+  PY_NEURODAMUS_BRANCH: main
+  PY_NEURODAMUS_USE_MODULE: 1
+  # this it taken into account only if PY_NEURODAMUS_USE_MODULE==0
+  NEURODAMUS_NEOCORTEX_BRANCH: main
+  NEURODAMUS_NEOCORTEX_USE_MODULE: 1
+
 
 
 workflow:
@@ -49,9 +50,9 @@ setup_neurodamus_neocortex:
   extends: [.build]
   variables:
     SPACK_PACKAGE: neurodamus-neocortex
-    # TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
-    # SPACK_PACKAGE_SPEC: +ngv+metabolism
-    SPACK_PACKAGE_SPEC: +ngv+metabolism%intel ^neuron%intel
+    SPACK_PACKAGE_SPEC: +ngv+metabolism
+  rules:
+    - if: $NEURODAMUS_NEOCORTEX_USE_MODULE == "0" && $CI_PIPELINE_SOURCE == "merge_request_event"
 
 .custom_build:
   stage: build
@@ -59,6 +60,7 @@ setup_neurodamus_neocortex:
     bb5_ntasks: 2   # so we block 16 cores
     bb5_cpus_per_task: 8 # ninja -j {this}
     bb5_memory: 76G # ~16*384/80
+    IS_SPACK_UPDATED: 1
   artifacts:
     when: always
     paths:
@@ -69,9 +71,12 @@ setup_neurodamus_neocortex:
   script:
     - !reference [ .bbp_gitlab_access, script ]
     - source .ci/setup.sh
+  
 
 setup_bloodflow:
   extends: [.custom_build]
+  needs:
+    - spack_setup
   variables:
     setup_file: .setup_bloodflow.sh
     envvars: "envvars=(BLOODFLOW_PATH)"
@@ -80,8 +85,11 @@ setup_bloodflow:
 setup_spackenv:
   extends: [.custom_build]
   needs:
-    - setup_neurodamus_neocortex
-    - setup_steps
+    - spack_setup
+    - job: setup_neurodamus_neocortex
+      optional: true
+    - job: setup_steps
+      optional: true
   variables:
     setup_file: .setup_spackenv.sh
     envvars: "envvars=(SPACKENV_PATH)"
@@ -116,11 +124,14 @@ setup_julia:
 .test:
   stage: test
   needs:
+    - spack_setup
     - setup_spackenv
     - setup_julia
     - setup_python_venv
-    - setup_neurodamus_neocortex
-    - setup_steps
+    - job: setup_neurodamus_neocortex
+      optional: true
+    - job: setup_steps
+      optional: true
     - setup_bloodflow
   variables:
     bb5_exclusive: "full"

@@ -18,8 +18,6 @@ module load hpe-mpi
 if [[ -n "${CI}" ]]
 then
   module load git
-  echo "ndam neocortex from CI"
-  spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
 fi
 
 if [ -d "spackenv" ]
@@ -36,18 +34,51 @@ export SPACKENV_PATH=${PWD}/spackenv
 
 if [[ -z "${CI}" ]]
 then
-  echo "add ndam py"
+  if [ "${PY_NEURODAMUS_USE_MODULE}" -eq 1 ]
+  then
+    echo "py-neurodamus from module"
+    module load py-neurodamus
+  else
+    echo "add custom py-neurodamus"
 
-  lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH $UPDATE_NEURODAMUS
-  # hack to remove the links to proj12 for the people that do not have access. Discussion in [BBPBGLIB-973]
-  rm py-neurodamus/tests/simulations/v5_gapjunctions/gap_junctions
-  spack add py-neurodamus@develop
-  spack develop -p ${PWD}/py-neurodamus --no-clone py-neurodamus@develop
+    lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH $UPDATE_NEURODAMUS
+    # hack to remove the links to proj12 for the people that do not have access. Discussion in [BBPBGLIB-973]
+    rm py-neurodamus/tests/simulations/v5_gapjunctions/gap_junctions
+    spack add py-neurodamus@develop
+    spack develop -p ${PWD}/py-neurodamus --no-clone py-neurodamus@develop
+  fi
 
   echo "add ndam neocortex"
-  # TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
-  # spack add neurodamus-neocortex@develop+ngv+metabolism
-  spack add neurodamus-neocortex@develop+ngv+metabolism%intel ^neuron%intel
+  spack add neurodamus-neocortex@develop+ngv+metabolism
+fi
+
+
+if [ "${NEURODAMUS_NEOCORTEX_USE_MODULE}" -eq 1 ]
+then
+  echo "neurodamus neocortex from module"
+  module load neurodamus-neocortex-multiscale
+else
+  if [[ -n "${CI}" ]]
+  then
+    echo "neurodamus neocortex from CI"
+    spack load /${NEURODAMUS_NEOCORTEX_INSTALLED_HASH}
+  else
+    if [ "${PY_NEURODAMUS_USE_MODULE}" -eq 1 ]
+    then
+      echo "py-neurodamus from module"
+      module load py-neurodamus
+    else
+      echo "add custom py-neurodamus"
+      lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH $UPDATE_NEURODAMUS
+      # hack to remove the links to proj12 for the people that do not have access. Discussion in [BBPBGLIB-973]
+      rm py-neurodamus/tests/simulations/v5_gapjunctions/gap_junctions
+      spack add py-neurodamus@develop
+      spack develop -p ${PWD}/py-neurodamus --no-clone py-neurodamus@develop
+    fi
+
+    echo "add ndam neocortex"
+    spack add neurodamus-neocortex@develop+ngv+metabolism
+  fi
 fi
 
 if [ "${STEPS_USE_MODULE}" -eq 1 ]
@@ -69,7 +100,7 @@ fi
 
 echo "additional software"
 # TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
-spack add py-psutil py-bluepysnap ^neuron%intel py-pytest py-jupyterlab
+spack add py-psutil py-bluepysnap ^neuron py-pytest py-jupyterlab
 
 
 spack install
