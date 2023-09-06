@@ -1,5 +1,7 @@
+import sys
 import time
 import logging
+from tqdm import tqdm
 import numpy as np
 from mpi4py import MPI as MPI4PY
 
@@ -175,7 +177,9 @@ class MsrStepsManager:
         assert n_inside == npts, f"n inside ({n_inside}) != n pts ({npts})"
 
         with self.msh.asLocal():
-            for i in range(comm.Get_size()):
+            for i in tqdm(range(size), file=sys.stdout) if rank == 0 else range(size):
+                if rank == 0: print("", flush=True) # needed, otherwise tqdm output is not flushed.
+                
                 pts = None
 
                 if i == rank:
