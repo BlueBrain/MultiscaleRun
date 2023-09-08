@@ -161,10 +161,10 @@ pytests:
       - RESULTS/*
     expire_in: 3 days
   variables:
-    sonata_path: configs/rat_old/simulation_config.json
+    sonata_path: configs/rat_sscxS1HL_V6/simulation_config.json
   script:
     - source .ci/load.sh
-    - .ci/test.sh
+    - source .ci/test.sh
 
 integration_tests:
   extends: [.test]
@@ -213,6 +213,7 @@ triplerun_test:
     with_steps: 1
     with_metabolism: 1
     with_bloodflow: 0
+    with_postproc: 1
 
 quadrun_test:
   extends: [.nrun_test]
@@ -223,3 +224,17 @@ quadrun_test:
     with_steps: 1
     with_metabolism: 1
     with_bloodflow: 1
+    with_postproc: 1
+
+cns_test:
+  extends: [.nrun_test]
+  timeout: 2 hours
+  variables:
+    bb5_duration: "02:00:00"
+    bb5_ntasks: 32
+    with_steps: 1
+    with_metabolism: 1
+    with_bloodflow: 1
+    metabolism_type: cns
+
+

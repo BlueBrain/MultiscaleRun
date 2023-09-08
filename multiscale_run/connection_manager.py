@@ -130,7 +130,7 @@ class MsrConnectionManager:
         l = [config.KK.name]
         ans = {}
         for name in l:
-            ans[name] = steps_m.get_tet_concs(config.KK.name) * r
+            ans[name] = steps_m.get_tet_concs(name) * r
             ans[name] = self.nXtetMat.dot(ans[name])
         metab_m.steps_vars = ans
 

@@ -26,6 +26,7 @@ unset IS_SPACK_UPDATED
 #export with_steps=1
 #export with_metabolism=1
 #export with_bloodflow=0
+#export with_postproc=0
 
 #export results_path=RESULTS
 

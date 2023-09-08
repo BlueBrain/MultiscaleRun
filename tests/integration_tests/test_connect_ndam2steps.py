@@ -54,8 +54,7 @@ def check_mats_shape(ndam_m, conn_m, steps_m, nshape=None, segshape=None):
     if segshape is not None:
         np.testing.assert_equal(conn_m.nsegXtetMat.shape, segshape)
 
-    np.testing.assert_equal(conn_m.nXnsegMatBool.shape[0], len(ndam_m.ncs))
-    np.testing.assert_equal(conn_m.nXnsegMatBool.shape[1], sum([v for k, v in d.items() if k not in ndam_m.removed_gids]))
+    np.testing.assert_equal(conn_m.nXnsegMatBool.shape, (nn, nseg))
 
     np.testing.assert_equal(conn_m.nXnsegMatBool.shape, (nn, nseg))
 

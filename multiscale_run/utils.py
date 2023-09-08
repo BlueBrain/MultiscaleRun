@@ -278,8 +278,8 @@ def select_file(d, name=None):
 
 
 def get_sonata_path():
-    """Sonata path. All the config searches are based on this path"""
-    path = load_from_env("sonata_path", "configs/rat_old/simulation_config.json")
+    """ Sonata path. All the config searches are based on this path """
+    path = load_from_env("sonata_path", "configs/rat_sscxS1HL_V6/simulation_config.json")
     f = select_file(path)
     assert f is not None, f"sonata_path: {path} not found!"
     return f

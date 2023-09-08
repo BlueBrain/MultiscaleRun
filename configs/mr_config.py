@@ -166,7 +166,8 @@ class Volsys:
 ##############################################
 # Triplerun related
 ##############################################
-metabolism_type = ["cns", "main"][0]  # CHOOSE HERE FOR METABOLISM VERSION
+# possible options: `cns`, `main`
+metabolism_type = utils.load_from_env("metabolism_type", "main")
 
 # paths
 metabolism_path = "metabolismndam_reduced"

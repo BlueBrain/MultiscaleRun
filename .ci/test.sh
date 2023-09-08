@@ -2,11 +2,16 @@
 
 set -e
 
-export results_path=./RESULTS/
 echo "*******************************************************************************"
 echo " *** main.py run *** "
 echo "*******************************************************************************"
+export results_path=RESULTS
 srun --overlap -n $bb5_ntasks python main.py
+
+if [[ $with_postproc -ne 1 ]]; then
+    echo "no postproc required. with_postproc=$with_postproc"
+    return
+fi
 
 echo "*******************************************************************************"
 echo " *** Jupyter notebook *** "
@@ -24,13 +29,9 @@ postproc.ipynb
 echo "*******************************************************************************"
 echo " *** pytest *** "
 echo "*******************************************************************************"
-if [[ $nrun -eq 2 ]]
-then
-  pytest -mpytest -v tests/test_dualrun.py
-elif [[ $nrun -eq 3 ]]
-then
-  python -mpytest -v tests/test_triplerun.py
-elif [[ $nrun -eq 4 ]]
-then
-  pytest -mpytest -v tests/test_triplerun.py
+
+
+if [[ "$with_steps" -eq 1 && "$with_metabolism" -eq 1 ]]; then
+    echo "Running test_triplerun"
+    python -mpytest -v tests/test_triplerun.py
 fi
