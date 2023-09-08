@@ -28,21 +28,32 @@ class MsrConnectionManager:
         is_save=False,  # deactivated, not critical atm
         is_load=False,  # deactivated, not critical atm
         only_rank0=False,
-        field_names=["nXtetMat", "nsegXtetMat", "nXnsegMatBool"],
+        field_names=["nXsecMat", "nsecXnsegMat", "nXnsegMatBool"],
+    )
+    @utils.logs_decorator
+    def connect_ndam2ndam(self, ndam_m):
+        """ Add some useful matrices that map ndam points, segments, sections and neurons """
+        pts = ndam_m.get_seg_points(config.steps_mesh_scale)
+        
+        self.nXsecMat = ndam_m.get_nXsecMat()
+        self.nsecXnsegMat = ndam_m.get_nsecXnsegMat(pts)
+        self.nXnsegMatBool = self.nXsecMat.dot(self.nsecXnsegMat) > 0
+
+    @utils.cache_decorator(
+        path=config.cache_path,
+        is_save=False,  # deactivated, not critical atm
+        is_load=False,  # deactivated, not critical atm
+        only_rank0=False,
+        field_names=["nsegXtetMat", "nXtetMat"],
     )
     @utils.logs_decorator
     def connect_ndam2steps(self, ndam_m, steps_m):
         """neuron volume fractions in tets"""
         pts = ndam_m.get_seg_points(steps_m.msh._scale)
 
-        nsegXtetMat = steps_m.get_nsegXtetMat(pts)
-        nsecXnsegMat = ndam_m.get_nsecXnsegMat(pts)
-        nXsecMat = ndam_m.get_nXsecMat()
-
         # Connection matrices
-        self.nXtetMat = nXsecMat.dot(nsecXnsegMat.dot(nsegXtetMat))
-        self.nsegXtetMat = nsegXtetMat
-        self.nXnsegMatBool = nXsecMat.dot(nsecXnsegMat) > 0
+        self.nsegXtetMat = steps_m.get_nsegXtetMat(pts)
+        self.nXtetMat = self.nXsecMat.dot(self.nsecXnsegMat.dot(self.nsegXtetMat))
 
     @utils.cache_decorator(
         path=config.cache_path,
@@ -78,13 +89,15 @@ class MsrConnectionManager:
 
     def delete_rows(self, m, to_be_removed):
         """We need to remove rows in case of failed neurons"""
-        attr = getattr(self, m)
-        setattr(self, m, utils.delete_rows_csr(attr, to_be_removed))
+        if hasattr(self, m):
+            attr = getattr(self, m)
+            setattr(self, m, utils.delete_rows_csr(attr, to_be_removed))
 
     def delete_cols(self, m, to_be_removed):
         """We need to remove rows in case of failed neurons"""
-        attr = getattr(self, m)
-        setattr(self, m, utils.delete_cols_csr(attr, to_be_removed))
+        if hasattr(self, m):
+            attr = getattr(self, m)
+            setattr(self, m, utils.delete_cols_csr(attr, to_be_removed))
 
     def ndam2steps_sync(self, ndam_m, steps_m, specs, DT):
         """use ndam to correct steps concentrations"""

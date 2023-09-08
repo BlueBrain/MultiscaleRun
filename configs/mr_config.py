@@ -37,14 +37,15 @@ class ConfigError(Exception):
 # base flags and paths
 ##############################################
 
-mr_debug = utils.load_from_env("mr_debug", False)
+mr_debug = utils.load_from_env("mr_debug", False, lambda x : bool(int(x)))
+mr_sim_end = utils.load_from_env("mr_sim_end", None, lambda x : float(x))
 logging.basicConfig(level=logging.DEBUG if mr_debug else logging.INFO)
 
-with_steps = utils.load_from_env("with_steps", True)
-with_metabolism = utils.load_from_env("with_metabolism", True)
-with_bloodflow = utils.load_from_env("with_bloodflow", True)
+with_steps = utils.load_from_env("with_steps", True, lambda x : bool(int(x)))
+with_metabolism = utils.load_from_env("with_metabolism", True, lambda x : bool(int(x)))
+with_bloodflow = utils.load_from_env("with_bloodflow", True, lambda x : bool(int(x)))
 
-results_path = utils.load_from_env("results_path", "RESULTS")
+results_path = utils.load_from_env("results_path", "RESULTS", lambda x : str(x))
 
 # If you want to change paths, use bash: "export sonata_path=mypath"
 # and put mesh and mr config file in the same folder. Otherwise the program
@@ -62,6 +63,8 @@ config_path = utils.get_config_path()
 
 # in case of unsplit mesh it auto-splits
 steps_mesh_path = utils.search_path("mesh/mc2c/mc2c.msh")
+steps_mesh_scale = 1e-6
+
 
 ##############################################
 # caching
@@ -162,12 +165,12 @@ class Volsys:
     name = "extra_volsys"
     specs = [Na, KK]
 
-
 ##############################################
 # Triplerun related
 ##############################################
 # possible options: `cns`, `main`
-metabolism_type = utils.load_from_env("metabolism_type", "main")
+
+metabolism_type = utils.load_from_env("metabolism_type", "main", lambda x : str(x))
 
 # paths
 metabolism_path = "metabolismndam_reduced"
@@ -252,7 +255,7 @@ def get_GLY_a_and_mito_vol_frac(c_gid):
 ##############################################
 # Quadrun related
 ##############################################
-bloodflow_path = utils.load_from_env("BLOODFLOW_PATH", "bloodflow_src")
+bloodflow_path = utils.load_from_env("BLOODFLOW_PATH", "bloodflow_src", lambda x : str(x))
 bloodflow_params = {
     # paths
     "output_folder": "RESULTS/bloodflow",

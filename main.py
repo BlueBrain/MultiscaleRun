@@ -48,10 +48,16 @@ def main():
 
     with timeit(name="initialization"):
         ndam_m = neurodamus_manager.MsrNeurodamusManager(config.sonata_path)
+        conn_m.connect_ndam2ndam(ndam_m=ndam_m)
 
         # Times are in ms (for NEURON, because STEPS works with SI)
         DT = ndam_m.dt()  # 0.025  #ms i.e. = 25 usec which is timstep of ndam
-        SIM_END = ndam_m.duration()  # 500.0 #10.0 #1000.0 #ms
+   
+        SIM_END = ndam_m.duration()
+
+        # Possible override of SIM_END: export mr_sim_end=100
+        if config.mr_sim_end:
+            SIM_END = config.mr_sim_end
 
         rss = []  # Memory tracking
 

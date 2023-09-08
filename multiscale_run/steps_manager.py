@@ -58,7 +58,7 @@ class MsrStepsManager:
 
         mesh_path = self._auto_select_mesh(mesh_path)
 
-        self.msh = DistMesh(mesh_path, scale=1e-6)
+        self.msh = DistMesh(mesh_path, scale=config.steps_mesh_scale)
 
         with self.msh:
             extra = Compartment(name=config.Mesh.compname, vsys=config.Volsys.name)

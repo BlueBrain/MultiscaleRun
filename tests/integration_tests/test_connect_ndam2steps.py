@@ -64,6 +64,7 @@ def test_connection():
     conn_m = connection_manager.MsrConnectionManager()
 
     ndam_m = neurodamus_manager.MsrNeurodamusManager(config.sonata_path)
+    conn_m.connect_ndam2ndam(ndam_m=ndam_m)
     steps_m = steps_manager.MsrStepsManager(config.steps_mesh_path)
 
     conn_m.connect_ndam2steps(ndam_m=ndam_m, steps_m=steps_m)

@@ -188,8 +188,10 @@ integration_tests:
 dualrun_test_n1:
   extends: [.dualrun_test]
   variables:
-    bb5_duration: "04:00:00"
+    bb5_duration: "02:00:00"
     bb5_ntasks: 1
+    # Shortened time for CI
+    mr_sim_end: 200
 
 dualrun_test_n2:
   extends: [.dualrun_test]
@@ -197,6 +199,8 @@ dualrun_test_n2:
     bb5_duration: "02:00:00"
     bb5_ntasks: 2
     mesh_path: mesh/mc2c/mc2c.msh
+    # Shortened time for CI
+    mr_sim_end: 200
 
 dualrun_test_n16:
   extends: [.dualrun_test]

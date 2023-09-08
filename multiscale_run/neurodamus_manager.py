@@ -118,6 +118,9 @@ class MsrNeurodamusManager:
         check the relative check function for the reasoning behind these lengths
         """
 
+        if hasattr(self, "seg_points"):
+            return self.seg_points
+
         def get_seg_extremes(sec, loc2glob, scale):
             """Get extremes and roto-translate in global coordinates"""
 
@@ -171,11 +174,12 @@ class MsrNeurodamusManager:
             )
             return ans
 
-        return [
+        self.seg_points = [
             get_seg_extremes(sec, nc.local_to_global_coord_mapping, scale)
             for nc in self.ncs
             for sec in self._gen_secs(nc)
         ]
+        return self.seg_points
 
     def get_nsecXnsegMat(self, pts):
         """nsecXnsegMat is a matrix that gives the fraction of neuron section in a tet"""

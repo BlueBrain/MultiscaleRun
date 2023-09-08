@@ -238,16 +238,11 @@ def ppf(n):
     return f"{n:.3}"
 
 
-def load_from_env(env_name, default):
+def load_from_env(env_name, default, t):
     """Either load from environment or set with default (env takes priority)"""
     var = os.getenv(env_name)
 
-    if isinstance(default, bool):
-        return bool(int(var)) if var is not None else default
-    elif isinstance(default, int):
-        return int(var) if var is not None else default
-    else:
-        return var if var is not None else default
+    return t(var) if var is not None else default
 
 
 def path_exists(path):
@@ -279,7 +274,7 @@ def select_file(d, name=None):
 
 def get_sonata_path():
     """ Sonata path. All the config searches are based on this path """
-    path = load_from_env("sonata_path", "configs/rat_sscxS1HL_V6/simulation_config.json")
+    path = load_from_env("sonata_path", "configs/rat_sscxS1HL_V6/simulation_config.json", lambda x : str(x))
     f = select_file(path)
     assert f is not None, f"sonata_path: {path} not found!"
     return f
