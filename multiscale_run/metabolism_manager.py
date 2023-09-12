@@ -150,7 +150,7 @@ class MsrMetabolismManager:
             error_solver = e
 
         if sol is None:
-            raise error_solver
+            comm.Abort(f"sol is None: {error_solver}") 
 
         self.um[(i_metab + 1, c_gid)] = sol.u[-1]
         self.prnt.append_to_file(config.um_out_file, [c_gid, i_metab, sol.u[-1]], rank)

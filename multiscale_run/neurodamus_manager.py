@@ -33,6 +33,7 @@ class MsrNeurodamusManager:
 
         self.set_managers()
         self.ncs = np.array([nc for nc in self.neuron_manager.cells])
+        self.init_ncs_len = len(self.ncs)
         self.acs = np.array([nc for nc in self.astrocyte_manager.cells])
         self.nc_vols = self._cumulate_nc_sec_quantity("volume")
         self.nc_areas = self._cumulate_nc_sec_quantity("area")
@@ -43,7 +44,7 @@ class MsrNeurodamusManager:
 
         s = "\n".join(f"{k}: {v}" for k, v in failed_cells.items())
         if len(s):
-            utils.rank_print("failed gids:\n" + s)
+            utils.rank_print(f"failed gids ({len(s)}/{self.init_ncs_len}): {s}")
 
         self.removed_gids |= failed_cells
 

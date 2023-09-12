@@ -154,14 +154,14 @@ pytests:
 .nrun_test:
   extends: [.test]
   timeout: 2 hours
-
   artifacts:
     when: always
     paths:
       - RESULTS/*
-    expire_in: 3 days
+    expire_in: 4 hours
   variables:
     sonata_path: configs/rat_sscxS1HL_V6/simulation_config.json
+    bb5_ntasks: 32
   script:
     - source .ci/load.sh
     - source .ci/test.sh
@@ -179,66 +179,46 @@ integration_tests:
 
 .dualrun_test:
   extends: [.nrun_test]
-  timeout: 4 hours
+  timeout: 2 hours
   variables:
     with_steps: 1
     with_metabolism: 0
     with_bloodflow: 0
+    # Shortened time for CI
+    mr_sim_end: 200
 
-dualrun_test_n1:
+dualrun_test 1/16:
   extends: [.dualrun_test]
   variables:
-    bb5_duration: "02:00:00"
     bb5_ntasks: 1
     # Shortened time for CI
     mr_sim_end: 200
 
-dualrun_test_n2:
+dualrun_test 2/16:
   extends: [.dualrun_test]
   variables:
-    bb5_duration: "02:00:00"
     bb5_ntasks: 2
-    mesh_path: mesh/mc2c/mc2c.msh
-    # Shortened time for CI
-    mr_sim_end: 200
 
-dualrun_test_n16:
+dualrun_test 16/16:
   extends: [.dualrun_test]
   variables:
-    bb5_duration: "01:00:00"
     bb5_ntasks: 16
 
-triplerun_test:
+nrun_[steps, metab, bf]:
   extends: [.nrun_test]
-  timeout: 2 hours
   variables:
-    bb5_duration: "02:00:00"
-    bb5_ntasks: 32
-    with_steps: 1
-    with_metabolism: 1
-    with_bloodflow: 0
-    with_postproc: 1
+    # Shortened time for CI. Here we just want to check that everything runs 
+    # for a couple of syncs (every 100 ms atm). 
+    # There are some accumulation problems when steps is not involved and metab fails on his own. 
+    mr_sim_end: 200
+  parallel:
+    matrix:
+    - with_steps: [0, 1]
+      with_metabolism: [0, 1]
+      with_bloodflow: [0, 1]
+  rules:
+    - if: $with_steps != "1" || $with_metabolism != "1" || $with_bloodflow != "1"
 
 quadrun_test:
   extends: [.nrun_test]
-  timeout: 2 hours
-  variables:
-    bb5_duration: "02:00:00"
-    bb5_ntasks: 32
-    with_steps: 1
-    with_metabolism: 1
-    with_bloodflow: 1
-    with_postproc: 1
-
-cns_test:
-  extends: [.nrun_test]
-  timeout: 2 hours
-  variables:
-    bb5_duration: "02:00:00"
-    bb5_ntasks: 32
-    with_steps: 1
-    with_metabolism: 1
-    with_bloodflow: 1
-    metabolism_type: cns
-
 

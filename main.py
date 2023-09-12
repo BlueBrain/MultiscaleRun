@@ -82,7 +82,8 @@ def main():
                 vasculature_path=ndam_m.get_vasculature_path(),
                 params=config.bloodflow_params,
             )
-            conn_m.connect_bf2steps(bf_m=bf_m, steps_m=steps_m)
+            if config.with_steps:
+                conn_m.connect_bf2steps(bf_m=bf_m, steps_m=steps_m)
 
     log_stage("===============================================")
     log_stage("Running the selected solvers ...")
@@ -125,7 +126,7 @@ def main():
                         with timeit(name="steps_2_metabolism"):
                             conn_m.steps2metab_sync(steps_m=steps_m, metab_m=metab_m)
 
-                    if config.with_bloodflow:
+                    if config.with_bloodflow and config.with_steps:
                         with timeit(name="bloodflow_2_metabolism"):
                             conn_m.bloodflow2metab_sync(bf_m=bf_m, metab_m=metab_m)
 

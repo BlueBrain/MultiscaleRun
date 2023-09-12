@@ -101,7 +101,8 @@ if with_bloodflow:
     n_DT_steps_per_update["bf"] = 10 if mr_debug else 4000
 
 # the multiscale run update happens with the largest DT that syncs everything else
-n_DT_steps_per_update["mr"] = np.gcd.reduce(list(n_DT_steps_per_update.values()))
+l_DTs = list(n_DT_steps_per_update.values())
+n_DT_steps_per_update["mr"] = np.gcd.reduce(l_DTs if len(l_DTs) else 10000)
 
 
 class Mesh:
