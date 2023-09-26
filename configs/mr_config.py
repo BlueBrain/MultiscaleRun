@@ -53,18 +53,14 @@ results_path = utils.load_from_env("results_path", "RESULTS", lambda x : str(x))
 
 # Do not change this directly, pls
 sonata_path = utils.get_sonata_path()
+sonata_folder_path = utils.get_sonata_folder_path()
+node_sets_path = os.path.join(sonata_folder_path, "node_sets.json")
+
+# These can be changed directly
+circuit_path = utils.search_path("circuit_config.json")
 
 # Do not change this directly, pls
 config_path = utils.get_config_path()
-
-
-# You can change this considering that we are searcing in the folder of the 
-# sonata_path first and its parent if not found
-
-# in case of unsplit mesh it auto-splits
-steps_mesh_path = utils.search_path("mesh/mc2c/mc2c.msh")
-steps_mesh_scale = 1e-6
-
 
 ##############################################
 # caching
@@ -75,8 +71,27 @@ cache_save = True
 cache_load = True
 
 ##############################################
+# ndam
+##############################################
+
+# If True, the neuron ids will contain only the neuron that are connected 
+# to the astrocytes, otherwise, the list will contain all the neurons ids
+filter_neuron = False
+
+# Name of the neuron population. Used only in preprocessing to decide 
+# what to put in node_sets.json
+neuron_population_name = 'All'
+
+##############################################
 # Dualrun related
 ##############################################
+
+# You can change this considering that we are searcing in the folder of the 
+# sonata_path first and its parent if not found
+
+# in case of unsplit mesh it auto-splits
+steps_mesh_path = utils.search_path("mesh/mc2c/mc2c.msh")
+steps_mesh_scale = 1e-6
 
 # for out file names
 timestr = time.strftime("%Y%m%d%H")
@@ -174,25 +189,25 @@ class Volsys:
 metabolism_type = utils.load_from_env("metabolism_type", "main", lambda x : str(x))
 
 # paths
+metab_node_sets_path = os.path.join(sonata_folder_path, "metab_node_sets.json")
 metabolism_path = "metabolismndam_reduced"
-path_to_metab_jl = os.path.join(metabolism_path, "sim/metabolism_unit_models")
 
 # files
 match metabolism_type:
     case "cns":
         julia_code_file_name = "met4cns.jl"  # < reduced for CNS
-        u0_file = os.path.join(path_to_metab_jl, "u0_Calv_ATP_1p4_Nai10.csv")
+        u0_file = os.path.join(metabolism_path, "u0_Calv_ATP_1p4_Nai10.csv")
         metab_vm_indexes = {"atpn": 28, "adpn": 30, "nai": 7, "ko": 8}
     case "main":
         julia_code_file_name = "metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl"  # <main met
         u0_file = os.path.join(
-            path_to_metab_jl, "u0steady_22nov22.csv"
+            metabolism_path, "u0steady_22nov22.csv"
         )  # file created from /gpfs/bbp.cscs.ch/project/proj34/metabolismndam/optimiz_unit/enzymes/enzymes_preBigg/COMBO/MODEL_17Nov22.ipynb
         metab_vm_indexes = {"atpn": 22, "adpn": 23, "nai": 98, "ko": 95}
 
 
 julia_code_file = os.path.join(
-    path_to_metab_jl, julia_code_file_name
+    metabolism_path, julia_code_file_name
 )  # file created based on /gpfs/bbp.cscs.ch/project/proj34/metabolismndam/optimiz_unit/enzymes/enzymes_preBigg/COMBO/MODEL_17Nov22.ipynb
 
 
@@ -211,16 +226,8 @@ wrong_gids_testing_file = f"dis_wrong_gid_errors_{timestr}.txt"
 err_solver_output = f"dis_solver_errors_{timestr}.txt"
 
 #####
-gids_lists_dir = "metabolismndam_reduced/sim/gids_sets"
-# mrci stems from testNGVSSCX. However, the layer subdivision is totally random and there is no
-# correlation with real-life data
-target_gids = set(list(np.loadtxt(os.path.join(gids_lists_dir, "mrci_gids.txt"))))
 
-target_gids_L = []
-for i in range(1, 7):
-    list_temp = np.loadtxt(os.path.join(gids_lists_dir, f"mrci_L{i}_gids.txt")).tolist()
-    target_gids_L.append(list_temp if isinstance(list_temp, list) else [list_temp])
-
+# These are used to filter and select the 6 layers of neurons
 
 mito_volume_fraction = [
     0.0459,
@@ -244,13 +251,6 @@ glycogen_au = [
 ]  # 6 Layers of the circuit
 glycogen_scaled = [i / max(glycogen_au) for i in glycogen_au]
 
-
-def get_GLY_a_and_mito_vol_frac(c_gid):
-    for idx, tgt in enumerate(target_gids_L):
-        if c_gid in tgt:
-            return glycogen_scaled[idx] * 14, mito_volume_fraction_scaled[idx]
-
-    return None, None
 
 
 ##############################################

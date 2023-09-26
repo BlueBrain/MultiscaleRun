@@ -22,7 +22,7 @@ from diffeqpy import de
 
 
 def test_init():
-    ndam_m = neurodamus_manager.MsrNeurodamusManager(config.sonata_path)
+    ndam_m = neurodamus_manager.MsrNeurodamusManager(config)
 
 
 if __name__ == "__main__":

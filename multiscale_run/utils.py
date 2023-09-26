@@ -223,12 +223,12 @@ def cache_decorator(path, is_save, is_load, field_names, only_rank0=False):
 def logs_decorator(foo):
     def logs(*args, **kwargs):
         function_name = foo.__name__
-        logging.info(f"{function_name}")
+        logging.info(f"   {function_name}")
         start = time.perf_counter()
         res = foo(*args, **kwargs)
         mem = psutil.Process().memory_info().rss / 1024**2
         stop = time.perf_counter()
-        logging.info(f"/{function_name}: mem: {mem}, time: {stop - start}")
+        logging.info(f"   /{function_name}: mem: {mem}, time: {stop - start}")
         return res
 
     return logs
@@ -273,17 +273,26 @@ def select_file(d, name=None):
 
 
 def get_sonata_path():
-    """ Sonata path. All the config searches are based on this path """
-    path = load_from_env("sonata_path", "configs/rat_sscxS1HL_V6/simulation_config.json", lambda x : str(x))
+    """Sonata path. All the config searches are based on this path"""
+    path = load_from_env(
+        "sonata_path",
+        "configs/rat_sscxS1HL_V6/simulation_config.json",
+        lambda x: str(x),
+    )
     f = select_file(path)
     assert f is not None, f"sonata_path: {path} not found!"
     return f
 
 
+def get_sonata_folder_path():
+    """Get the folder where the sonata files are stored"""
+    sonata_path = get_sonata_path()
+    return os.path.split(sonata_path)[0]
+
+
 def search_path(name):
     """Search config file (or folder) based on the sonata path"""
-    sonata_path = get_sonata_path()
-    d, _ = os.path.split(sonata_path)
+    d = get_sonata_folder_path()
     f = select_file(d, name)
     assert f is not None, f"path: `{os.path.join(d, name)}` not found!"
     return f

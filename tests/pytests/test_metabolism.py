@@ -13,7 +13,7 @@ from julia import Main
 def test_metabolism():
     prnt = printer.MsrPrinter()
     metab_m = metabolism_manager.MsrMetabolismManager(
-        u0_file=config.u0_file, main=Main, prnt=prnt
+        config=config, main=Main, prnt=prnt, neuron_pop_name="All"
     )
 
 

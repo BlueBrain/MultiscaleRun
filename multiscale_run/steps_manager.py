@@ -178,8 +178,11 @@ class MsrStepsManager:
 
         with self.msh.asLocal():
             for i in tqdm(range(size), file=sys.stdout) if rank == 0 else range(size):
-                if rank == 0: print("", flush=True) # needed, otherwise tqdm output is not flushed.
-                
+                if rank == 0:
+                    print(
+                        "", flush=True
+                    )  # needed, otherwise tqdm output is not flushed.
+
                 pts = None
 
                 if i == rank:

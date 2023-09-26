@@ -32,9 +32,9 @@ class MsrConnectionManager:
     )
     @utils.logs_decorator
     def connect_ndam2ndam(self, ndam_m):
-        """ Add some useful matrices that map ndam points, segments, sections and neurons """
+        """Add some useful matrices that map ndam points, segments, sections and neurons"""
         pts = ndam_m.get_seg_points(config.steps_mesh_scale)
-        
+
         self.nXsecMat = ndam_m.get_nXsecMat()
         self.nsecXnsegMat = ndam_m.get_nsecXnsegMat(pts)
         self.nXnsegMatBool = self.nXsecMat.dot(self.nsecXnsegMat) > 0
@@ -156,7 +156,7 @@ class MsrConnectionManager:
         if rank == 0:
             vasc_ids = [j for i in vasc_ids for j in i]
             radii = [j for i in radii for j in i]
-            bf_m.set_radii(vasc_ids, radii)
+            bf_m.set_radii(vasc_ids=vasc_ids, radii=radii)
 
     def bloodflow2metab_sync(self, bf_m, metab_m):
         """bloodflow flows and volumes for metab"""
@@ -194,9 +194,7 @@ class MsrConnectionManager:
         # u stands for Julia ODE var and m stands for metabolism
         atpi_weighted_mean = np.array(
             [
-                metab_m.um[(i_metab + 1, int(nc.CCell.gid))][
-                    config.metab_vm_indexes["atpn"]
-                ]
+                metab_m.vm[int(nc.CCell.gid)][config.metab_vm_indexes["atpn"]]
                 for nc in ndam_m.ncs
             ]
         )  # 1.4
@@ -215,8 +213,12 @@ class MsrConnectionManager:
         #                         )  # 140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
 
         ko_weighted_mean = np.array(
-            [metab_m.vm[config.metab_vm_indexes["ko"]]] * len(ndam_m.ncs)
-        )  # 5
+            [
+                metab_m.vm[int(nc.CCell.gid)][config.metab_vm_indexes["ko"]]
+                for nc in ndam_m.ncs
+            ]
+        )
+        # 5
         #                         nai_weighted_mean = (
         #                             0.5 * 10.0 + 0.5 * um[(idxm + 1, c_gid)][6]
         #                         )  # 0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #um[(idxm+1,c_gid)][6]

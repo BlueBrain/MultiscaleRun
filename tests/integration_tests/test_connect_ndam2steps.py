@@ -63,7 +63,7 @@ def check_mats_shape(ndam_m, conn_m, steps_m, nshape=None, segshape=None):
 def test_connection():
     conn_m = connection_manager.MsrConnectionManager()
 
-    ndam_m = neurodamus_manager.MsrNeurodamusManager(config.sonata_path)
+    ndam_m = neurodamus_manager.MsrNeurodamusManager(config=config)
     conn_m.connect_ndam2ndam(ndam_m=ndam_m)
     steps_m = steps_manager.MsrStepsManager(config.steps_mesh_path)
 

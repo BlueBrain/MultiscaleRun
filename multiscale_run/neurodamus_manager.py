@@ -1,13 +1,13 @@
 from neurodamus.connection_manager import SynapseRuleManager
+from bluepysnap import Circuit
 from mpi4py import MPI as MPI4PY
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 from . import utils
 
-config = utils.load_config()
-
 import logging
+import json
 import neurodamus
 import numpy as np
 from scipy import sparse
@@ -15,14 +15,16 @@ import steps
 
 import os
 
+logging.basicConfig(level=logging.INFO)
+
 
 class MsrNeurodamusManager:
     """Handles neurodamus and keep track of what neurons are working"""
 
-    def __init__(self, sonata_path):
+    def __init__(self, config):
         logging.info("instantiate ndam")
         self.ndamus = neurodamus.Neurodamus(
-            sonata_path,
+            config.sonata_path,
             logging_level=None,
             enable_coord_mapping=True,
             cleanup_atexit=False,
@@ -342,7 +344,7 @@ class MsrNeurodamusManager:
 
         def gen_vasc_ids(astro_id):
             # libsonata is 0 based
-            endfeet = manager._gliovascular.afferent_edges(astro_id-1)
+            endfeet = manager._gliovascular.afferent_edges(astro_id - 1)
             astrocyte = manager._cell_manager.gid2cell[astro_id + manager._gid_offset]
 
             if astrocyte.endfeet is None:
@@ -352,7 +354,7 @@ class MsrNeurodamusManager:
                 if i is None:
                     continue
                 # neurodamus is 1 based
-                yield i+1
+                yield int(i + 1)
 
         def gen_radii(astro_id):
             astrocyte = manager._cell_manager.gid2cell[astro_id + manager._gid_offset]

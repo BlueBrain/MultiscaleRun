@@ -30,7 +30,7 @@ from scipy.sparse import diags
 def test_sync():
     conn_m = connection_manager.MsrConnectionManager()
 
-    ndam_m = neurodamus_manager.MsrNeurodamusManager(config.sonata_path)
+    ndam_m = neurodamus_manager.MsrNeurodamusManager(config)
     conn_m.connect_ndam2ndam(ndam_m)
     steps_m = steps_manager.MsrStepsManager(config.steps_mesh_path)
 

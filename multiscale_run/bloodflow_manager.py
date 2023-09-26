@@ -28,8 +28,6 @@ from astrovascpy.utils import set_edge_data, create_entry_largest_nodes
 
 from multiscale_run import utils
 
-config = utils.load_config()
-
 from mpi4py import MPI as MPI4PY
 
 comm = MPI4PY.COMM_WORLD

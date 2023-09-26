@@ -22,7 +22,7 @@ else
   python -m pip install --upgrade pip
 fi
 
-pip install diffeqpy julia
+pip install diffeqpy julia black
 
 # install blood flow solver
 echo "   ### python-venv : Blood Flow Solver setup"

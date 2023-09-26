@@ -3,6 +3,7 @@ from __future__ import print_function
 import os
 import logging
 
+
 import copy
 
 import numpy as np
@@ -20,6 +21,11 @@ from mpi4py import MPI as MPI4PY
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
+# this goes before neurodamus for correct logging
+from multiscale_run import utils
+
+config = utils.load_config()
+
 import neurodamus
 from neurodamus.core import ProgressBarRank0 as ProgressBar
 from neurodamus.utils.logging import log_stage
@@ -31,28 +37,29 @@ import psutil
 
 from multiscale_run import (
     metabolism_manager,
-    utils,
     steps_manager,
     neurodamus_manager,
     bloodflow_manager,
     connection_manager,
     printer,
+    preprocessor,
 )
-config = utils.load_config()
 
 
 def main():
+    preprocessor.MsrPreprocessor(config).run()
+
     config.print_config()
     prnt = printer.MsrPrinter()
     conn_m = connection_manager.MsrConnectionManager()
 
     with timeit(name="initialization"):
-        ndam_m = neurodamus_manager.MsrNeurodamusManager(config.sonata_path)
+        ndam_m = neurodamus_manager.MsrNeurodamusManager(config)
         conn_m.connect_ndam2ndam(ndam_m=ndam_m)
 
         # Times are in ms (for NEURON, because STEPS works with SI)
         DT = ndam_m.dt()  # 0.025  #ms i.e. = 25 usec which is timstep of ndam
-   
+
         SIM_END = ndam_m.duration()
 
         # Possible override of SIM_END: export mr_sim_end=100
@@ -71,10 +78,13 @@ def main():
         if config.with_steps:
             steps_m = steps_manager.MsrStepsManager(config.steps_mesh_path)
             conn_m.connect_ndam2steps(ndam_m=ndam_m, steps_m=steps_m)
-            
+
         if config.with_metabolism:
             metab_m = metabolism_manager.MsrMetabolismManager(
-                u0_file=config.u0_file, main=Main, prnt=prnt
+                config=config,
+                main=Main,
+                prnt=prnt,
+                neuron_pop_name=ndam_m.neuron_manager.population_name,
             )
 
         if config.with_bloodflow:
@@ -90,13 +100,17 @@ def main():
 
     # i_* is the number of time steps of that particular simulator
     i_ndam, i_metab = 0, 0
-    for t in ProgressBar(int(SIM_END / (DT*config.n_DT_steps_per_update["mr"])))(utils.timesteps(SIM_END, DT*config.n_DT_steps_per_update["mr"])):
+    for t in ProgressBar(int(SIM_END / (DT * config.n_DT_steps_per_update["mr"])))(
+        utils.timesteps(SIM_END, DT * config.n_DT_steps_per_update["mr"])
+    ):
         i_ndam += config.n_DT_steps_per_update["mr"]
         with timeit(name="main_loop"):
             with timeit(name="neurodamus_solver"):
                 ndam_m.ndamus.solve(t)
 
-            if config.with_steps and (i_ndam % config.n_DT_steps_per_update["steps"] == 0):
+            if config.with_steps and (
+                i_ndam % config.n_DT_steps_per_update["steps"] == 0
+            ):
                 with timeit(name="steps_loop"):
                     log_stage("steps loop")
                     with timeit(name="steps_solver"):
@@ -107,16 +121,20 @@ def main():
                             ndam_m=ndam_m,
                             steps_m=steps_m,
                             specs=config.Volsys.specs,
-                            DT=config.n_DT_steps_per_update["steps"]*DT,
+                            DT=config.n_DT_steps_per_update["steps"] * DT,
                         )
 
-            if config.with_bloodflow and (i_ndam % config.n_DT_steps_per_update["bf"] == 0):
+            if config.with_bloodflow and (
+                i_ndam % config.n_DT_steps_per_update["bf"] == 0
+            ):
                 with timeit(name="bf_loop"):
                     log_stage("bf loop")
                     conn_m.ndam2bloodflow_sync(ndam_m=ndam_m, bf_m=bf_m)
                     bf_m.update_static_flow()
 
-            if config.with_metabolism and (i_ndam % config.n_DT_steps_per_update["metab"] == 0):
+            if config.with_metabolism and (
+                i_ndam % config.n_DT_steps_per_update["metab"] == 0
+            ):
                 with timeit(name="metabolism_loop"):
                     log_stage("metab loop")
                     with timeit(name="neurodamus_2_metabolism"):
@@ -131,7 +149,11 @@ def main():
                             conn_m.bloodflow2metab_sync(bf_m=bf_m, metab_m=metab_m)
 
                     with timeit(name="solve_metabolism"):
-                        failed_cells = metab_m.advance(ndam_m.ncs, i_metab, config.n_DT_steps_per_update["metab"]*DT)
+                        failed_cells = metab_m.advance(
+                            ndam_m.ncs,
+                            i_metab,
+                            config.n_DT_steps_per_update["metab"] * DT,
+                        )
 
                     ndam_m.remove_gids(failed_cells, conn_m)
 
