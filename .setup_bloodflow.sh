@@ -7,7 +7,8 @@ echo
 echo "   ### bloodflow"
 echo
 
+source setup_env.sh
+
 # it is important to not name this "bloodflow" otherwise python messes up the imports
-folder=bloodflow_src
-export BLOODFLOW_PATH=${PWD}/$folder
-lazy_clone $folder https://github.com/BlueBrain/AstroVascPy.git $BLOODFLOW_BRANCH $UPDATE_BLOODFLOW
+export BLOODFLOW_PATH=${PWD}/bloodflow_src
+lazy_clone $BLOODFLOW_PATH https://github.com/BlueBrain/AstroVascPy.git $BLOODFLOW_BRANCH $UPDATE_BLOODFLOW

@@ -1,70 +1,99 @@
-from neurodamus.connection_manager import SynapseRuleManager
+import numpy as np
+from scipy import sparse
+
+import neurodamus
+import steps
 from mpi4py import MPI as MPI4PY
+from neurodamus.connection_manager import SynapseRuleManager
+
+from . import utils
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
-from . import utils
-
-config = utils.load_config()
-
-import logging
-import neurodamus
-import numpy as np
-from scipy import sparse
-import steps
-
-import os
-
 
 class MsrConnectionManager:
-    """This keeps track of all the connection matrices
+    """Tracks connection matrices for various models, enabling efficient caching.
 
-    For maximum efficiency matrices are cached with: cache_decorator
+    This class maintains various connection matrices used in the multiscale simulation, improving efficiency by caching them when necessary.
+
+    Attributes:
+        config (MrConfig): The multiscale run configuration.
     """
 
+    def __init__(self, config):
+        """Initialize the MsrConnectionManager with a given configuration.
+
+        Args:
+            config (MrConfig): The multiscale run configuration.
+
+        Returns:
+            None
+        """
+        self.config = config
+
     @utils.cache_decorator(
-        path=config.cache_path,
-        is_save=False,  # deactivated, not critical atm
-        is_load=False,  # deactivated, not critical atm
         only_rank0=False,
         field_names=["nXsecMat", "nsecXnsegMat", "nXnsegMatBool"],
     )
     @utils.logs_decorator
     def connect_ndam2ndam(self, ndam_m):
-        """Add some useful matrices that map ndam points, segments, sections and neurons"""
-        pts = ndam_m.get_seg_points(config.steps_mesh_scale)
+        """Add some useful matrices that map ndam points, segments, sections, and neurons.
+
+        This method calculates and stores several matrices that provide mappings between various components of neuronal and segment data.
+
+        Args:
+            ndam_m (NeurodamusModel): The neuronal digital anatomy model.
+
+        Returns:
+            None
+        """
+        pts = ndam_m.get_seg_points(self.config.mesh_scale)
 
         self.nXsecMat = ndam_m.get_nXsecMat()
         self.nsecXnsegMat = ndam_m.get_nsecXnsegMat(pts)
         self.nXnsegMatBool = self.nXsecMat.dot(self.nsecXnsegMat) > 0
 
     @utils.cache_decorator(
-        path=config.cache_path,
-        is_save=False,  # deactivated, not critical atm
-        is_load=False,  # deactivated, not critical atm
         only_rank0=False,
         field_names=["nsegXtetMat", "nXtetMat"],
     )
     @utils.logs_decorator
     def connect_ndam2steps(self, ndam_m, steps_m):
-        """neuron volume fractions in tets"""
-        pts = ndam_m.get_seg_points(steps_m.msh._scale)
+        """Neuron volume fractions in tets.
+
+        This method calculates the neuron volume fractions within tetrahedral elements and stores the results in connection matrices.
+
+        Args:
+            ndam_m (NeurodamusModel): The neuronal digital anatomy model.
+            steps_m (StepsModel): The steps model representing the vasculature.
+
+        Returns:
+            None
+        """
+        pts = ndam_m.get_seg_points(scale=self.config.mesh_scale)
 
         # Connection matrices
         self.nsegXtetMat = steps_m.get_nsegXtetMat(pts)
         self.nXtetMat = self.nXsecMat.dot(self.nsecXnsegMat.dot(self.nsegXtetMat))
 
     @utils.cache_decorator(
-        path=config.cache_path,
-        is_save=config.cache_save,
-        is_load=config.cache_load,
         only_rank0=True,
         field_names=["tetXbfVolsMat", "tetXbfFlowsMat", "tetXtetMat"],
     )
     @utils.logs_decorator
     def connect_bf2steps(self, bf_m, steps_m):
-        """vols and flows fractions in tets"""
+        """Volumes and flows fractions in tets.
+
+        This method calculates and stores volumes and flows fractions within tetrahedral elements and synchronization matrices.
+
+        Args:
+            bf_m (BloodflowModel): The bloodflow model.
+            steps_m (StepsModel): The steps model representing the vasculature.
+
+        Returns:
+            None
+        """
         pts = None
         if rank == 0:
             pts = bf_m.get_seg_points(steps_m.msh._scale)
@@ -76,7 +105,7 @@ class MsrConnectionManager:
             # resize based on tet volume
             flowsMat = mat.sign()
 
-            for isec, itet in enumerate(starting_tets):
+            for isec, itet in starting_tets:
                 if isec not in bf_m.entry_nodes:
                     flowsMat[itet, isec] = 0
 
@@ -88,67 +117,134 @@ class MsrConnectionManager:
             self.tetXbfFlowsMat = flowsMat
 
     def delete_rows(self, m, to_be_removed):
-        """We need to remove rows in case of failed neurons"""
+        """Remove rows from a matrix.
+
+        This method removes specified rows from a matrix to accommodate changes, particularly in cases of failed neurons.
+
+        Args:
+            m: The matrix to be modified.
+            to_be_removed: A list of row indices to be removed.
+
+        Returns:
+            None
+        """
         if hasattr(self, m):
             attr = getattr(self, m)
             setattr(self, m, utils.delete_rows_csr(attr, to_be_removed))
 
     def delete_cols(self, m, to_be_removed):
-        """We need to remove rows in case of failed neurons"""
+        """Remove columns from a matrix.
+
+        This method removes specified columns from a matrix, typically in cases of failed neurons or changes in the network structure.
+
+        Args:
+            m: The matrix to be modified.
+            to_be_removed: A list of column indices to be removed.
+
+        Returns:
+            None
+        """
         if hasattr(self, m):
             attr = getattr(self, m)
             setattr(self, m, utils.delete_cols_csr(attr, to_be_removed))
 
+    @utils.logs_decorator
     def ndam2steps_sync(self, ndam_m, steps_m, specs, DT):
-        """use ndam to correct steps concentrations"""
+        """Use neuronal data to correct step concentrations.
+
+        This method employs neuronal data to adjust concentration levels in the StepsModel for specified species and species concentrations. The adjustments take into account factors like segment current and time step (DT).
+
+        Args:
+            ndam_m (NeurodamusModel): The neuronal digital anatomy model.
+            steps_m (StepsModel): The steps model representing the vasculature.
+            specs: A list of species and their names.
+            DT: The time step for the simulation.
+
+        Returns:
+            None
+        """
+
         for s in specs:
+            sp = getattr(self.config.species, s)
             # there are 1e8 µm2 in a cm2, final output in mA
-            seg_curr = ndam_m.get_var(var=s.current_var, weight="area") * 1e-8
+            seg_curr = ndam_m.get_var(var=sp.neurodamus.curr, weight="area") * 1e-8
 
             tet_curr = self.nsegXtetMat.transpose().dot(seg_curr)
             comm.Allreduce(tet_curr, tet_curr, op=MPI4PY.SUM)
 
-            steps_m.correct_concs(species=s, curr=tet_curr, DT=DT)
+            steps_m.update_concs(species=sp, curr=tet_curr, DT=DT)
 
+    @utils.logs_decorator
     def ndam2metab_sync(self, ndam_m, metab_m):
-        """use ndam to compute current and concentration concentrations for metab"""
-        vars_weights = {
-            "ina_density": (config.Na.current_var, "area"),
-            "ik_density": (config.KK.current_var, "area"),
-            "nais_mean": (config.Na.nai_var, "volume"),
-            "kis_mean": (config.KK.ki_var, "volume"),
-            "cais_mean": (config.Ca.current_var, "volume"),
-            "atpi_mean": (config.ATP.atpi_var, "volume"),
-            "adpi_mean": (config.ADP.adpi_var, "volume"),
-        }
+        """Use neuronal data to compute current and concentration concentrations for metabolism.
+
+        This method utilizes neuronal data to calculate the current and concentration concentrations for a metabolism model.
+
+        Args:
+            ndam_m (NeurodamusModel): The neuronal digital anatomy model.
+            metab_m (MetabolismModel): The metabolism model.
+
+        Returns:
+            None
+        """
 
         ans = {}
         d = {
             "area": [i[0] for i in ndam_m.nc_areas],
             "volume": [i[0] for i in ndam_m.nc_vols],
         }
-        for k, (var, weight) in vars_weights.items():
-            ans[k] = self.nXnsegMatBool.dot(ndam_m.get_var(var=var, weight=weight))
+        for s, t in self.config.metabolism.ndam_input_vars:
+            weight = "area" if t == "curr" else "volume"
+            var = getattr(getattr(self.config.species, s).neurodamus, t)
+            ans[(s, t)] = self.nXnsegMatBool.dot(ndam_m.get_var(var=var, weight=weight))
 
             l = d.get(weight, None)
-            ans[k] = np.divide(ans[k], l)
+            ans[(s, t)] = np.divide(ans[(s, t)], l)
 
         metab_m.ndam_vars = ans
 
+    @utils.logs_decorator
     def steps2metab_sync(self, steps_m, metab_m):
-        """steps concentrations for metab"""
+        """
+        Synchronize concentration data from Steps to Metabolism models for specific species.
 
-        r = 1.0 / (1e-3 * config.CONC_FACTOR)
+        This function converts concentration data from a 'steps_m' model to a 'metab_m' model for specified species, taking into account scaling factors.
 
-        l = [config.KK.name]
+        Args:
+            steps_m (StepsModel): The source model containing concentration data.
+            metab_m (MetabolismModel): The target model where the concentration data will be synchronized.
+
+        Returns:
+            None
+        """
+
+        r = 1.0 / (1e-3 * self.config.steps.conc_factor)
+
+        l = [
+            getattr(self.config.species, i).steps.name
+            for i in self.config.metabolism.steps_input_concs
+        ]
         ans = {}
+
         for name in l:
             ans[name] = steps_m.get_tet_concs(name) * r
             ans[name] = self.nXtetMat.dot(ans[name])
+
         metab_m.steps_vars = ans
 
     def ndam2bloodflow_sync(self, ndam_m, bf_m):
-        """ndam vasculature radii for bloodflow"""
+        """
+        Synchronize vascular radii data from a ndam model to a bloodflow model.
+
+        This function gathers vascular IDs and radii information from the NDAM (Neuronal Digital Anatomy Model) model and synchronizes it with the bloodflow model. The gathered data is used to set radii in the bloodflow model for corresponding vascular segments.
+
+        Args:
+            ndam_m (NDAMModel): The source model containing vascular radii information.
+            bf_m (BloodflowModel): The target model where the radii data will be synchronized.
+
+        Returns:
+            None
+        """
 
         vasc_ids, radii = ndam_m.get_vasc_radii()
         vasc_ids = comm.gather(vasc_ids, root=0)
@@ -158,8 +254,21 @@ class MsrConnectionManager:
             radii = [j for i in radii for j in i]
             bf_m.set_radii(vasc_ids=vasc_ids, radii=radii)
 
+    @utils.logs_decorator
     def bloodflow2metab_sync(self, bf_m, metab_m):
-        """bloodflow flows and volumes for metab"""
+        """
+        Synchronize bloodflow parameters including flows and volumes from a bloodflow model to a metabolism model.
+
+        This function calculates and synchronizes blood flow and volume data from a bloodflow model to a metabolism model. It performs the necessary transformations and scaling based on the models' data to ensure accurate synchronization.
+
+        Args:
+            bf_m (BloodflowModel): The source model containing blood flow and volume data.
+            metab_m (MetabolismModel): The target model where the data will be synchronized.
+
+        Returns:
+            None
+        """
+
         Fin, vol = None, None
         if rank == 0:
             # 1e-12 to pass from um^3 to ml
@@ -167,15 +276,9 @@ class MsrConnectionManager:
             # and it is not clear to what the winter paper is referring too exactly for volume and flow
             # given that we are sure that we are not double counting on a tet Fin and Fout, we can use
             # and abs value to have always positive input flow
-            Fin = (
-                self.nXtetMat.dot(np.abs(self.tetXbfFlowsMat.dot(bf_m.get_flows())))
-                * 1e-12
-                * 500
-            )
+            Fin = np.abs(self.tetXbfFlowsMat.dot(bf_m.get_flows())) * 1e-12 * 500
             vol = (
-                self.nXtetMat.dot(
-                    self.tetXtetMat.dot(self.tetXbfVolsMat.dot(bf_m.get_vols()))
-                )
+                self.tetXtetMat.dot(self.tetXbfVolsMat.dot(bf_m.get_vols()))
                 * 1e-12
                 * 500
             )
@@ -183,10 +286,25 @@ class MsrConnectionManager:
         Fin = comm.bcast(Fin, root=0)
         vol = comm.bcast(vol, root=0)
 
+        Fin = self.nXtetMat.dot(Fin)
+        vol = self.nXtetMat.dot(vol)
+
         metab_m.bloodflow_vars = {"Fin": Fin, "vol": vol}
 
     def metab2ndam_sync(self, metab_m, ndam_m, i_metab):
-        """metab concentrations for ndam"""
+        """
+        Synchronize metabolic concentrations from a metabolism model to a NDAM (Neuronal Digital Anatomy Model) for specific variables.
+
+        This function calculates and synchronizes metabolic concentrations, including ATP, ADP, and potassium (K+), from a metabolism model to a NDAM model for specific variables, taking into account weighted means. It constrains the NDAM model with the metabolic output.
+
+        Args:
+            metab_m (MetabolismModel): The source model containing metabolic concentration data.
+            ndam_m (NDAMModel): The target model where the data will be synchronized.
+            i_metab: Additional parameter (not described in the function, consider adding a description).
+
+        Returns:
+            None
+        """
 
         if len(ndam_m.ncs) == 0:
             return
@@ -194,7 +312,7 @@ class MsrConnectionManager:
         # u stands for Julia ODE var and m stands for metabolism
         atpi_weighted_mean = np.array(
             [
-                metab_m.vm[int(nc.CCell.gid)][config.metab_vm_indexes["atpn"]]
+                metab_m.vm[int(nc.CCell.gid)][self.config.metabolism.vm_idxs.atpn]
                 for nc in ndam_m.ncs
             ]
         )  # 1.4
@@ -214,7 +332,7 @@ class MsrConnectionManager:
 
         ko_weighted_mean = np.array(
             [
-                metab_m.vm[int(nc.CCell.gid)][config.metab_vm_indexes["ko"]]
+                metab_m.vm[int(nc.CCell.gid)][self.config.metabolism.vm_idxs.ko]
                 for nc in ndam_m.ncs
             ]
         )
@@ -239,11 +357,14 @@ class MsrConnectionManager:
 
         #                             for seg in neurodamus_manager.gen_segs(nc, [Na.nai_var]):
         #                                 seg.nai = nai_weighted_mean  # 10
+        ndam_k_conco = self.config.species.K.neurodamus.conco
+        ndam_atp_conco = self.config.species.atp.neurodamus.conci
+        ndam_adp_conco = self.config.species.adp.neurodamus.conci
 
         l = [
-            (config.KK.ko_var, ko_weighted_mean),
-            (config.ATP.atpi_var, atpi_weighted_mean),
-            (config.ADP.adpi_var, adpi_weighted_mean),
+            (ndam_k_conco, ko_weighted_mean),
+            (ndam_atp_conco, atpi_weighted_mean),
+            (ndam_adp_conco, adpi_weighted_mean),
         ]
         for i, v in l:
             ndam_m.set_var(i, v, filter=[i])

@@ -19,6 +19,7 @@ HBP_STEPS/
 spackenv/
 !.setup_*
 .julia/
+julia_environment/
 RESULTS*/
 bloodflow_src/
 bluepy-configfile/
@@ -27,3 +28,6 @@ ngv2.json
 py-neurodamus/
 mod/*
 cache*
+*.stl
+autogen_mesh.geo
+autogen_mesh.msh

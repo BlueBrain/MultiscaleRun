@@ -1,0 +1,19 @@
+{
+    "mesh_path": "${base_path}/mesh/mesh.msh",
+    "mesh_scale": 1e-6,
+    "steps" : {   
+        "compname": "extra",
+        "Volsys": {
+            "name": "extra_volsys"
+        }
+    },
+    "preprocessor": {
+        "mesh": {
+            "explode_factor": 1.001,
+            "base_length": 30,
+            "refinement_steps": 1,
+            "surface_subdivisions": 1,
+            "generative_algorithm": 0
+        }
+    }
+}

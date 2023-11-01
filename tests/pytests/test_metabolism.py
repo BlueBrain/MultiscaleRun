@@ -1,19 +1,17 @@
-import sys, os, glob
+import sys
+from pathlib import Path
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
-
-
-
-from multiscale_run import printer, metabolism_manager, utils
-config = utils.load_config()
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from julia import Main
+from multiscale_run import metabolism_manager, printer, utils, config
 
 
 def test_metabolism():
-    prnt = printer.MsrPrinter()
+    conf = config.MsrConfig()
+    prnt = printer.MsrPrinter(config=conf)
     metab_m = metabolism_manager.MsrMetabolismManager(
-        config=config, main=Main, prnt=prnt, neuron_pop_name="All"
+        config=conf, main=Main, prnt=prnt, neuron_pop_name="All"
     )
 
 

@@ -1,0 +1,104 @@
+{
+  "version": 2,
+  "manifest": {
+    "$BASE_DIR": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/build"
+  },
+  "node_sets_file": "$BASE_DIR/sonata/node_sets.json",
+  "networks": {
+    "nodes": [
+      {
+        "nodes_file": "$BASE_DIR/sonata/networks/nodes/All/nodes.h5",
+        "populations": {
+          "All": {
+            "type": "biophysical",
+            "biophysical_neuron_models_dir": "$BASE_DIR/../emodels/hoc",
+            "spatial_segment_index_dir": "$BASE_DIR/sonata/networks/nodes/All/spatial_segment_index",
+            "provenance": {
+              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/bioname"
+            },
+            "alternate_morphologies": {
+              "h5v1": "/gpfs/bbp.cscs.ch/project/proj83/entities/fixed-ais-L23PC-2020-12-10/h5v1",
+              "neurolucida-asc": "/gpfs/bbp.cscs.ch/project/proj83/entities/fixed-ais-L23PC-2020-12-10/ascii"
+            }
+          }
+        }
+      },
+      {
+        "nodes_file": "$BASE_DIR/sonata/networks/nodes/astrocytes/nodes.h5",
+        "populations": {
+          "astrocytes": {
+            "type": "astrocyte",
+            "alternate_morphologies": {
+              "h5v1": "$BASE_DIR/morphologies/astrocytes/h5"
+            },
+            "microdomains_file": "$BASE_DIR/sonata/networks/nodes/astrocytes/microdomains.h5",
+            "provenance": {
+              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/bioname"
+            }
+          }
+        }
+      },
+      {
+        "nodes_file": "$BASE_DIR/sonata/networks/nodes/vasculature/nodes.h5",
+        "populations": {
+          "vasculature": {
+            "type": "vasculature",
+            "vasculature_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/atlas/Vasculature/rat_S1HL_Column_somatosensory_cortex_sv.h5",
+            "vasculature_mesh": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/atlas/Vasculature/Meshes/meshes/rat_S1HL_Column_somatosensory_cortex_sv-watertight.obj",
+            "provenance": {
+              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/bioname"
+            }
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "edges_file": "$BASE_DIR/sonata/networks/edges/functional/All/edges.h5",
+        "populations": {
+          "All": {
+            "type": "chemical",
+            "provenance": {
+              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/bioname"
+            },
+            "spatial_synapse_index_dir": "$BASE_DIR/sonata/networks/edges/functional/All/spatial_synapse_index"
+          }
+        }
+      },
+      {
+        "edges_file": "$BASE_DIR/sonata/networks/edges/neuroglial/edges.h5",
+        "populations": {
+          "neuroglial": {
+            "type": "synapse_astrocyte",
+            "provenance": {
+              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/bioname"
+            }
+          }
+        }
+      },
+      {
+        "edges_file": "$BASE_DIR/sonata/networks/edges/glialglial/edges.h5",
+        "populations": {
+          "glialglial": {
+            "type": "glialglial",
+            "provenance": {
+              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/bioname"
+            }
+          }
+        }
+      },
+      {
+        "edges_file": "$BASE_DIR/sonata/networks/edges/gliovascular/edges.h5",
+        "populations": {
+          "gliovascular": {
+            "type": "endfoot",
+            "endfeet_meshes_file": "$BASE_DIR/sonata/networks/edges/gliovascular/endfeet_meshes.h5",
+            "provenance": {
+              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V10/bioname"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

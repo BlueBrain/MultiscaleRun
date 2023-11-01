@@ -1,34 +1,25 @@
-import sys, os, glob, shutil
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/../..")
-
-import multiscale_run.utils as utils
-from scipy import sparse
-
 import logging
 
-logging.basicConfig(level=logging.INFO)
+import shutil
+import sys
+from pathlib import Path
+
+
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 import numpy as np
+from scipy import sparse
 
 # this needs to be before "import neurodamus" and before MPI4PY
 from neuron import h
 
 h.nrnmpi_init()
 
+import multiscale_run.utils as utils
 from mpi4py import MPI as MPI4PY
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
-
-
-def remove_test_cache_files(path):
-    if rank == 0:
-        try:    
-            shutil.rmtree(path)
-        except FileNotFoundError:
-            pass
-    comm.Barrier()
 
 
 cache = "cache_tests"
@@ -85,10 +76,10 @@ def instantiate_and_check(a, b, c, aexp, bexp, cexp):
 
 
 def test_cache_decor():
-    remove_test_cache_files(cache)
+    utils.remove_path(cache)
     instantiate_and_check(1, 2, 3 if rank == 0 else 4, 1, 2, 3 if rank == 0 else 4)
     instantiate_and_check(10, 20, 30 if rank == 0 else 40, 1, 2, 3 if rank == 0 else 4)
-    remove_test_cache_files(cache)
+    utils.remove_path(cache)
 
 
 class B:
@@ -107,28 +98,107 @@ def test_timestamps():
     assert list(utils.timesteps(10, 1)) == list(range(1, 11, 1))
     assert list(utils.timesteps(10, 0.9)) == [i * 0.9 for i in range(1, 12, 1)]
 
-def test_select_file():
-    assert utils.select_file("bau.txt") is None
-    assert utils.select_file("miao/bau.txt") is None
-    s = "tests/pytests/test_folder/test_folder2/simple_file.txt"
-    assert utils.select_file(s) == s, utils.select_file(s)
-    s = "tests/pytests/test_folder/test_folder2/fallback_file.txt"
-    assert utils.select_file(s) == "tests/pytests/test_folder/fallback_file.txt"
-    s = "tests/pytests/test_folder"
-    assert utils.select_file(s) == s
-    assert utils.select_file("bau", s) == s
 
-def test_load_config():
-    config = utils.load_config()
-    config.print_config()
+def test_heavy_duty_MPI_gather():
+    def get_rank_matrix(dtype="i", n=3, m=5, p=68573):
+        return np.array(
+            [[(j + i * n + rank * n * m) % p for j in range(n)] for i in range(m)],
+            dtype=dtype,
+        )
 
-def test_get_paths():
-    utils.get_sonata_path()
-    assert utils.search_path("mr_config.py") == "configs/mr_config.py"
+    def final_matrix(dtype="i", n=3, m=5, p=68573):
+        return np.array(
+            [
+                [[(j + i * n + r * n * m) % p for j in range(n)] for i in range(m)]
+                for r in range(size)
+            ],
+            dtype=dtype,
+        )
+
+    local_mat = get_rank_matrix()
+    final_mat = utils.heavy_duty_MPI_Gather(local_mat, root=0)
+    final_mat2 = comm.gather(local_mat, root=0)
+    if rank == 0:
+        assert (final_mat == final_matrix()).all()
+        assert (final_mat == final_mat2).all()
+
+    local_mat = get_rank_matrix(dtype="float")
+    final_mat = utils.heavy_duty_MPI_Gather(local_mat, root=0)
+    final_mat2 = comm.gather(local_mat, root=0)
+    if rank == 0:
+        assert (final_mat == final_matrix(dtype="float")).all()
+        assert (final_mat == final_mat2).all()
+
+
+def test_recursive_replace():
+    d = {"key1": "This is ${token1}"}
+    rd = {"token1": "value1"}
+    utils.recursive_replace(d, rd)
+    assert d["key1"] == "This is value1"
+
+    d = {"key1": "This is ${token1}", "key2": "Another ${token2} example"}
+    rd = {"token1": "value1", "token2": "value2"}
+    utils.recursive_replace(d, rd)
+    assert d["key1"] == "This is value1"
+    assert d["key2"] == "Another value2 example"
+
+    d = {"key1": "This is ${token1} with ${token3}"}
+    rd = {"token1": "value1", "token2": "value2"}
+    try:
+        utils.recursive_replace(d, rd)
+    except ValueError as e:
+        assert "token3" in str(e)
+
+    d = {"outer": {"inner": "Nested ${token1}"}}
+    rd = {"token1": "value1"}
+    utils.recursive_replace(d, rd)
+    assert d["outer"]["inner"] == "Nested value1"
+
+    d = {
+        "A": "bau",
+        "B": "fusto",
+        "C": "pera",
+        "F": {"D": "${A}/miao", "L": {"E": "${D}/${M}/bau"}},
+        "K": "aaa/${Q}/hola",
+        "AA": "${BB}/${B}",
+        "BB": "${A}/${B}",
+    }
+    rd = {"M": "zio", "Q": "pio", "R": "wak"}
+
+    utils.recursive_replace(d, rd)
+    assert d["F"]["L"]["E"] == "bau/miao/zio/bau"
+
+
+def test_clear_and_replace_files_decorator():
+    p = Path("bau")
+
+    if rank == 0:
+        if not p.exists():
+            p.mkdir()
+
+    @utils.clear_and_replace_files_decorator(str(p))
+    def f():
+        logging.info("check clear_and_replace_files_decorator")
+        comm.Barrier()
+        assert not p.exists()
+        comm.Barrier()
+
+    comm.Barrier()
+    assert p.exists()
+    comm.Barrier()
+
+    f()
+
+    comm.Barrier()
+    assert p.exists()
+    comm.Barrier()
+
+    utils.remove_path(p)
+
 
 if __name__ == "__main__":
     test_cache_decor()
     test_logs_decorator()
-    test_select_file()
-    test_load_config()
-    test_get_paths()
+    test_heavy_duty_MPI_gather()
+    test_recursive_replace()
+    test_clear_and_replace_files_decorator()

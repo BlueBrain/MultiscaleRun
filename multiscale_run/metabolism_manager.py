@@ -1,17 +1,16 @@
 ##https://stackoverflow.com/questions/57441384/trouble-getting-differential-equation-to-solve-via-diffeqpy
 
 import logging
-import json
 
-from . import utils
+import numpy as np
 
 import neurodamus
-import numpy as np
 import pandas as pd
-from diffeqpy import de
 from bluepysnap import Circuit
-
+from diffeqpy import de
 from mpi4py import MPI as MPI4PY
+
+from . import utils
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
@@ -31,15 +30,41 @@ class MsrMetabParameters:
     l = ["ina_density", "ik_density", "mito_scale", "bf_Fin", "bf_Fout", "bf_vol"]
 
     def __init__(self, metab_type):
+        """Initialize MsrMetabParameters with the given metabolism type.
+
+        Args:
+            metab_type (str): The type of metabolism, e.g., "main" or another value.
+
+        Returns:
+            None
+        """
         self.metab_type = metab_type
         for i in self.l:
             setattr(self, i, None)
 
     def __iter__(self):
+        """Iterate over the parameters in the defined order.
+
+        Yields:
+            The values of the parameters in the defined order.
+
+        Returns:
+            None
+        """
         for i in self.l:
             yield getattr(self, i)
 
     def is_valid(self):
+        """Check the validity of parameter values and their data types.
+
+        This method validates the parameter values by checking if they are not None, are of float data type, and not NaN or Inf. It also checks specific validity conditions for "bf_vol" when the metabolism type is "main".
+
+        Raises:
+            MsrMetabParameterException: If any of the parameter values are not valid.
+
+        Returns:
+            None
+        """
         for k in self.l:
             v = getattr(self, k)
             msg = f"{k}: {v} is "
@@ -63,8 +88,21 @@ class MsrMetabolismManager:
     """Wrapper to manage the metabolism julia model"""
 
     def __init__(self, config, main, prnt, neuron_pop_name):
+        """Initialize the MsrMetabolismManager.
+
+        Args:
+            config: The configuration for the metabolism manager.
+            main: An instance of the main class.
+            prnt: An instance for printing data.
+            neuron_pop_name: The name of the neuron population.
+
+        Returns:
+            None
+        """
         self.config = config
-        self.u0 = pd.read_csv(self.config.u0_file, sep=",", header=None)[0].tolist()
+        self.u0 = pd.read_csv(self.config.metabolism.u0_path, sep=",", header=None)[
+            0
+        ].tolist()
         self.load_metabolism_data(main)
         self.gen_metabolism_model(main)
         self.vm = {}
@@ -78,9 +116,20 @@ class MsrMetabolismManager:
 
     @utils.logs_decorator
     def load_metabolism_data(self, main):
+        """Load metabolism data and parameters from Julia scripts.
+
+        This method loads metabolism data and parameters from Julia scripts if the metabolism type is "main".
+
+        Args:
+            main: An instance of the main class.
+
+        Returns:
+            None
+        """
+
         self.ATDPtot_n = 1.4449961078157665
 
-        if self.config.metabolism_type != "main":
+        if self.config.metabolism.type != "main":
             return None
 
         main.eval(
@@ -132,14 +181,34 @@ class MsrMetabolismManager:
 
     @utils.logs_decorator
     def gen_metabolism_model(self, main):
-        """import jl metabolism diff eq system code to py"""
-        with open(self.config.julia_code_file, "r") as f:
+        """Generate the metabolism model from Julia code.
+
+        This method generates the metabolism model using Julia code.
+
+        Args:
+            main: An instance of the main class.
+
+        Returns:
+            None
+        """
+        with open(str(self.config.metabolism.julia_code_path), "r") as f:
             julia_code = f.read()
         self.model = main.eval(julia_code)
 
     @utils.logs_decorator
     def _advance_gid(self, c_gid, i_metab, param):
-        """advance metabolism simulation for gid"""
+        """Advance metabolism simulation for a specific GID (Global ID).
+
+        This method advances the metabolism simulation for a specific GID using the provided parameters.
+
+        Args:
+            c_gid: The Global ID of the neuron.
+            i_metab: The current metabolism iteration.
+            param: An instance of MsrMetabParameters containing metabolism parameters.
+
+        Returns:
+            None
+        """
 
         prob = de.ODEProblem(self.model, self.vm[c_gid], self.tspan_m, list(param))
         try:
@@ -165,12 +234,23 @@ class MsrMetabolismManager:
 
         self.vm[c_gid] = sol.u[-1]
         self.prnt.append_to_file(
-            self.config.um_out_file, [c_gid, i_metab, sol.u[-1]], rank
+            self.config.metabolism.um_path, [c_gid, i_metab, sol.u[-1]], root=rank
         )
 
     @utils.logs_decorator
     def advance(self, ncs, i_metab, metab_dt):
-        """advance metabolism simulation"""
+        """Advance metabolism simulation for a list of neurons.
+
+        This method advances the metabolism simulation for a list of neurons using the provided parameters.
+
+        Args:
+            ncs: A list of neurons to simulate.
+            i_metab: The current metabolism iteration.
+            metab_dt: The time step for metabolism simulation.
+
+        Returns:
+            failed_cells: A dictionary containing information about neurons with failed simulations.
+        """
 
         self.failed_cells = {}
         for inc, nc in enumerate(ncs):
@@ -192,25 +272,56 @@ class MsrMetabolismManager:
         return self.failed_cells
 
     def _get_GLY_a_and_mito_vol_frac(self, c_gid):
+        """Get glycogen (GLY_a) and mitochondrial volume fraction.
+
+        This method calculates glycogen (GLY_a) and mitochondrial volume fraction for a given neuron based on its layer.
+
+        Args:
+            c_gid: The Global ID of the neuron.
+
+        Returns:
+            glycogen: The calculated glycogen value.
+            mito_volume_fraction: The calculated mitochondrial volume fraction.
+        """
+
         # idx: layers are 1-based while python vectors are 0-based
         # c_gid: ndam is 1-based while libsonata and bluepysnap are 0-based
         idx = self.neuro_df.get(c_gid - 1).layer - 1
+
+        glycogen_au = np.array(self.config.metabolism.glycogen_au)
+        mito_volume_fraction = np.array(self.config.metabolism.mito_volume_fraction)
+        glycogen_scaled = glycogen_au * (14.0 / max(glycogen_au))
+        mito_volume_fraction_scaled = mito_volume_fraction * (
+            1.0 / max(mito_volume_fraction)
+        )
         return (
-            self.config.glycogen_scaled[idx] * 14,
-            self.config.mito_volume_fraction_scaled[idx],
+            glycogen_scaled[idx],
+            mito_volume_fraction_scaled[idx],
         )
 
     @utils.logs_decorator
     def init_inputs(self, c_gid, inc, i_metab, metab_dt):
-        """set params for metabolism"""
+        """Initialize parameters for metabolism simulation.
 
-        param = MsrMetabParameters(metab_type=self.config.metabolism_type)
+        This method initializes parameters for metabolism simulation based on the provided neuron's characteristics.
 
-        kis_mean = self.ndam_vars["kis_mean"][inc]
-        atpi_mean = self.ndam_vars["atpi_mean"][inc]
-        nais_mean = self.ndam_vars["nais_mean"][inc]
-        param.ina_density = self.ndam_vars["ina_density"][inc]
-        param.ik_density = self.ndam_vars["ik_density"][inc]
+        Args:
+            c_gid: The Global ID of the neuron.
+            inc: An index for the neuron.
+            i_metab: The current metabolism iteration.
+            metab_dt: The time step for metabolism simulation.
+
+        Returns:
+            param: An instance of MsrMetabParameters containing initialized parameters.
+        """
+
+        param = MsrMetabParameters(metab_type=self.config.metabolism.type)
+
+        kis_mean = self.ndam_vars[("K", "conci")][inc]
+        atpi_mean = self.ndam_vars[("atp", "conci")][inc]
+        nais_mean = self.ndam_vars[("Na", "conci")][inc]
+        param.ina_density = self.ndam_vars[("Na", "curr")][inc]
+        param.ik_density = self.ndam_vars[("K", "curr")][inc]
 
         GLY_a, param.mito_scale = self._get_GLY_a_and_mito_vol_frac(c_gid)
 
@@ -230,10 +341,10 @@ class MsrMetabolismManager:
         # vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
         # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
 
-        idx_atpn = self.config.metab_vm_indexes["atpn"]
-        idx_adpn = self.config.metab_vm_indexes["adpn"]
-        idx_nai = self.config.metab_vm_indexes["nai"]
-        idx_ko = self.config.metab_vm_indexes["ko"]
+        idx_atpn = self.config.metabolism.vm_idxs.atpn
+        idx_adpn = self.config.metabolism.vm_idxs.adpn
+        idx_nai = self.config.metabolism.vm_idxs.nai
+        idx_ko = self.config.metabolism.vm_idxs.ko
 
         self.vm[c_gid][idx_atpn] = 0.5 * 1.384727988648391 + 0.5 * atpi_mean
 
@@ -247,9 +358,11 @@ class MsrMetabolismManager:
         self.vm[c_gid][idx_nai] = nais_mean
 
         # KKconc is computed in 3 different simulators: ndam, metab, steps. We calculate all of them to do computations later
+
+        k_steps_name = self.config.species.K.steps.name
         self.vm[c_gid][idx_ko] = (
-            self.steps_vars[self.config.KK.name][inc]
-            if self.config.KK.name in self.steps_vars
+            self.steps_vars[k_steps_name][inc]
+            if k_steps_name in self.steps_vars
             else 3.0 - 1.33 * (kis_mean - 140.0)
         )
 
@@ -262,7 +375,7 @@ class MsrMetabolismManager:
         l = [
             *[
                 f"vm[{c_gid}][{i}]: {utils.ppf(self.vm[c_gid][i])}"
-                for i in self.config.metab_vm_indexes.values()
+                for i in self.config.metabolism.vm_idxs.values()
             ],
             f"kis_mean[c_gid]: {utils.ppf(kis_mean)}",
             f"bf_Fin: {param.bf_Fin}",
@@ -282,14 +395,14 @@ class MsrMetabolismManager:
         assert 1 <= self.vm[c_gid][idx_ko] <= 10, self.vm[c_gid][idx_ko]
         assert 100 <= kis_mean <= 160, kis_mean
 
-        # 2.2 should coincide with the BC METypePath field & with u0_file
+        # 2.2 should coincide with the BC METypePath field & with u0_path
         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
 
         self.prnt.append_to_file(
-            self.config.param_out_file,
+            self.config.metabolism.param_path,
             [c_gid, i_metab, *list(param)],
-            rank,
+            root=rank,
         )
 
         return param

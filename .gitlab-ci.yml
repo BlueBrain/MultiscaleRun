@@ -13,10 +13,10 @@ variables:
   STEPS_USE_MODULE: 1
   # this it taken into account only if PY_NEURODAMUS_USE_MODULE==0
   PY_NEURODAMUS_BRANCH: main
-  PY_NEURODAMUS_USE_MODULE: 1
+  PY_NEURODAMUS_USE_MODULE: 0
   # this it taken into account only if PY_NEURODAMUS_USE_MODULE==0
   NEURODAMUS_NEOCORTEX_BRANCH: main
-  NEURODAMUS_NEOCORTEX_USE_MODULE: 1
+  NEURODAMUS_NEOCORTEX_USE_MODULE: 0
 
 
 
@@ -144,12 +144,14 @@ pytests:
   extends: [.test]
   script:
   # this hangs if called on the folder
-    - source .ci/load.sh
+    - source setup_quick.sh
     - python -mpytest tests/pytests/test_bloodflow.py
     - python -mpytest tests/pytests/test_metabolism.py
     - python -mpytest tests/pytests/test_neurodamus.py
     - python -mpytest tests/pytests/test_steps.py
     - python -mpytest tests/pytests/test_utils.py
+    - python -mpytest tests/pytests/test_config.py
+    - python -mpytest tests/pytests/test_preprocessor.py
 
 .nrun_test:
   extends: [.test]
@@ -160,10 +162,9 @@ pytests:
       - RESULTS/*
     expire_in: 4 hours
   variables:
-    sonata_path: configs/rat_sscxS1HL_V6/simulation_config.json
     bb5_ntasks: 32
   script:
-    - source .ci/load.sh
+    - source setup_quick.sh
     - source .ci/test.sh
 
 integration_tests:
@@ -173,9 +174,11 @@ integration_tests:
     bb5_duration: "00:10:00"
     bb5_ntasks: 2
   script:
-    - source .ci/load.sh
-    - rm -rf cache && srun --overlap -n 2 python tests/integration_tests/test_connect_ndam2steps.py
-    - rm -rf cache && srun --overlap -n 2 python tests/integration_tests/test_ndam2steps_sync.py
+    - source setup_quick.sh
+    - srun --overlap -n 2 python tests/integration_tests/test_connect_ndam2steps.py
+    - srun --overlap -n 2 python tests/integration_tests/test_ndam2steps_sync.py
+    - srun --overlap -n 2 python tests/integration_tests/test_autogen_mesh.py
+    - srun --overlap -n 2 python tests/integration_tests/test_preprocessor.py
 
 .dualrun_test:
   extends: [.nrun_test]
@@ -184,20 +187,18 @@ integration_tests:
     with_steps: 1
     with_metabolism: 0
     with_bloodflow: 0
-    # Shortened time for CI
-    mr_sim_end: 200
 
 dualrun_test 1/16:
   extends: [.dualrun_test]
   variables:
     bb5_ntasks: 1
-    # Shortened time for CI
-    mr_sim_end: 200
+    msr_sim_end: 105
 
 dualrun_test 2/16:
   extends: [.dualrun_test]
   variables:
     bb5_ntasks: 2
+    msr_sim_end: 105
 
 dualrun_test 16/16:
   extends: [.dualrun_test]
@@ -206,19 +207,10 @@ dualrun_test 16/16:
 
 nrun_[steps, metab, bf]:
   extends: [.nrun_test]
-  variables:
-    # Shortened time for CI. Here we just want to check that everything runs 
-    # for a couple of syncs (every 100 ms atm). 
-    # There are some accumulation problems when steps is not involved and metab fails on his own. 
-    mr_sim_end: 200
   parallel:
     matrix:
     - with_steps: [0, 1]
       with_metabolism: [0, 1]
       with_bloodflow: [0, 1]
-  rules:
-    - if: $with_steps != "1" || $with_metabolism != "1" || $with_bloodflow != "1"
 
-quadrun_test:
-  extends: [.nrun_test]
 

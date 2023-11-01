@@ -1,21 +1,18 @@
-from vascpy import PointVasculature
-
-import pickle
 import logging
 from collections import defaultdict
-import pandas as pd
+
 import numpy as np
 from scipy import sparse
-import yaml
-from pathlib import Path
-from pathlib import PurePath
 
-from . import utils
+from astrovascpy import bloodflow
+from astrovascpy.utils import create_entry_largest_nodes, set_edge_data
 
-import neurodamus
-import libsonata
+from mpi4py import MPI as MPI4PY
+
+import pandas as pd
 
 import steps.interface
+
 from steps.geom import *
 from steps.model import *
 from steps.rng import *
@@ -23,19 +20,77 @@ from steps.saving import *
 from steps.sim import *
 from steps.utils import *
 
-from astrovascpy import bloodflow
-from astrovascpy.utils import set_edge_data, create_entry_largest_nodes
+from vascpy import PointVasculature
 
-from multiscale_run import utils
-
-from mpi4py import MPI as MPI4PY
+from . import utils
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
 
 class MsrBloodflowManager:
+    """
+    Manager class for handling bloodflow-related operations.
+
+    This class is responsible for managing bloodflow data and operations within a multiscale simulation.
+    It provides methods for retrieving bloodflow segment points, flows, volumes, entry nodes, and more.
+    It also handles loading vasculature data and applying boundary flows to entry nodes.
+
+    Args:
+        vasculature_path (str): The path to the vasculature data file.
+        params (dict): A dictionary containing parameters for bloodflow calculations.
+
+    Attributes:
+        entry_nodes (list): List of entry nodes for bloodflow simulation.
+        boundary_flows (numpy.ndarray): Boundary flows for entry nodes.
+        graph (PointVasculature): The vasculature graph.
+
+    Methods:
+        get_seg_points(scale):
+            Get a series of disjoint segments described by their extreme points.
+
+        get_flows():
+            Get the flow in each bloodflow segment.
+
+        get_vols():
+            Get the volume in each bloodflow segment.
+
+        get_entry_nodes():
+            Get the bloodflow input nodes (entry nodes).
+
+        load_circuit(vasculature_path):
+            Load vasculature data from a SONATA file.
+
+        get_boundary_flows():
+            Apply input boundary flows to entry nodes.
+
+        update_static_flow():
+            Update flows and volumes for quasi-static computation.
+
+        set_radii(vasc_ids, radii):
+            Set the radii of vasculature sections identified by their IDs.
+
+    """
+
     def __init__(self, vasculature_path, params):
+        """
+        Initialize the MsrBloodflowManager.
+
+        This method initializes an instance of the MsrBloodflowManager class by loading vasculature data and
+        calculating various bloodflow-related parameters. It also sets the entry nodes and boundary flows
+        for subsequent bloodflow simulations.
+
+        Args:
+            vasculature_path (str): The path to the vasculature data file.
+            params (dict): A dictionary containing parameters for bloodflow calculations.
+
+        Attributes:
+            entry_nodes (list): List of entry nodes for bloodflow simulation.
+            boundary_flows (numpy.ndarray): Boundary flows for entry nodes.
+            graph (PointVasculature): The vasculature graph.
+
+        """
+
         logging.info("init MsrBloodflowManager")
 
         self.params = params
@@ -56,6 +111,9 @@ class MsrBloodflowManager:
         if self.graph is None:
             return np.array([])
 
+        if hasattr(self, "seg_points"):
+            return self.seg_points * scale
+
         start_node_coords = self.graph.node_properties.iloc[
             self.graph.edge_properties.loc[:, "start_node"]
         ].to_numpy()[:, :3]
@@ -67,26 +125,67 @@ class MsrBloodflowManager:
         )
         pts[0::2] = start_node_coords
         pts[1::2] = end_node_coords
-        pts *= scale  # we assume same scaling factor as the mesh
+        self.seg_points = pts
 
-        return pts
+        return self.seg_points * scale
 
     def get_flows(self):
-        """Flow in each segment"""
+        """
+        Get the flow in each vasculature segment.
+
+        This method retrieves the blood flow values associated with each vasculature segment in the loaded vasculature graph.
+
+        Returns:
+            numpy.ndarray: An array containing the flow values for each vasculature segment.
+        """
         return self.graph.edge_properties["flow"].to_numpy()
 
     def get_vols(self):
-        """Volume in each segment"""
+        """
+        Get the volume in each vasculature segment.
+
+        This method retrieves the volume values associated with each vasculature segment in the loaded vasculature graph.
+
+        Returns:
+            numpy.ndarray: An array containing the volume values for each vasculature segment.
+        """
+
         return self.graph.edge_properties.volume.to_numpy()
 
     @utils.logs_decorator
     def get_entry_nodes(self):
-        """Bloodflow input nodes"""
-        self.entry_nodes = create_entry_largest_nodes(self.graph, self.params)
+        """
+        Get bloodflow input nodes (entry nodes).
+
+        This method determines the bloodflow input nodes in the vasculature graph. It identifies these nodes based on criteria defined by the 'params' provided when initializing the MsrBloodflowManager.
+
+        Returns:
+            list: A list of bloodflow input nodes as node IDs.
+        """
+
+        self.entry_nodes = create_entry_largest_nodes(
+            graph=self.graph, params=self.params
+        )
         logging.info(f"entry nodes: {self.entry_nodes}")
 
     @utils.logs_decorator
     def load_circuit(self, vasculature_path):
+        """
+        Load the vasculature circuit from a Sonata file.
+
+        This method loads the vasculature circuit from the specified Sonata file at 'vasculature_path' and prepares it for further bloodflow computations.
+
+        Parameters:
+            vasculature_path (str or Path): The path to the Sonata file containing vasculature data.
+
+        Returns:
+            None
+
+        Note:
+            - The loaded vasculature graph is stored in the 'graph' attribute of the MsrBloodflowManager.
+            - This method prepares the vasculature graph by setting edge data and creating a MultiIndex for edge properties based on section and segment IDs.
+        """
+
         self.graph = PointVasculature.load_sonata(vasculature_path)
 
         set_edge_data(self.graph)
@@ -96,7 +195,22 @@ class MsrBloodflowManager:
 
     @utils.logs_decorator
     def get_boundary_flows(self):
-        """apply the input_v to entry nodes"""
+        """
+        Calculate boundary flows for entry nodes.
+
+        This method calculates the boundary flows for entry nodes based on the specified input flow rate and entry nodes. The calculated boundary flows are stored in the 'boundary_flows' attribute of the MsrBloodflowManager.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+
+        Note:
+            - This method requires that the vasculature graph and entry nodes have been initialized.
+            - The calculated boundary flows are based on the input flow rate ('input_v') and the entry nodes in the vasculature graph.
+            - The calculated boundary flows are stored in the 'boundary_flows' attribute.
+        """
 
         input_flows = None
         if self.entry_nodes is not None:
@@ -107,25 +221,47 @@ class MsrBloodflowManager:
 
     @utils.logs_decorator
     def update_static_flow(self):
-        """Given graph and input update flows and volumes for the quasi-static computation"""
-        bloodflow.update_static_flow_pressure(self.graph, self.boundary_flows)
+        """
+        Update flow and volume for quasi-static computation.
+
+        This method updates the flow and volume properties of the vasculature graph based on the provided boundary flows, blood viscosity, and base pressure. It is used for quasi-static blood flow computations.
+
+        Parameters:
+            None
+
+        Returns:
+            None
+
+        Note:
+            - The method takes boundary flows, blood viscosity, and base pressure into account to compute updated flow and volume properties for the vasculature.
+            - It is typically used in the context of multiscale simulations involving blood flow.
+        """
+
+        bloodflow.update_static_flow_pressure(
+            graph=self.graph,
+            input_flow=self.boundary_flows,
+            blood_viscosity=self.params["blood_viscosity"],
+            base_pressure=self.params["base_pressure"],
+        )
 
     @utils.logs_decorator
     def set_radii(self, vasc_ids, radii):
         """
-        Here we want to set the radii of the vasculature sections identified by
-        vasc_ids. The problem stems from the fact that in theory we could have repeating
-        indexes in vasc_ids. What radii do we set in that case?
+        Set radii for vasculature sections.
 
-        We assume that the astrocytes operate in series. Every astrocyte gets to control
-        a subpart of the segment of length l/n where n is the number of astrocytes
-        that act on the this particular segment.
+        This method allows you to set radii for specific vasculature sections identified by their indices. It takes care of distributing the radii evenly across the sections to ensure that the total volume is maintained.
 
-        We want to maintain the same volume so:
+        Parameters:
+            vasc_ids (List[int]): A list of vasculature section indices to set the radii for.
+            radii (List[float]): A list of radii corresponding to the specified vasculature sections.
 
-        V_r_eq = V_r0 + V_r1 + ...
+        Returns:
+            None
 
-            r_eq = sqrt(\sum_n r_i^2/n)
+        Note:
+            - The method calculates equivalent radii to distribute across the specified sections while maintaining volume.
+            - It ensures that radii are evenly distributed among sections with the same index.
+            - The updated radii are stored in the vasculature graph's edge properties.
         """
 
         def eq_radii(v):

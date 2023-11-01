@@ -10,6 +10,10 @@ echo
 echo "   ### spack env and additional repos"
 echo
 
+source setup_env.sh
+
+export SPACKENV_PATH=${PWD}/spackenv
+
 module load unstable
 module load gcc 
 module load intel-oneapi-compilers 
@@ -30,7 +34,6 @@ else
   spack env activate -d spackenv
   spack config add concretizer:unify:true
 fi
-export SPACKENV_PATH=${PWD}/spackenv
 
 if [[ -z "${CI}" ]]
 then
@@ -41,7 +44,7 @@ then
   else
     echo "add custom py-neurodamus"
 
-    lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH $UPDATE_NEURODAMUS
+    lazy_clone py-neurodamus git@github.com:BlueBrain/neurodamus.git $PY_NEURODAMUS_BRANCH $UPDATE_PY_NEURODAMUS
     # hack to remove the links to proj12 for the people that do not have access. Discussion in [BBPBGLIB-973]
     rm py-neurodamus/tests/simulations/v5_gapjunctions/gap_junctions
     spack add py-neurodamus@develop
@@ -69,7 +72,7 @@ else
       module load py-neurodamus
     else
       echo "add custom py-neurodamus"
-      lazy_clone py-neurodamus git@bbpgitlab.epfl.ch:hpc/sim/neurodamus-py.git $PY_NEURODAMUS_BRANCH $UPDATE_NEURODAMUS
+      lazy_clone py-neurodamus git@github.com:BlueBrain/neurodamus.git $PY_NEURODAMUS_BRANCH $UPDATE_PY_NEURODAMUS
       # hack to remove the links to proj12 for the people that do not have access. Discussion in [BBPBGLIB-973]
       rm py-neurodamus/tests/simulations/v5_gapjunctions/gap_junctions
       spack add py-neurodamus@develop
@@ -99,8 +102,7 @@ else
 fi
 
 echo "additional software"
-# TODO reactivate this after https://bbpteam.epfl.ch/project/issues/browse/BBPBGLIB-1039 is solved
-spack add py-psutil py-bluepysnap ^neuron py-pytest py-jupyterlab
+spack add py-psutil py-bluepysnap py-bluepyopt~scoop py-jupyterlab py-pytest
 
 
 spack install

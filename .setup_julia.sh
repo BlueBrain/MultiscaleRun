@@ -9,6 +9,8 @@ echo
 echo "   ### julia"
 echo
 
+source setup_env.sh
+
 source $PYTHON_VENV_PATH/bin/activate
 
 module load unstable
@@ -24,16 +26,16 @@ else
   echo "julia not found. Set up"
   mkdir ${JULIA_DEPOT_PATH}
 
-  if [ -d ${JULIA_PROJECT} ]
+  if [ ! -d ${JULIA_PROJECT} ]
   then
-    julia -e 'using Pkg; Pkg.instantiate(; verbose=true)'
-  else
+    julia -e 'using Pkg; Pkg.add("PythonCall");Pkg.build("PythonCall")'
+    julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
     julia -e 'using Pkg; Pkg.add("IJulia")'
     julia -e 'using Pkg; Pkg.add("DifferentialEquations")'
     julia -e 'using Pkg; Pkg.add("DiffEqBase")'
     julia -e 'using Pkg; Pkg.add("ParameterizedFunctions")'
     julia -e 'using Pkg; Pkg.add("StaticArrays")'
     julia -e 'using Pkg; Pkg.add("RecursiveArrayTools")'
-    julia -e 'using Pkg; Pkg.add("PyCall");Pkg.build("PyCall")'
   fi
+  julia -e 'using Pkg; Pkg.instantiate(; verbose=true)'
 fi

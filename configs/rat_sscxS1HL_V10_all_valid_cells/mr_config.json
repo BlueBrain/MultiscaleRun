@@ -1,0 +1,3 @@
+{
+    "parent_config_path": "${base_path}/../mr_config.json"
+}

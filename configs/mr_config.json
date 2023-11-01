@@ -1,0 +1,115 @@
+{
+    "with_steps": true,
+    "with_bloodflow": true,
+    "with_metabolism": true,
+
+    "cache_save": true,
+    "cache_load": true,
+
+    "mr_debug": false,
+    "logging_level": 1,
+
+    "msr_sim_end": 1000,
+    "steps_ndts": 100,
+    "metabolism_ndts": 4000,
+    "bloodflow_ndts": 4000,
+    
+    "sonata_path": "${base_path}/simulation_config.json",
+    "node_sets_path": "${base_path}/node_sets.json",
+    "circuit_path": "${base_path}/circuit_config.json",
+    "mesh_path": "${base_path}/mesh/autogen_mesh.msh",
+    "results_path": "RESULTS",
+    "cache_path": "${base_path}/cache",
+
+    "mesh_scale": 1e-6,
+    "preprocessor": {
+        "mesh": {
+            "explode_factor": 1.001,
+            "base_length": 30.0,
+            "refinement_steps": 0
+        },
+        "node_sets": {
+            "filter_neuron": false,
+            "neuron_population_name": "All"
+        }
+    },
+    "species": {
+        "K": {
+            "steps": {
+                "name": "KK",
+                "conc_0": 3,
+                "diffcst": 2e-9,
+                "ncharges": 1
+            },
+            "neurodamus": {
+                "name": "k",
+                "curr": "ik",
+                "conci": "ki",
+                "conco": "ko"
+            }
+        },
+        "Na": {
+            "steps": {
+                "name": "Na",
+                "conc_0": 140, 
+                "diffcst": 2e-9, 
+                "ncharges": 1
+            },
+            "neurodamus": {
+                "name": "na",
+                "curr": "ina",
+                "conci": "nai"
+            }
+        },
+        "Ca": {
+            "neurodamus": {
+                "name": "ca",
+                "conci": "cai"
+            }
+        },
+        "atp": {
+            "neurodamus": {
+                "name": "atp",
+                "conci": "atpi"
+            }
+        },
+        "adp": {
+            "neurodamus": {
+                "name": "adp",
+                "conci": "adpi"
+            }
+        }
+    },
+    "metabolism": {
+        "type": "main",
+        "u0_path": "metabolismndam_reduced/u0steady_22nov22.csv",
+        "julia_code_path": "metabolismndam_reduced/metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl",
+        "steps_input_concs": ["K"],
+        "ndam_input_vars": [["Na", "curr"], ["K", "curr"], ["Na", "conci"], ["K", "conci"], ["Ca", "conci"], ["atp", "conci"], ["adp", "conci"]],
+        "glycogen_au": [128.0,100.0,100.0,90.0,80.0,75.0],
+        "mito_volume_fraction": [0.0459,0.0522,0.064,0.0774,0.0575,0.0403],
+        "vm_idxs": {"atpn": 22, "adpn": 23, "nai": 98, "ko": 95},
+        "param_path": "${results_path}/dis_param_${timestr}.txt",
+        "um_path": "${results_path}/dis_um_${timestr}.txt"
+    },
+    "steps": {
+        "conc_factor": 1e-9,
+        "compname": "extra",
+        "Volsys": {
+            "name": "extra_volsys",
+            "species": ["Na", "K"]
+        }
+    },
+    "bloodflow": {
+        "blood_viscosity": 1.2e-6,
+        "depth_ratio": 0.05,
+        "max_nb_inputs": 3,
+        "min_subgraph_size": 100,
+        "max_capillaries_diameter": 7.0,
+        "edge_scale": 2.0,
+        "node_scale": 20.0,
+        "input_v": 3.5e4,
+        "vasc_axis": 1,
+        "base_pressure": 1.33e-3
+    }
+}
