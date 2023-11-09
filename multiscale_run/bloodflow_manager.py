@@ -5,7 +5,7 @@ import numpy as np
 from scipy import sparse
 
 from astrovascpy import bloodflow
-from astrovascpy.utils import create_entry_largest_nodes, set_edge_data
+from astrovascpy.utils import create_entry_largest_nodes, Graph
 
 from mpi4py import MPI as MPI4PY
 
@@ -186,9 +186,9 @@ class MsrBloodflowManager:
             - This method prepares the vasculature graph by setting edge data and creating a MultiIndex for edge properties based on section and segment IDs.
         """
 
-        self.graph = PointVasculature.load_sonata(vasculature_path)
+        pv = PointVasculature.load_sonata(vasculature_path)
+        self.graph = Graph.from_point_vasculature(pv)
 
-        set_edge_data(self.graph)
         self.graph.edge_properties.index = pd.MultiIndex.from_frame(
             self.graph.edge_properties.loc[:, ["section_id", "segment_id"]]
         )

@@ -62,18 +62,37 @@
             }
         },
         "Ca": {
+            "steps": {
+                "name": "Ca",
+                "conc_0": 1e-5, 
+                "diffcst": 2e-9, 
+                "ncharges": 2
+            },
             "neurodamus": {
                 "name": "ca",
+                "curr": "ica",
                 "conci": "cai"
             }
         },
         "atp": {
+            "steps": {
+                "name": "atp",
+                "conc_0": 0.1, 
+                "diffcst": 2e-9, 
+                "ncharges": -3
+            },
             "neurodamus": {
                 "name": "atp",
                 "conci": "atpi"
             }
         },
         "adp": {
+            "steps": {
+                "name": "adp",
+                "conc_0": 0.0001, 
+                "diffcst": 2e-9, 
+                "ncharges": -2
+            },
             "neurodamus": {
                 "name": "adp",
                 "conci": "adpi"

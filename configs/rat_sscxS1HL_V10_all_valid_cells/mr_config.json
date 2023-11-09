@@ -1,3 +1,11 @@
 {
-    "parent_config_path": "${base_path}/../mr_config.json"
+    "parent_config_path": "${base_path}/../mr_config.json",
+
+    "steps_ndts": 100,
+    "metabolism_ndts": 400,
+    "bloodflow_ndts": 400,
+
+    "steps": {
+        "conc_factor": 1e-9
+    }
 }

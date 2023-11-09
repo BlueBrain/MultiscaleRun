@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name="msr_ratV10"
-#SBATCH --nodes=4
+#SBATCH --nodes=16
 #SBATCH --ntasks-per-node=32
 
 #SBATCH --account=proj40

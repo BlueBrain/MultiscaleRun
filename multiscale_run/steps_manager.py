@@ -496,6 +496,8 @@ class MsrStepsManager:
 
         conc += corr_conc
 
+        logging.info(f"tet concs for {species.steps.name}: len: {len(conc)}, min: {min(conc)}, max: {min(conc)}")
+
         assert np.all(
             conc >= 0
         ), f"\nConcentration of {species.steps.name} went negative for at least one tet [tet_idx, val]:\n{np.column_stack((np.where(conc < 0)[0], conc[conc < 0]))}"

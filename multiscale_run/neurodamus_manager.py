@@ -35,6 +35,7 @@ class MsrNeurodamusManager:
             logging_level=config.logging_level,
             enable_coord_mapping=True,
             cleanup_atexit=False,
+            lb_mode="RoundRobin"
         )
         logging.info("ndam sim init")
         self.ndamus.sim_init()
@@ -383,7 +384,7 @@ class MsrNeurodamusManager:
                     return f"\033[1;31m{r}\033[m"
 
             ratios = [
-                rr(total, working) for working, total in zip(working_gids, num_neurons)
+                rr(total, working) for working, total in zip(working_gids, num_neurons) if total
             ]
 
             logging.info(f"Working GIDs to Total GIDs Ratio:\n{', '.join(ratios)}")

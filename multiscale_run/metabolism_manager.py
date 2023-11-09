@@ -377,7 +377,7 @@ class MsrMetabolismManager:
                 f"vm[{c_gid}][{i}]: {utils.ppf(self.vm[c_gid][i])}"
                 for i in self.config.metabolism.vm_idxs.values()
             ],
-            f"kis_mean[c_gid]: {utils.ppf(kis_mean)}",
+            f"kis_mean[{c_gid}]: {utils.ppf(kis_mean)}",
             f"bf_Fin: {param.bf_Fin}",
             f"bf_vol: {param.bf_vol}",
         ]
