@@ -87,7 +87,7 @@ fi
 if [ "${STEPS_USE_MODULE}" -eq 1 ]
 then
   echo "steps from module"
-  module load steps/5.0.0a
+  module load steps/5.0.0b
 else
   if [[ -n "${CI}" ]]
   then

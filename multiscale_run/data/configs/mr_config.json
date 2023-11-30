@@ -101,8 +101,8 @@
     },
     "metabolism": {
         "type": "main",
-        "u0_path": "metabolismndam_reduced/u0steady_22nov22.csv",
-        "julia_code_path": "metabolismndam_reduced/metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl",
+        "u0_path": "${pkg_data_path}/metabolismndam_reduced/u0steady_22nov22.csv",
+        "julia_code_path": "${pkg_data_path}/metabolismndam_reduced/metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl",
         "steps_input_concs": ["K"],
         "ndam_input_vars": [["Na", "curr"], ["K", "curr"], ["Na", "conci"], ["K", "conci"], ["Ca", "conci"], ["atp", "conci"], ["adp", "conci"]],
         "glycogen_au": [128.0,100.0,100.0,90.0,80.0,75.0],

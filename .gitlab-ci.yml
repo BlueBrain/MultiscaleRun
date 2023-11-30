@@ -146,6 +146,7 @@ pytests:
   # this hangs if called on the folder
     - source setup_quick.sh
     - python -mpytest tests/pytests/test_bloodflow.py
+    - python -mpytest tests/pytests/test_cli.py
     - python -mpytest tests/pytests/test_metabolism.py
     - python -mpytest tests/pytests/test_neurodamus.py
     - python -mpytest tests/pytests/test_steps.py

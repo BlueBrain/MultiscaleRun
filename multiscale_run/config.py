@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import time
 
+from .data import DATA_DIR, DEFAULT_CIRCUIT
 from . import utils
 
 
@@ -48,7 +49,7 @@ class MsrConfig(dict):
         if self.base_path is None:
             self.base_path = utils.load_from_env(
                 "base_path",
-                "configs/rat_sscxS1HL_V6",
+                DEFAULT_CIRCUIT,
                 lambda x: str(x),
             )
 
@@ -197,7 +198,11 @@ class MsrConfig(dict):
         Example:
             >>> config.load()
         """
-        rd = {"base_path": str(self.base_path), "timestr": time.strftime("%Y%m%d%H")}
+        rd = dict(
+            base_path=str(self.base_path),
+            pkg_data_path=str(DATA_DIR),
+            timestr=time.strftime("%Y%m%d%H"),
+        )
         d = self._get_dict_from_json(self.config_path, rd)
         self.update(d)
 

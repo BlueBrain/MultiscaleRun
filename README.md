@@ -83,3 +83,98 @@ In the `job_script`:
 For more on how to use ARM MAP check [here](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
 
 **REMARK**: In the past, at the very end of the multiscale_run script we were calling `exit() # needed to avoid hanging`. However, this `exit` is crashing ARM MAP because some processes exit before `MPI_Finalize` is called. In the latest versions of Neurodamus and STEPS, there is no need for using `exit()` and therefore it has been removed from the script.
+
+# Multiscale_run on BB5
+
+## As a module
+
+```
+module load unstable py-multiscale-run
+```
+
+## As a spack package:
+
+```
+spack install py-multiscale-run@develop
+spack load py-multiscale-run
+```
+
+> :rainbow: **This may also work on your spack-powered machine!**
+
+
+## Your working-copy of multiscale_run
+
+```bash
+$ spack install py-multiscale-run@develop
+$ spack load --only dependencies py-multiscale-run@develop
+$ python -m venv .env
+$ .env/bin/python -m pip install -e .
+
+$ .env/bin/multiscale-run --version
+multiscale-run 0.1
+```
+
+> :rainbow: **Feel free to _activate_ the virtualenv to have the multiscale-run executable in your PATH**
+
+> :rainbow: **This may also work on your spack-powered machine!**
+
+
+# How to use the `multiscale-run` executable?
+
+
+## Setup a new simulation
+
+```shell
+multiscale-run init /path/to/my-sim
+```
+
+This command creates the following files in `/path/to/my-sim` providing both the circuit, the config files, and runtime dependencies:
+
+```
+.
+├── config
+│   ├── circuit_config.json
+│   ├── mr_config_cns.json
+│   ├── mr_config.json
+│   ├── node_sets.json
+│   └── simulation_config.json
+├── julia_environment
+│   ├── Manifest.toml
+│   └── Project.toml
+├── metabolismndam_reduced
+│   ├── julia_gen_18feb2021.jl
+│   ├── met4cns.jl
+│   ├── metabolism_model_21nov22_noEphys_noSB.jl
+│   ├── metabolism_model_21nov22_withEphysCurrNdam_noSB.jl
+│   ├── metabolism_model_21nov22_withEphysNoCurrNdam_noSB.jl
+│   ├── metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl
+│   ├── u0_Calv_ATP_1p4_Nai10.csv
+│   └── u0steady_22nov22.csv
+├── mr_config.json
+└── simulation.sbatch
+```
+
+The generated setup is already ready to compute, but feel free to browse and tweak the JSON configuration files at will!
+
+> :ledger: **See `multiscale-run init --help` for more information**
+
+## Compute the simulation
+
+### On the current machine / allocation
+
+```shell
+multiscale-run compute
+```
+
+> :ledger: To use multiple ranks, use `srun -n X multiscale-run compute` where X is the number of ranks. Notice that steps requires this to be a power of 2.
+
+> :ledger: **See `multiscale-run compute --help` for more information**
+
+> :exclamation: **You may need to load the `intel-oneapi-mkl` module on BB5 if not already loaded**
+> otherwise you will probably experience the following error when running the _compute_ phase: `libmkl_intel_thread.so.1: undefined symbol: omp_get_num_procs`
+
+### On SLURM cluster:
+
+```
+sbatch simulation.sbatch
+```

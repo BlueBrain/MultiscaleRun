@@ -1,0 +1,36 @@
+#!/bin/bash
+
+#SBATCH --job-name="{{ job_name }}"
+#SBATCH --nodes={{ nodes }}
+#SBATCH --ntasks-per-node=32
+
+#SBATCH --account=proj40
+#SBATCH --partition=prod
+#SBATCH --constraint=cpu
+#SBATCH --time={{ time }}
+
+#SBATCH --cpus-per-task=2
+#SBATCH --exclusive
+#SBATCH --mem=0
+#SBATCH --output="%x-%j.log"
+
+# Here are the modules loaded when the simulation was initialized
+# Feel free to edit this section
+{%- for module in loaded_modules %}
+module load {{ module }}
+{%- endfor %}
+# -----------------------------------------------------------------
+
+module load unstable
+module load py-multiscale-run
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# BEFORE SUBMITTING THIS SCRIPT TO THE SLURM QUEUE.    !
+# please ensure that both the configuration and the    !
+# environment of the simulation are sane by executing: !
+#                                                      !
+#               multiscale-run check                   !
+#                                                      !
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+time srun --overlap dplace multiscale-run compute

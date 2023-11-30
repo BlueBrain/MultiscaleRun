@@ -7,7 +7,6 @@ import numpy as np
 import neurodamus
 import pandas as pd
 from bluepysnap import Circuit
-from diffeqpy import de
 from mpi4py import MPI as MPI4PY
 
 from . import utils
@@ -210,6 +209,7 @@ class MsrMetabolismManager:
             None
         """
 
+        from diffeqpy import de
         prob = de.ODEProblem(self.model, self.vm[c_gid], self.tspan_m, list(param))
         try:
             logging.info("   solve ODE problem")

@@ -1,4 +1,3 @@
-import importlib.util
 import json
 import logging
 import os
@@ -11,7 +10,6 @@ from pathlib import Path
 
 import numpy as np
 import psutil
-import scipy as sp
 from scipy import sparse
 
 from mpi4py import MPI as MPI4PY
