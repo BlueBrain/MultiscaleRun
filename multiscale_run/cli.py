@@ -314,5 +314,4 @@ def main(**kwargs):
             logging.error(e)
             sys.exit(1)
     else:
-        print("ERROR: a multiscale-run command is required", file=sys.stderr)
-        ap.print_help(sys.stderr)
+        ap.error("a subcommand is required.")
