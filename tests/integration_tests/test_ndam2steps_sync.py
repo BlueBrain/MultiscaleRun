@@ -21,11 +21,13 @@ from multiscale_run import (
     config,
     preprocessor,
 )
+from multiscale_run.data import DEFAULT_CIRCUIT
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
-conf0 = config.MsrConfig()
+
+conf0 = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
 
 
 @utils.clear_and_replace_files_decorator([conf0.mesh_path.parent, conf0.cache_path])
@@ -48,7 +50,7 @@ def test_sync():
     This function is used to ensure that the synchronization between these components works correctly.
 
     """
-    conf = config.MsrConfig()
+    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
 
     prep = preprocessor.MsrPreprocessor(conf)
     prep.autogen_node_sets()

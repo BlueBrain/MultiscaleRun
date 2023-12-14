@@ -1,9 +1,0 @@
-{
-    "a": 1,
-    "c": 1,
-    "d": {
-        "q": 0,
-        "miao_path": "${bau_path}/${results}/hola",
-        "bau_path": "${results}/bbb"
-    }
-}

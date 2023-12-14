@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+# set -e
 # There are a lot of things to load. Better have a blueprint for that
 
 echo

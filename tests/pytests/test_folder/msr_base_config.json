@@ -1,0 +1,56 @@
+{
+    "results_path": "RESULTS",
+    "a": 1,
+    "c": 1,
+    "q": 1,
+    "d": {
+        "q": 0,
+        "miao_path": "${bau_path}/${results}/hola",
+        "bau_path": "${results}/bbb"
+    },
+    "msr_sim_end": 1000,
+    "preprocessor": {
+        "node_sets": {
+            "neuron_population_name": "All"
+        }
+    },
+    "metabolism": {
+        "steps_input_concs": [
+            "K"
+        ],
+        "ndam_input_vars": [
+            [
+                "Na",
+                "curr"
+            ],
+            [
+                "K",
+                "curr"
+            ],
+            [
+                "Na",
+                "conci"
+            ],
+            [
+                "K",
+                "conci"
+            ],
+            [
+                "Ca",
+                "conci"
+            ],
+            [
+                "atp",
+                "conci"
+            ],
+            [
+                "adp",
+                "conci"
+            ]
+        ]
+    },
+    "metabolism_ndts": 4000,
+    "steps_ndts": 4000,
+    "with_metabolism": true,
+    "with_steps": true
+}

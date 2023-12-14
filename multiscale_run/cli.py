@@ -26,6 +26,7 @@ from .data import (
     circuit_path,
     SBATCH_TEMPLATE,
     MSR_CONFIG_JSON,
+    MSR_POSTPROC,
 )
 
 
@@ -151,8 +152,8 @@ def init(directory, circuit, julia="shared", force=False):
         ),
         rat_sscxS1HL_V10_all_valid_cells=dict(
             job_name="msr_ratV10",
-            nodes=16,
-            time="08:00:00",
+            nodes=64,
+            time="10:00:00",
         ),
     )
     sbatch_params = copy.copy(SBATCH_CIRCUITS_PARAMS[circuit.name])
@@ -162,6 +163,7 @@ def init(directory, circuit, julia="shared", force=False):
     sbatch_params["loaded_modules"] = loaded_modules
     SBATCH_TEMPLATE.stream(sbatch_params).dump("simulation.sbatch")
     shutil.copy(MSR_CONFIG_JSON, MSR_CONFIG_JSON.name)
+    shutil.copy(MSR_POSTPROC, MSR_POSTPROC.name)
 
     shutil.copytree(
         str(circuit),
@@ -171,7 +173,9 @@ def init(directory, circuit, julia="shared", force=False):
     )
     if julia == "no":
         replace_in_file(
-            MSR_CONFIG_JSON.name, '"with_metabolism": true,', '"with_metabolism": false,'
+            MSR_CONFIG_JSON.name,
+            '"with_metabolism": true,',
+            '"with_metabolism": false,',
         )
     else:
         if julia == "shared" and not BB5_JULIA_ENV.exists():
@@ -208,7 +212,9 @@ def init(directory, circuit, julia="shared", force=False):
 
         check_julia_env()
 
-    LOGGER.warning("Preparation of the simulation configuration and environment succeeded")
+    LOGGER.warning(
+        "Preparation of the simulation configuration and environment succeeded"
+    )
     LOGGER.warning(
         "The generated setup is already ready to compute "
         "with the command 'multiscale-run compute' or via the "

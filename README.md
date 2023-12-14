@@ -134,8 +134,8 @@ This command creates the following files in `/path/to/my-sim` providing both the
 .
 ├── config
 │   ├── circuit_config.json
-│   ├── mr_config_cns.json
-│   ├── mr_config.json
+│   ├── msr_config_cns.json
+│   ├── msr_config.json
 │   ├── node_sets.json
 │   └── simulation_config.json
 ├── julia_environment
@@ -150,7 +150,7 @@ This command creates the following files in `/path/to/my-sim` providing both the
 │   ├── metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl
 │   ├── u0_Calv_ATP_1p4_Nai10.csv
 │   └── u0steady_22nov22.csv
-├── mr_config.json
+├── msr_config.json
 └── simulation.sbatch
 ```
 

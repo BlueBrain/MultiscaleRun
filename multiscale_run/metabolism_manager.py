@@ -86,13 +86,12 @@ class MsrMetabParameters:
 class MsrMetabolismManager:
     """Wrapper to manage the metabolism julia model"""
 
-    def __init__(self, config, main, prnt, neuron_pop_name):
+    def __init__(self, config, main, neuron_pop_name):
         """Initialize the MsrMetabolismManager.
 
         Args:
             config: The configuration for the metabolism manager.
             main: An instance of the main class.
-            prnt: An instance for printing data.
             neuron_pop_name: The name of the neuron population.
 
         Returns:
@@ -110,7 +109,6 @@ class MsrMetabolismManager:
         self.steps_vars = {}
         self.bloodflow_vars = {}
         self.failed_cells = {}
-        self.prnt = prnt
         self.neuro_df = Circuit(config.circuit_path).nodes[neuron_pop_name]
 
     @utils.logs_decorator
@@ -210,6 +208,7 @@ class MsrMetabolismManager:
         """
 
         from diffeqpy import de
+
         prob = de.ODEProblem(self.model, self.vm[c_gid], self.tspan_m, list(param))
         try:
             logging.info("   solve ODE problem")
@@ -233,9 +232,6 @@ class MsrMetabolismManager:
             comm.Abort(f"sol is None: {error_solver}")
 
         self.vm[c_gid] = sol.u[-1]
-        self.prnt.append_to_file(
-            self.config.metabolism.um_path, [c_gid, i_metab, sol.u[-1]], root=rank
-        )
 
     @utils.logs_decorator
     def advance(self, ncs, i_metab, metab_dt):
@@ -388,21 +384,21 @@ class MsrMetabolismManager:
         # macro-problems like K+ accumulation faster. For now the additional computation is minimal.
         # Improvements are possible if needed."
 
-        assert 0.25 <= self.vm[c_gid][idx_atpn] <= 2.5, self.vm[c_gid][idx_atpn]
-        assert 5 <= self.vm[c_gid][idx_nai] <= 30, self.vm[c_gid][
-            idx_nai
-        ]  # usually around 10
-        assert 1 <= self.vm[c_gid][idx_ko] <= 10, self.vm[c_gid][idx_ko]
-        assert 100 <= kis_mean <= 160, kis_mean
+        def check_VIP_value(min0, max0, val, ss):
+            if not (min0 <= val <= max0):
+                raise MsrMetabManagerException(f"{ss} {min0} <= {val} <= {max0}")
+
+        check_VIP_value(0.25, 2.5, self.vm[c_gid][idx_atpn], "atp out of range:")
+        check_VIP_value(
+            5, 30, self.vm[c_gid][idx_nai], "nai out of range (usually around 10):"
+        )
+        check_VIP_value(100, 160, kis_mean, "kis_mean (ki) out of range:")
+        # TODO remove this if when https://bbpteam.epfl.ch/project/issues/browse/BBPP40-371 is fixed
+        if self.config.with_steps:
+            check_VIP_value(1, 10, self.vm[c_gid][idx_ko], "ko out of range:")
 
         # 2.2 should coincide with the BC METypePath field & with u0_path
-        # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-        # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects will be counted twice for metab model
-
-        self.prnt.append_to_file(
-            self.config.metabolism.param_path,
-            [c_gid, i_metab, *list(param)],
-            root=rank,
-        )
+        # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects
+        # will be counted twice for metab model
 
         return param

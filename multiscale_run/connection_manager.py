@@ -167,7 +167,7 @@ class MsrConnectionManager:
         for s in specs:
             sp = getattr(self.config.species, s)
             # there are 1e8 µm2 in a cm2, final output in mA
-            seg_curr = ndam_m.get_var(var=sp.neurodamus.curr, weight="area") * 1e-8
+            seg_curr = ndam_m.get_var(var=sp.neurodamus.curr.var, weight="area") * 1e-8
 
             tet_curr = self.nsegXtetMat.transpose().dot(seg_curr)
             comm.Allreduce(tet_curr, tet_curr, op=MPI4PY.SUM)
@@ -195,12 +195,14 @@ class MsrConnectionManager:
         }
         for s, t in self.config.metabolism.ndam_input_vars:
             weight = "area" if t == "curr" else "volume"
-            var = getattr(getattr(self.config.species, s).neurodamus, t)
+            var = getattr(getattr(self.config.species, s).neurodamus, t).var
             ans[(s, t)] = self.nXnsegMatBool.dot(ndam_m.get_var(var=var, weight=weight))
 
             l = d.get(weight, None)
             ans[(s, t)] = np.divide(ans[(s, t)], l)
 
+        gids = ndam_m.gids()
+        ans["valid_gid"] = np.ones(len(gids))
         metab_m.ndam_vars = ans
 
     @utils.logs_decorator
@@ -357,9 +359,9 @@ class MsrConnectionManager:
 
         #                             for seg in neurodamus_manager.gen_segs(nc, [Na.nai_var]):
         #                                 seg.nai = nai_weighted_mean  # 10
-        ndam_k_conco = self.config.species.K.neurodamus.conco
-        ndam_atp_conco = self.config.species.atp.neurodamus.conci
-        ndam_adp_conco = self.config.species.adp.neurodamus.conci
+        ndam_k_conco = self.config.species.K.neurodamus.conco.var
+        ndam_atp_conco = self.config.species.atp.neurodamus.conci.var
+        ndam_adp_conco = self.config.species.adp.neurodamus.conci.var
 
         l = [
             (ndam_k_conco, ko_weighted_mean),

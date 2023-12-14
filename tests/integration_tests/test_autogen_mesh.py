@@ -23,9 +23,14 @@ from multiscale_run import (
     neurodamus_manager,
     preprocessor,
 )
+from multiscale_run.data import DEFAULT_CIRCUIT
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
+
+
+def base_path():
+    return str(Path(__file__).resolve().parent)
 
 
 def generate_random_points_in_cube(a, b, n):
@@ -61,7 +66,7 @@ def test_autogen_mesh(f, n):
     This function generates points using the provided function, creates a mesh, and performs various tests on the generated mesh.
 
     """
-    conf = config.MsrConfig(base_path_or_dict="tests/integration_tests")
+    conf = config.MsrConfig(base_path_or_dict=base_path())
     utils.remove_path(conf.mesh_path.parent)
 
     prep = preprocessor.MsrPreprocessor(config=conf)
@@ -87,7 +92,7 @@ def test_gen_msh():
     This function tests mesh generation using specific configurations and managers. It includes steps to create, manage, and clean up the mesh.
 
     """
-    conf = config.MsrConfig()
+    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
     tmp_mesh_path = conf.mesh_path.parent.name + "_tmp"
     utils.rename_path(
         conf.mesh_path.parent, conf.mesh_path.parent.with_name(tmp_mesh_path)
@@ -101,10 +106,10 @@ def test_gen_msh():
     )
     pp.autogen_mesh(ndam_m=ndam_m, bf_m=bf_m)
 
-    # utils.remove_path(conf.mesh_path.parent)
-    # utils.rename_path(
-    #     conf.mesh_path.parent.with_name(tmp_mesh_path), conf.mesh_path.parent
-    # )
+    utils.remove_path(conf.mesh_path.parent)
+    utils.rename_path(
+        conf.mesh_path.parent.with_name(tmp_mesh_path), conf.mesh_path.parent
+    )
 
 
 if __name__ == "__main__":

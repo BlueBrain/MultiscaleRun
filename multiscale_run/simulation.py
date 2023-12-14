@@ -10,6 +10,7 @@ import logging
 
 def _run_once(f):
     """Decorator to ensure a function is called only once."""
+
     def wrapper(*args, **kwargs):
         if not wrapper.has_run:
             wrapper.has_run = True
@@ -52,7 +53,6 @@ class MsrSimulation:
             neurodamus_manager,
             steps_manager,
             preprocessor,
-            printer,
         )
 
     @_run_once
@@ -61,14 +61,10 @@ class MsrSimulation:
         logging.info("configure simulators")
         from multiscale_run import config
         from multiscale_run import preprocessor
-        from multiscale_run import printer
         from multiscale_run import connection_manager
 
         self.conf = config.MsrConfig(self._base_path)
-
         self.prep = preprocessor.MsrPreprocessor(self.conf)
-
-        self.prnt = printer.MsrPrinter(self.conf)
         self.conn_m = connection_manager.MsrConnectionManager(self.conf)
 
     @_run_once
@@ -82,11 +78,13 @@ class MsrSimulation:
         from multiscale_run import bloodflow_manager
         from multiscale_run import metabolism_manager
         from multiscale_run import neurodamus_manager
+        from multiscale_run import reporter
         from multiscale_run import steps_manager
 
         with timeit(name="initialization"):
             self.prep.autogen_node_sets()
             self.ndam_m = neurodamus_manager.MsrNeurodamusManager(self.conf)
+            self.rep = reporter.MsrReporter(config=self.conf, gids=self.ndam_m.gids())
             self.conn_m.connect_ndam2ndam(ndam_m=self.ndam_m)
 
             self.conf.merge_without_priority({"DT": self.ndam_m.dt()})
@@ -110,14 +108,13 @@ class MsrSimulation:
                 self.steps_m = steps_manager.MsrStepsManager(config=self.conf)
                 self.steps_m.init_sim()
                 self.conn_m.connect_ndam2steps(ndam_m=self.ndam_m, steps_m=self.steps_m)
-                if self.conf.with_steps:
+                if self.conf.with_bloodflow:
                     self.conn_m.connect_bf2steps(bf_m=self.bf_m, steps_m=self.steps_m)
 
             if self.conf.with_metabolism:
                 self.metab_m = metabolism_manager.MsrMetabolismManager(
                     config=self.conf,
                     main=JMain,
-                    prnt=self.prnt,
                     neuron_pop_name=self.ndam_m.neuron_manager.population_name,
                 )
 
@@ -145,9 +142,13 @@ class MsrSimulation:
         # i_* is the number of time steps of that particular simulator
         i_ndam, i_metab = 0, 0
         for t in ProgressBar(
-            int(self.conf.msr_sim_end / (self.conf.DT * self.conf.mr_ndts))
-        )(msr_utils.timesteps(self.conf.msr_sim_end, self.conf.DT * self.conf.mr_ndts)):
-            i_ndam += self.conf.mr_ndts
+            int(self.conf.msr_sim_end / (self.conf.DT * self.conf.msr_ndts))
+        )(
+            msr_utils.timesteps(
+                self.conf.msr_sim_end, self.conf.DT * self.conf.msr_ndts
+            )
+        ):
+            i_ndam += self.conf.msr_ndts
             with timeit(name="main_loop"):
                 with timeit(name="neurodamus_solver"):
                     self.ndam_m.ndamus.solve(t)
@@ -180,9 +181,23 @@ class MsrSimulation:
                 ):
                     with timeit(name="metabolism_loop"):
                         log_stage("metab loop")
+                        # gids may change during the sim. We need to get the updated version
+                        lgids = self.ndam_m.gids()
                         with timeit(name="neurodamus_2_metabolism"):
                             self.conn_m.ndam2metab_sync(
                                 ndam_m=self.ndam_m, metab_m=self.metab_m
+                            )
+
+                            units = [
+                                getattr(
+                                    getattr(self.conf.species, k[0]).neurodamus, k[1]
+                                ).unit
+                                if isinstance(k, tuple)
+                                else ""
+                                for k in self.metab_m.ndam_vars.keys()
+                            ]
+                            self.rep.set_group(
+                                "ndam", self.metab_m.ndam_vars, units, lgids
                             )
 
                         if self.conf.with_steps:
@@ -190,12 +205,29 @@ class MsrSimulation:
                                 self.conn_m.steps2metab_sync(
                                     steps_m=self.steps_m, metab_m=self.metab_m
                                 )
+                                self.rep.set_group(
+                                    "steps",
+                                    self.metab_m.steps_vars,
+                                    ["M"] * len(self.metab_m.steps_vars),
+                                    lgids,
+                                )
 
                         if self.conf.with_bloodflow and self.conf.with_steps:
                             with timeit(name="bloodflow_2_metabolism"):
                                 self.conn_m.bloodflow2metab_sync(
                                     bf_m=self.bf_m, metab_m=self.metab_m
                                 )
+
+                                self.rep.set_group(
+                                    "bf",
+                                    self.metab_m.bloodflow_vars,
+                                    [
+                                        "um^3" if "vol" in i else "um^3/s"
+                                        for i in self.metab_m.bloodflow_vars
+                                    ],
+                                    lgids,
+                                )
+                        self.rep.flush_buffer(i_metab)
 
                         with timeit(name="solve_metabolism"):
                             failed_cells = self.metab_m.advance(
@@ -221,7 +253,7 @@ class MsrSimulation:
                     psutil.Process().memory_info().rss / (1024**2)
                 )  # memory consumption in MB
 
-        self.ndam_m.ndamus.spike2file(str(self.conf.results_path / "out.dat"))
+        self.ndam_m.ndamus.sonata_spikes()
         TimerManager.timeit_show_stats()
         comm.Barrier()
 

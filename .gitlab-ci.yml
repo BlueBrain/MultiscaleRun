@@ -147,12 +147,15 @@ pytests:
     - source setup_quick.sh
     - python -mpytest tests/pytests/test_bloodflow.py
     - python -mpytest tests/pytests/test_cli.py
+    - python -mpytest tests/pytests/test_config.py
     - python -mpytest tests/pytests/test_metabolism.py
     - python -mpytest tests/pytests/test_neurodamus.py
+    - python -mpytest tests/pytests/test_preprocessor.py
+    - python -mpytest tests/pytests/test_reporter.py
     - python -mpytest tests/pytests/test_steps.py
     - python -mpytest tests/pytests/test_utils.py
-    - python -mpytest tests/pytests/test_config.py
-    - python -mpytest tests/pytests/test_preprocessor.py
+
+    
 
 .nrun_test:
   extends: [.test]
@@ -176,9 +179,9 @@ integration_tests:
     bb5_ntasks: 2
   script:
     - source setup_quick.sh
+    - srun --overlap -n 2 python tests/integration_tests/test_autogen_mesh.py
     - srun --overlap -n 2 python tests/integration_tests/test_connect_ndam2steps.py
     - srun --overlap -n 2 python tests/integration_tests/test_ndam2steps_sync.py
-    - srun --overlap -n 2 python tests/integration_tests/test_autogen_mesh.py
     - srun --overlap -n 2 python tests/integration_tests/test_preprocessor.py
 
 .dualrun_test:

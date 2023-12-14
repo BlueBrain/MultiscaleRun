@@ -14,6 +14,7 @@ from multiscale_run import (
     neurodamus_manager,
     preprocessor,
 )
+from multiscale_run.data import DEFAULT_CIRCUIT
 
 
 def test_gen_msh():
@@ -33,7 +34,7 @@ def test_gen_msh():
     This function is responsible for testing the mesh generation process with given configurations and managers.
 
     """
-    conf = config.MsrConfig()
+    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
     tmp_mesh_path = conf.mesh_path.parent.name + "_tmp"
     utils.rename_path(
         conf.mesh_path.parent, conf.mesh_path.parent.with_name(tmp_mesh_path)

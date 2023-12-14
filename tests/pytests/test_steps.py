@@ -12,6 +12,7 @@ h.nrnmpi_init()
 
 from mpi4py import MPI as MPI4PY
 from multiscale_run import steps_manager, config, preprocessor
+from multiscale_run.data import DEFAULT_CIRCUIT
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
@@ -35,7 +36,7 @@ def gen_segments_in_bbox(msh):
 
 
 def test_only_steps():
-    conf = config.MsrConfig()
+    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
     config.cache_load = False
     config.cache_save = False
 

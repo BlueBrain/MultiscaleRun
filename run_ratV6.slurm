@@ -17,11 +17,11 @@
 # check multiscale_run/config.py for more info on how the config object is constructed
 
 # first time, today
-export IS_SPACK_UPDATED=1
-source setup.sh
-unset IS_SPACK_UPDATED
+# export IS_SPACK_UPDATED=1
+# source setup.sh
+# unset IS_SPACK_UPDATED
 
 # the other times
-# source setup_quick.sh
+source setup_quick.sh
 
 time srun --overlap dplace python main.py

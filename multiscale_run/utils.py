@@ -248,10 +248,7 @@ def cache_decorator(
             logging.info(f"no cache found. Compute {str(field_names)}")
             method(self, *args, **kwargs)
             if is_save:
-                try:
-                    path.mkdir(parents=True, exist_ok=True)
-                except FileExistsError:
-                    pass
+                path.mkdir(parents=True, exist_ok=True)
                 for field, file in zip(field_names, file_names):
                     full_path = path / file
                     if rank == 0 or "rank" in file:

@@ -1,6 +1,6 @@
 {
     "e": 1,
-    "parent_config_path": "tests/pytests/test_folder/mr_base_config.json",
+    "parent_config_path": "${base_path}/../../msr_base_config.json",
     "sonata_path": "simulation_config.json",
     "results": "aaa"
 }

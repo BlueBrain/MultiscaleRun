@@ -9,10 +9,11 @@ from neuron import h
 h.nrnmpi_init()
 
 from multiscale_run import neurodamus_manager, config
+from multiscale_run.data import DEFAULT_CIRCUIT
 
 
 def test_init():
-    conf = config.MsrConfig()
+    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
     ndam_m = neurodamus_manager.MsrNeurodamusManager(config=conf)
 
 

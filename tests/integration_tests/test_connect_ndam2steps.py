@@ -23,11 +23,13 @@ from multiscale_run import (
     config,
     preprocessor,
 )
+from multiscale_run.data import DEFAULT_CIRCUIT
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
-conf0 = config.MsrConfig()
+
+conf0 = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
 
 
 def check_ratio_mat(m):
@@ -105,7 +107,7 @@ def test_connection():
     It also checks various conditions using the 'check_ratio_mat' and 'check_mats_shape' functions.
 
     """
-    conf = config.MsrConfig()
+    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
 
     prep = preprocessor.MsrPreprocessor(conf)
 

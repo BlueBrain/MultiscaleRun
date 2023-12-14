@@ -1,4 +1,5 @@
 import json
+import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -12,7 +13,7 @@ class MsrConfig(dict):
     """Multiscale run Config class
 
     This class is composed from a chain of json files. We start from "base_path" which can
-    be provided or deducted from environment. We look for a file named: <base_path>/mr_config.json.
+    be provided or deducted from environment. We look for a file named: <base_path>/msr_config.json.
     This provides the first hook. We load the file as a dict (child) and look recursively if there is a
     "parent_config_path" marked. In that case we add that dict as parent and merge them using the
     priority rules of utils.merge_dicts. After all of that, the assigned env variables that match
@@ -28,7 +29,7 @@ class MsrConfig(dict):
         """Multiscale run Config class
 
         This class is composed from a chain of json files. We start from "base_path" which can
-        be provided or deducted from the environment. We look for a file named: <base_path>/mr_config.json.
+        be provided or deducted from the environment. We look for a file named: <base_path>/msr_config.json.
         This provides the first hook. We load the file as a dict (child) and look recursively if there is a
         "parent_config_path" marked. In that case, we add that dict as parent and merge them using the
         priority rules of utils.merge_dicts.
@@ -49,11 +50,11 @@ class MsrConfig(dict):
         if self.base_path is None:
             self.base_path = utils.load_from_env(
                 "base_path",
-                DEFAULT_CIRCUIT,
+                (self.cwd_path / "config"),
                 lambda x: str(x),
             )
-
-        self.config_path = self.base_path / "mr_config.json"
+        self.base_path = Path(self.base_path)
+        self.config_path = self.base_path / "msr_config.json"
 
         self.load()
 
@@ -209,9 +210,12 @@ class MsrConfig(dict):
         # finalize computing a few additional entries
         if "mr_debug" in self and self.mr_debug:
             self.debug_overrides()
-        self.compute_mr_ndts()
 
+        # get msr_dts and fix dts
+        self.compute_msr_ndts()
         self.env_overrides()
+        # do it again, after the overrides
+        self.compute_msr_ndts()
 
     def env_overrides(self):
         """
@@ -240,9 +244,17 @@ class MsrConfig(dict):
             This function uses a lambda to convert environment variable values to the
             same data type as the original values in the dictionary-like object.
 
+            Since bool('0') is True in python we need to use f
+
         """
+
+        def f(base, a):
+            if isinstance(base, bool):
+                return bool(int(a))
+            return type(base)(a)
+
         for k in self.keys():
-            self[k] = utils.load_from_env(k, self[k], lambda a: type(self[k])(a))
+            self[k] = utils.load_from_env(k, self[k], lambda a: f(self[k], a))
 
     def debug_overrides(self):
         """
@@ -257,18 +269,47 @@ class MsrConfig(dict):
         self.metabolism_ndts = 10
         self.bloodflow_ndts = 10
 
-    def compute_mr_ndts(self):
+    def dt(self, token="neurodamus"):
+        """
+        Get the time step (dt) for a given token.
+
+        Parameters:
+        - token (str, optional): Token specifying the type of time step.
+        Defaults to "neurodamus".
+
+        Returns:
+        - float: The time step for the specified token.
+        """
+        if token == "neurodamus":
+            return self.DT
+
+        ndts = getattr(self, f"{token}_ndts")
+        return ndts * self.DT
+
+    def compute_msr_ndts(self):
         """
         Compute multiscale run n dts based on the active steps, metabolism, and bloodflow ndts.
 
         This method calculates the number of neurodamus dts required to synchronize simulations based on active simulation steps (if enabled), metabolism, and bloodflow.
 
         Note:
-            - The 'mr_ndts' attribute is updated with the calculated value.
+            - The 'msr_ndts' attribute is updated with the calculated value.
 
         Example:
-            >>> config.compute_mr_ndts()
+            >>> config.compute_msr_ndts()
         """
+
+        if "metabolism_ndts" in self:
+            if "steps_ndts" in self and self.steps_ndts > self.metabolism_ndts:
+                logging.info(
+                    f"steps_ndts reduced to match metabolism: {self.steps_ndts} -> {self.metabolism_ndts}"
+                )
+                self.steps_ndts = self.metabolism_ndts
+            if "bloodflow_ndts" in self and self.bloodflow_ndts > self.metabolism_ndts:
+                logging.info(
+                    f"bloodflow_ndts reduced to match metabolism: {self.bloodflow_ndts} -> {self.metabolism_ndts}"
+                )
+                self.bloodflow_ndts = self.metabolism_ndts
 
         l = []
         if "with_steps" in self and self.with_steps:
@@ -278,7 +319,10 @@ class MsrConfig(dict):
         if "with_bloodflow" in self and self.with_bloodflow:
             l.append(self.bloodflow_ndts)
 
-        self.mr_ndts = int(np.gcd.reduce(l if len(l) else 10000))
+        if "msr_ndts" in self:
+            l.append(self.msr_ndts)
+
+        self.msr_ndts = int(np.gcd.reduce(l if len(l) else 10000))
 
     def __str__(self):
         """
@@ -320,7 +364,7 @@ class MsrConfig(dict):
 
         def get_line(v):
             ndts = getattr(self, f"{v}_ndts")
-            return {"DT (ms)": ndts * self.DT, "ndts": ndts}
+            return {"DT (ms)": self.dt(v), "ndts": ndts}
 
         data = {}
 
@@ -328,7 +372,7 @@ class MsrConfig(dict):
             "DT (ms)": self.DT,
         }
 
-        data["mr"] = get_line("mr")
+        data["msr"] = get_line("msr")
 
         if self.with_steps:
             data["steps"] = get_line("steps")

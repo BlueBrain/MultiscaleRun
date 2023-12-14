@@ -5,6 +5,5 @@
         "a": 3,
         "b": "B"
     },
-    "parent_config_path": "${base_path}/../mr_config2.json"
+    "parent_config_path": "${base_path}/../msr_config2.json"
 }
-

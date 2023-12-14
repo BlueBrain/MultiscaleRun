@@ -2,25 +2,20 @@
     "with_steps": true,
     "with_bloodflow": true,
     "with_metabolism": true,
-
     "cache_save": true,
     "cache_load": true,
-
     "mr_debug": false,
     "logging_level": 1,
-
     "msr_sim_end": 1000,
     "steps_ndts": 100,
     "metabolism_ndts": 4000,
     "bloodflow_ndts": 4000,
-    
     "sonata_path": "${base_path}/simulation_config.json",
     "node_sets_path": "${base_path}/node_sets.json",
     "circuit_path": "${base_path}/circuit_config.json",
     "mesh_path": "${base_path}/mesh/autogen_mesh.msh",
     "results_path": "RESULTS",
     "cache_path": "${base_path}/cache",
-
     "mesh_scale": 1e-6,
     "preprocessor": {
         "mesh": {
@@ -43,59 +38,86 @@
             },
             "neurodamus": {
                 "name": "k",
-                "curr": "ik",
-                "conci": "ki",
-                "conco": "ko"
+                "curr": {
+                    "var": "ik",
+                    "unit": "mA/cm^2"
+                },
+                "conci": {
+                    "var": "ki",
+                    "unit": "mM"
+                },
+                "conco": {
+                    "var": "ko",
+                    "unit": "mM"
+                }
             }
         },
         "Na": {
             "steps": {
                 "name": "Na",
-                "conc_0": 140, 
-                "diffcst": 2e-9, 
+                "conc_0": 140,
+                "diffcst": 2e-9,
                 "ncharges": 1
             },
             "neurodamus": {
                 "name": "na",
-                "curr": "ina",
-                "conci": "nai"
+                "curr": {
+                    "var": "ina",
+                    "unit": "mA/cm^2"
+                },
+                "conci": {
+                    "var": "nai",
+                    "unit": "mM"
+                }
             }
         },
         "Ca": {
             "steps": {
                 "name": "Ca",
-                "conc_0": 1e-5, 
-                "diffcst": 2e-9, 
+                "conc_0": 1e-5,
+                "diffcst": 2e-9,
                 "ncharges": 2
             },
             "neurodamus": {
                 "name": "ca",
-                "curr": "ica",
-                "conci": "cai"
+                "curr": {
+                    "var": "ica",
+                    "unit": "mA/cm^2"
+                },
+                "conci": {
+                    "var": "cai",
+                    "unit": "mM"
+                }
             }
         },
         "atp": {
             "steps": {
                 "name": "atp",
-                "conc_0": 0.1, 
-                "diffcst": 2e-9, 
+                "conc_0": 0.1,
+                "diffcst": 2e-9,
                 "ncharges": -3
             },
             "neurodamus": {
                 "name": "atp",
-                "conci": "atpi"
+                "conci": {
+                    "var": "atpi",
+                    "unit": "mM"
+                }
             }
         },
         "adp": {
             "steps": {
                 "name": "adp",
-                "conc_0": 0.0001, 
-                "diffcst": 2e-9, 
+                "conc_0": 0.0001,
+                "diffcst": 2e-9,
                 "ncharges": -2
             },
             "neurodamus": {
                 "name": "adp",
-                "conci": "adpi"
+                "conci": {
+                    "var": "adpi",
+                    "unit": "mM"
+                }
             }
         }
     },
@@ -103,20 +125,71 @@
         "type": "main",
         "u0_path": "${pkg_data_path}/metabolismndam_reduced/u0steady_22nov22.csv",
         "julia_code_path": "${pkg_data_path}/metabolismndam_reduced/metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl",
-        "steps_input_concs": ["K"],
-        "ndam_input_vars": [["Na", "curr"], ["K", "curr"], ["Na", "conci"], ["K", "conci"], ["Ca", "conci"], ["atp", "conci"], ["adp", "conci"]],
-        "glycogen_au": [128.0,100.0,100.0,90.0,80.0,75.0],
-        "mito_volume_fraction": [0.0459,0.0522,0.064,0.0774,0.0575,0.0403],
-        "vm_idxs": {"atpn": 22, "adpn": 23, "nai": 98, "ko": 95},
-        "param_path": "${results_path}/dis_param_${timestr}.txt",
-        "um_path": "${results_path}/dis_um_${timestr}.txt"
+        "steps_input_concs": [
+            "K"
+        ],
+        "ndam_input_vars": [
+            [
+                "Na",
+                "curr"
+            ],
+            [
+                "K",
+                "curr"
+            ],
+            [
+                "Na",
+                "conci"
+            ],
+            [
+                "K",
+                "conci"
+            ],
+            [
+                "Ca",
+                "conci"
+            ],
+            [
+                "atp",
+                "conci"
+            ],
+            [
+                "adp",
+                "conci"
+            ]
+        ],
+        "glycogen_au": [
+            128.0,
+            100.0,
+            100.0,
+            90.0,
+            80.0,
+            75.0
+        ],
+        "mito_volume_fraction": [
+            0.0459,
+            0.0522,
+            0.064,
+            0.0774,
+            0.0575,
+            0.0403
+        ],
+        "vm_idxs": {
+            "atpn": 22,
+            "adpn": 23,
+            "nai": 98,
+            "ko": 95
+        }
     },
     "steps": {
         "conc_factor": 1e-9,
         "compname": "extra",
         "Volsys": {
             "name": "extra_volsys",
-            "species": ["Na", "K"]
+            "species": [
+                "Na",
+                "K"
+            ]
         }
     },
     "bloodflow": {

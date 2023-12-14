@@ -35,7 +35,6 @@ class MsrNeurodamusManager:
             logging_level=config.logging_level,
             enable_coord_mapping=True,
             cleanup_atexit=False,
-            lb_mode="RoundRobin"
         )
         logging.info("ndam sim init")
         self.ndamus.sim_init()
@@ -50,6 +49,10 @@ class MsrNeurodamusManager:
         self.nc_vols = self._cumulate_nc_sec_quantity("volume")
         self.nc_areas = self._cumulate_nc_sec_quantity("area")
         self.removed_gids = {}
+
+    def gids(self):
+        """Convenience function to get the gids from ncs"""
+        return [int(nc.CCell.gid) for nc in self.ncs]
 
     def remove_gids(self, failed_cells, conn_m):
         """Add GIDs (Global IDs) to the removed_gids list and update connections.
@@ -384,7 +387,9 @@ class MsrNeurodamusManager:
                     return f"\033[1;31m{r}\033[m"
 
             ratios = [
-                rr(total, working) for working, total in zip(working_gids, num_neurons) if total
+                rr(total, working)
+                for working, total in zip(working_gids, num_neurons)
+                if total
             ]
 
             logging.info(f"Working GIDs to Total GIDs Ratio:\n{', '.join(ratios)}")

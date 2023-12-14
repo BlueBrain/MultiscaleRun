@@ -1,14 +1,14 @@
 {
     "run": {
         "random_seed": 0,
-        "tstop": 10000,
+        "tstop": 1000,
         "dt": 0.025
     },
     "network": "circuit_config.json",
     "node_sets_file": "node_sets.json",
     "node_set": "testNGVSSCX_AstroMini",
     "output": {
-        "output_dir": "./../../RESULTS"
+        "output_dir": "./../RESULTS"
     },
     "conditions": {
         "v_init": -65
@@ -36,17 +36,17 @@
         }
     },
     "reports": {
-        "voltage": {
+        "ndam_v": {
             "cells": "testNGVSSCX",
             "type": "compartment",
             "variable_name": "v",
             "unit": "mV",
-            "dt": 1.0,
+            "dt": 0.025,
             "start_time": 0.0,
             "end_time": 2000.0,
-            "file_name": "voltage.h5"
+            "file_name": "ndam_v.h5"
         },
-        "NaCurrCompSum": {
+        "ndam_ina_sum": {
             "cells": "testNGVSSCX",
             "type": "summation",
             "variable_name": "ina",
@@ -54,9 +54,9 @@
             "dt": 1.0,
             "start_time": 0.0,
             "end_time": 2000.0,
-            "file_name": "NaCurrCompSum.h5"
+            "file_name": "ndam_ina_sum.h5"
         },
-        "NaConcAllCmps": {
+        "ndam_nai": {
             "cells": "testNGVSSCX",
             "type": "compartment",
             "variable_name": "nai",
@@ -64,9 +64,9 @@
             "dt": 1.0,
             "start_time": 0.0,
             "end_time": 2000.0,
-            "file_name": "NaConcAllCmps.h5"
+            "file_name": "ndam_nai.h5"
         },
-        "KConcAllCmps": {
+        "ndam_ki": {
             "cells": "testNGVSSCX",
             "type": "compartment",
             "variable_name": "ki",
@@ -74,9 +74,9 @@
             "dt": 1.0,
             "start_time": 0.0,
             "end_time": 2000.0,
-            "file_name": "KConcAllCmps.h5"
+            "file_name": "ndam_ki.h5"
         },
-        "ATPConcAllCmps": {
+        "ndam_atpi": {
             "cells": "testNGVSSCX",
             "type": "compartment",
             "variable_name": "atpi",
@@ -84,7 +84,37 @@
             "dt": 1.0,
             "start_time": 0.0,
             "end_time": 2000.0,
-            "file_name": "ATPConcAllCmps.h5"
+            "file_name": "ndam_atpi.h5"
+        },
+        "ndam_adpi": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "adpi",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_adpi.h5"
+        },
+        "ndam_cai": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "cai",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_cai.h5"
+        },
+        "ndam_IClamp": {
+            "cells": "testNGVSSCX",
+            "type": "summation",
+            "variable_name": "IClamp",
+            "sections": "soma",
+            "dt": 1,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_IClamp.h5"
         }
     }
 }

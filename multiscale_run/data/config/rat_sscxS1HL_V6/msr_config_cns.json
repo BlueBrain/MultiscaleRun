@@ -1,5 +1,5 @@
 {
-    "parent_config_path": "${base_path}/../mr_config.json",
+    "parent_config_path": "${base_path}/../msr_config.json",
     "metabolism": {
         "type": "cns",
         "u0_path": "metabolismndam_reduced/u0_Calv_ATP_1p4_Nai10.csv",

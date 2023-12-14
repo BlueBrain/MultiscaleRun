@@ -1,7 +1,7 @@
 {
     "mesh_path": "${base_path}/mesh/mesh.msh",
     "mesh_scale": 1e-6,
-    "steps" : {   
+    "steps": {
         "compname": "extra",
         "Volsys": {
             "name": "extra_volsys"
