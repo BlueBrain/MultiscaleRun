@@ -299,6 +299,11 @@ def main(**kwargs):
     args = ap.parse_args(**kwargs)
     args = vars(args)
 
+    # do not show an error if no arguments are provided, show the help instead
+    if len(sys.argv) == 1:
+        ap.print_help(sys.stderr)
+        sys.exit(1)
+
     verbosity = args.pop("verbose")
     log_level = logging.WARN
     if verbosity == 1:
