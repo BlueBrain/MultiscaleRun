@@ -4,8 +4,6 @@ import sys
 import os
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parent / "../.."))
-
 from mpi4py import MPI as MPI4PY
 
 from multiscale_run import reporter, utils, config
@@ -54,6 +52,7 @@ def test_simple_report():
         rr.set_group(k, q, ["mol"] * len(q), gids)
 
     rr.flush_buffer(idt)
+    comm.Barrier()
 
     for group, cols in rr.buffers.items():
         for name, v in cols.items():

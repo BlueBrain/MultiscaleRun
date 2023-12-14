@@ -1,8 +1,3 @@
-import sys
-from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-
 import numpy as np
 
 # this needs to be before "import neurodamus" and before MPI4PY otherwise mpi hangs
@@ -12,7 +7,6 @@ h.nrnmpi_init()
 
 from mpi4py import MPI as MPI4PY
 from multiscale_run import steps_manager, config, preprocessor
-from multiscale_run.data import DEFAULT_CIRCUIT
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
@@ -36,14 +30,14 @@ def gen_segments_in_bbox(msh):
 
 
 def test_only_steps():
-    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
+    conf = config.MsrConfig.rat_sscxS1HL_V6()
     config.cache_load = False
     config.cache_save = False
 
-    prep = preprocessor.MsrPreprocessor(config=conf)
+    prep = preprocessor.MsrPreprocessor(conf)
 
     prep.autogen_mesh(pts=np.array([[100, 100, 200], [300, 500, 400]]))
-    steps_m = steps_manager.MsrStepsManager(config=conf)
+    steps_m = steps_manager.MsrStepsManager(conf)
     steps_m.init_sim()
 
     pts = gen_segments_in_bbox(steps_m.msh)
@@ -55,8 +49,8 @@ def test_only_steps():
         )
         np.testing.assert_array_less(np.array(st)[:, 1], [steps_m.ntets] * len(st))
     else:
-        assert mat == None, mat
-        assert st == None, st
+        assert mat is None, mat
+        assert st is None, st
 
     for it in range(10):
         t = 0.025 * conf.steps_ndts * it

@@ -1,7 +1,5 @@
 BlueConfig.bkpOrigin
-steps_meshes/mc2c/mc2c.msh.bkp
 Jean
-.logs/
 sim_conf/
 mcomplex.dat
 *.pyc
@@ -13,24 +11,15 @@ python-venv/
 *.dat
 x86_64/
 bkp_x86_64/
-metabolismndam/
 .ipynb_checkpoints/
-HBP_STEPS/
 spackenv/
 !.setup_*
-.julia/
-julia_environment/
-RESULTS*/
-bloodflow_src/
 bluepy-configfile/
 input_flow.pkl
 ngv2.json
-py-neurodamus/
 mod/*
 cache*
 *.stl
-autogen_mesh.geo
-autogen_mesh.msh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

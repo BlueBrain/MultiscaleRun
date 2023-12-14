@@ -1,9 +1,6 @@
 # Test sec mapping algorithm to compute intersections among neuron segments and steps tets
 # Test neuron removal tools
-import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from timeit import default_timer as timer
 
@@ -21,13 +18,11 @@ from multiscale_run import (
     config,
     preprocessor,
 )
-from multiscale_run.data import DEFAULT_CIRCUIT
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
-
-conf0 = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
+conf0 = config.MsrConfig.rat_sscxS1HL_V6()
 
 
 @utils.clear_and_replace_files_decorator([conf0.mesh_path.parent, conf0.cache_path])
@@ -50,16 +45,16 @@ def test_sync():
     This function is used to ensure that the synchronization between these components works correctly.
 
     """
-    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
+    conf = config.MsrConfig.rat_sscxS1HL_V6()
 
     prep = preprocessor.MsrPreprocessor(conf)
     prep.autogen_node_sets()
-    conn_m = connection_manager.MsrConnectionManager(config=conf)
+    conn_m = connection_manager.MsrConnectionManager(conf)
 
-    ndam_m = neurodamus_manager.MsrNeurodamusManager(config=conf)
+    ndam_m = neurodamus_manager.MsrNeurodamusManager(conf)
     conn_m.connect_ndam2ndam(ndam_m)
     prep.autogen_mesh(ndam_m=ndam_m)
-    steps_m = steps_manager.MsrStepsManager(config=conf)
+    steps_m = steps_manager.MsrStepsManager(conf)
     steps_m.init_sim()
 
     conn_m.connect_ndam2steps(ndam_m=ndam_m, steps_m=steps_m)

@@ -1,208 +1,64 @@
 include:
   - project: hpc/gitlab-pipelines
-    file:
-      - spack-build-components.gitlab-ci.yml
-      - bbp-gitlab-access.yml
-
-default:
-  tags: [bb5_map]
+    file: 
+      - spack-build.gitlab-ci.yml
 
 variables:
-  # this it taken into account only if STEPS_USE_MODULE==0
-  STEPS_BRANCH: master
-  STEPS_USE_MODULE: 1
-  # this it taken into account only if PY_NEURODAMUS_USE_MODULE==0
-  PY_NEURODAMUS_BRANCH: main
-  PY_NEURODAMUS_USE_MODULE: 0
-  # this it taken into account only if PY_NEURODAMUS_USE_MODULE==0
-  NEURODAMUS_NEOCORTEX_BRANCH: main
-  NEURODAMUS_NEOCORTEX_USE_MODULE: 0
+  SPACK_PACKAGE: py-multiscale-run
 
-
-
-workflow:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "push"
-      when: never
-    - when: always
-
-spack_setup:
-  extends: [.spack_setup_ccache]
-  before_script:
-    - SPACK_BRANCH=develop
-
-.build:
-  extends: [.spack_build]
-  variables:
-    bb5_ntasks: 2   # so we block 16 cores
-    bb5_cpus_per_task: 8 # ninja -j {this}
-    bb5_memory: 76G # ~16*384/80
-
-setup_steps:
-  extends: [.build]
-  variables:
-    SPACK_PACKAGE: steps
-    SPACK_PACKAGE_SPEC: ^petsc+int64+mpi
-  rules:
-    - if: $STEPS_USE_MODULE == "0" && $CI_PIPELINE_SOURCE == "merge_request_event"
-
-setup_neurodamus_neocortex:
-  extends: [.build]
-  variables:
-    SPACK_PACKAGE: neurodamus-neocortex
-    SPACK_PACKAGE_SPEC: +ngv+metabolism
-  rules:
-    - if: $NEURODAMUS_NEOCORTEX_USE_MODULE == "0" && $CI_PIPELINE_SOURCE == "merge_request_event"
-
-.custom_build:
-  stage: build
-  variables:
-    bb5_ntasks: 2   # so we block 16 cores
-    bb5_cpus_per_task: 8 # ninja -j {this}
-    bb5_memory: 76G # ~16*384/80
-    IS_SPACK_UPDATED: 1
-  artifacts:
-    when: always
-    paths:
-      - "${envfile}.env"
-    reports:
-      dotenv:
-        - "${envfile}.env"
-  script:
-    - !reference [ .bbp_gitlab_access, script ]
-    - source .ci/setup.sh
-  
-
-setup_bloodflow:
-  extends: [.custom_build]
-  needs:
-    - spack_setup
-  variables:
-    setup_file: .setup_bloodflow.sh
-    envvars: "envvars=(BLOODFLOW_PATH)"
-    envfile: bloodflow_envs
-
-setup_spackenv:
-  extends: [.custom_build]
-  needs:
-    - spack_setup
-    - job: setup_neurodamus_neocortex
-      optional: true
-    - job: setup_steps
-      optional: true
-  variables:
-    setup_file: .setup_spackenv.sh
-    envvars: "envvars=(SPACKENV_PATH)"
-    envfile: spack_envs
-
-setup_python_venv:
-  extends: [.custom_build]
-  needs:
-    - spack_setup
-    - setup_bloodflow
-  variables:
-    setup_file: .setup_python_venv.sh
-    envvars: "envvars=(PYTHON_VENV_PATH)"
-    envfile: python_venv_envs
-
-
-setup_julia:
-  extends: [.custom_build]
-  needs:
-    - spack_setup
-    - setup_python_venv
-  variables:
-    setup_file: .setup_julia.sh
-    envvars: "envvars=(JULIA_DEPOT_PATH JULIA_PROJECT)"
-    envfile: julia_envs
-  cache:
-    - key: julia_cache3
-      paths: 
-        - ${JULIA_DEPOT_PATH}
-        - ${JULIA_PROJECT}
-
-.test:
-  stage: test
-  needs:
-    - spack_setup
-    - setup_spackenv
-    - setup_julia
-    - setup_python_venv
-    - job: setup_neurodamus_neocortex
-      optional: true
-    - job: setup_steps
-      optional: true
-    - setup_bloodflow
-  variables:
-    bb5_exclusive: "full"
-    bb5_constraint: cpu
-    bb5_memory: 0
-    bb5_cpus_per_task: 2
-    OMP_NUM_THREADS: 1
-
-pytests:
-  extends: [.test]
-  script:
-  # this hangs if called on the folder
-    - source setup_quick.sh
-    - python -mpytest tests/pytests/test_bloodflow.py
-    - python -mpytest tests/pytests/test_cli.py
-    - python -mpytest tests/pytests/test_config.py
-    - python -mpytest tests/pytests/test_metabolism.py
-    - python -mpytest tests/pytests/test_neurodamus.py
-    - python -mpytest tests/pytests/test_preprocessor.py
-    - python -mpytest tests/pytests/test_reporter.py
-    - python -mpytest tests/pytests/test_steps.py
-    - python -mpytest tests/pytests/test_utils.py
-
-    
-
-.nrun_test:
-  extends: [.test]
+# remove when many dependencies are not rebuilt anymore
+spack_build:
+  extends: .spack_build
   timeout: 2 hours
-  artifacts:
-    when: always
-    paths:
-      - RESULTS/*
-    expire_in: 4 hours
   variables:
-    bb5_ntasks: 32
-  script:
-    - source setup_quick.sh
-    - source .ci/test.sh
+    bb5_duration: "02:00:00"
 
-integration_tests:
-  extends: [.test]
+pytest:
+  extends: .spack_test
+
+integration:
+  extends: .spack_test
   timeout: 10 minutes
   variables:
     bb5_duration: "00:10:00"
     bb5_ntasks: 2
+
+.nrun_test:
+  extends: [.spack_test]
+  timeout: 3 hours
+  artifacts:
+    when: always
+    paths:
+    - msr-sim-$CI_JOB_NAME_SLUG/RESULTS/*
+    expire_in: 4 hours
+  variables:
+    bb5_memory: 64G
+    bb5_ntasks: 32
+    bb5_duration: "03:00:00"
   script:
-    - source setup_quick.sh
-    - srun --overlap -n 2 python tests/integration_tests/test_autogen_mesh.py
-    - srun --overlap -n 2 python tests/integration_tests/test_connect_ndam2steps.py
-    - srun --overlap -n 2 python tests/integration_tests/test_ndam2steps_sync.py
-    - srun --overlap -n 2 python tests/integration_tests/test_preprocessor.py
+  - spack ${SPACK_EXTRA_FLAGS} load /${SPACK_INSTALLED_HASH}
+  - ${SPACK_SOURCE_DIR}/.ci/test_simulation.sh
 
 .dualrun_test:
   extends: [.nrun_test]
   timeout: 2 hours
   variables:
-    with_steps: 1
-    with_metabolism: 0
-    with_bloodflow: 0
+    steps: "true"
+    metabolism: "false"
+    bloodflow: "false"
 
 dualrun_test 1/16:
   extends: [.dualrun_test]
   variables:
     bb5_ntasks: 1
-    msr_sim_end: 105
+    bb5_duration: "02:00:00"
+    sim_end: 105
 
 dualrun_test 2/16:
   extends: [.dualrun_test]
   variables:
     bb5_ntasks: 2
-    msr_sim_end: 105
+    sim_end: 105
 
 dualrun_test 16/16:
   extends: [.dualrun_test]
@@ -213,8 +69,6 @@ nrun_[steps, metab, bf]:
   extends: [.nrun_test]
   parallel:
     matrix:
-    - with_steps: [0, 1]
-      with_metabolism: [0, 1]
-      with_bloodflow: [0, 1]
-
-
+    - steps: ["false", "true"]
+      metabolism: ["false", "true"]
+      bloodflow: ["false", "true"]

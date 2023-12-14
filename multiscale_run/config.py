@@ -1,12 +1,13 @@
 import json
 import logging
+import time
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import time
 
-from .data import DATA_DIR, DEFAULT_CIRCUIT
 from . import utils
+from .data import DATA_DIR, DEFAULT_CIRCUIT
 
 
 class MsrConfig(dict):
@@ -250,7 +251,7 @@ class MsrConfig(dict):
 
         def f(base, a):
             if isinstance(base, bool):
-                return bool(int(a))
+                return utils.strtobool(a)
             return type(base)(a)
 
         for k in self.keys():
@@ -395,3 +396,11 @@ SIM_END: {self.msr_sim_end} ms
     """
 
         return s
+
+    @classmethod
+    def rat_sscxS1HL_V6(cls):
+        """
+        Returns:
+            MsrConfig: Default configuration using the rat v6 circuit
+        """
+        return cls(DEFAULT_CIRCUIT)

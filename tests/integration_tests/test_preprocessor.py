@@ -1,7 +1,4 @@
-import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from neuron import h
 
@@ -14,7 +11,6 @@ from multiscale_run import (
     neurodamus_manager,
     preprocessor,
 )
-from multiscale_run.data import DEFAULT_CIRCUIT
 
 
 def test_gen_msh():
@@ -34,7 +30,7 @@ def test_gen_msh():
     This function is responsible for testing the mesh generation process with given configurations and managers.
 
     """
-    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
+    conf = config.MsrConfig.rat_sscxS1HL_V6()
     tmp_mesh_path = conf.mesh_path.parent.name + "_tmp"
     utils.rename_path(
         conf.mesh_path.parent, conf.mesh_path.parent.with_name(tmp_mesh_path)

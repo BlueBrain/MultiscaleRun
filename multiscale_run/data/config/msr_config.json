@@ -17,6 +17,8 @@
     "results_path": "RESULTS",
     "cache_path": "${base_path}/cache",
     "mesh_scale": 1e-6,
+    "config_format": 1,
+    "msr_version": "develop",
     "preprocessor": {
         "mesh": {
             "explode_factor": 1.001,

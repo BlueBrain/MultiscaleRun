@@ -1,8 +1,4 @@
-import sys
-from pathlib import Path
 import numpy as np
-
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 from multiscale_run import preprocessor
 

@@ -8,6 +8,7 @@ The CLI provides the required commands to create a run simulations.
 import argparse
 import contextlib
 import copy
+import functools
 import logging
 import os
 from pathlib import Path
@@ -67,9 +68,10 @@ def replace_in_file(file, old, new, count=-1):
 def julia_env(func):
     """Decorator to define the required Julia environment variables"""
 
+    @functools.wraps(func)
     def wrap(**kwargs):
         julia_depot = Path(".julia")
-        julia_project = Path("julia_environment")
+        julia_project = Path(".julia_environment")
         os.environ.setdefault("JULIA_DEPOT_PATH", str(julia_depot.resolve()))
         os.environ.setdefault("JULIA_PROJECT", str(julia_project.resolve()))
         return func(**kwargs)
@@ -80,6 +82,12 @@ def julia_env(func):
 def command(func):
     """Decorator for every command functions"""
 
+    # extract first line of function docstring, and use it
+    # for --help description
+    func_doc = func.__doc__ or ""
+    func.__argparse_help__ = func_doc.split("\n", 1)[0]
+
+    @functools.wraps(func)
     def wrap(directory=None, **kwargs):
         directory = Path(directory or ".")
         directory.mkdir(parents=True, exist_ok=True)
@@ -124,9 +132,10 @@ def pushd(path):
         os.chdir(cwd)
 
 
-@julia_env
 @command
+@julia_env
 def julia(args=None, **kwargs):
+    """Run Julia within the simulation environment"""
     command = ["julia"]
     if args is not None:
         command += args
@@ -134,7 +143,8 @@ def julia(args=None, **kwargs):
 
 
 @command
-def init(directory, circuit, julia="shared", force=False):
+def init(directory, circuit, julia="shared", check=True, force=False):
+    """Setup a new simulation"""
     if not force and next(Path(".").iterdir(), None) is not None:
         raise IOError(
             f"Directory '{directory}' is not empty. "
@@ -163,6 +173,12 @@ def init(directory, circuit, julia="shared", force=False):
     sbatch_params["loaded_modules"] = loaded_modules
     SBATCH_TEMPLATE.stream(sbatch_params).dump("simulation.sbatch")
     shutil.copy(MSR_CONFIG_JSON, MSR_CONFIG_JSON.name)
+    replace_in_file(
+        MSR_CONFIG_JSON.name,
+        '"msr_version": "develop"',
+        f'"msr_version": "{__version__}"',
+    )
+
     shutil.copy(MSR_POSTPROC, MSR_POSTPROC.name)
 
     shutil.copytree(
@@ -184,11 +200,16 @@ def init(directory, circuit, julia="shared", force=False):
             julia = "create"
         if julia == "shared":
             LOGGER.warning("Reusing shared Julia environment at %s", BB5_JULIA_ENV)
-            os.symlink(BB5_JULIA_ENV / ".julia", ".julia")
-            os.symlink(BB5_JULIA_ENV / "julia_environment", "julia_environment")
+            for dir in [".julia", ".julia_environment"]:
+                dir = Path(dir)
+                if dir.is_symlink():
+                    dir.unlink()
+                elif dir.is_dir():
+                    shutil.rmtree(dir)
+                os.symlink(BB5_JULIA_ENV / dir.name[1:], dir)
         elif julia == "create":
             Path(".julia").mkdir(exist_ok=True)
-            Path("julia_environment").mkdir(exist_ok=True)
+            Path(".julia_environment").mkdir(exist_ok=True)
             LOGGER.warning("Installing Julia package 'IJulia'")
             julia_pkg("add", "IJulia")
             LOGGER.warning(
@@ -210,7 +231,8 @@ def init(directory, circuit, julia="shared", force=False):
             # noinspection PyUnresolvedReferences
             from diffeqpy import de  # noqa : F401
 
-        check_julia_env()
+        if check:
+            check_julia_env()
 
     LOGGER.warning(
         "Preparation of the simulation configuration and environment succeeded"
@@ -223,9 +245,10 @@ def init(directory, circuit, julia="shared", force=False):
     )
 
 
-@julia_env
 @command
+@julia_env
 def compute(**kwargs):
+    """Compute the simulation"""
     sim = MsrSimulation(Path("config"))
     sim.main()
 
@@ -233,6 +256,7 @@ def compute(**kwargs):
 @julia_env
 @command
 def check(**kwargs):
+    """Check environment sanity"""
     LOGGER.warning("Running minimalist checks to test environment sanity")
     sim = MsrSimulation(Path("config"))
     sim.configure()
@@ -243,18 +267,13 @@ def check(**kwargs):
     LOGGER.warning("The simulation environment looks sane")
 
 
-def main(**kwargs):
-    """Package script entry-point for the multiscale-run CLI utility.
-
-    Args:
-        kwargs: optional arguments passed to the argument parser.
-    """
+def argument_parser():
     ap = argparse.ArgumentParser()
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     ap.add_argument("--verbose", "-v", action="count", default=0)
     subparsers = ap.add_subparsers(title="commands")
 
-    parser_init = subparsers.add_parser("init", help="Setup a new simulation")
+    parser_init = subparsers.add_parser("init", help=init.__argparse_help__)
     parser_init.set_defaults(func=init)
     parser_init.add_argument(
         "--circuit",
@@ -277,17 +296,25 @@ def main(**kwargs):
         "'create' to construct a new env locally, "
         "'no' to skip Julia environment (typically if metabolism model is not required)",
     )
+    parser_init.add_argument(
+        "--no-check",
+        action="store_const",
+        const=False,
+        default=True,
+        dest="check",
+        help="Do not verify simulation health",
+    )
     parser_init.add_argument("directory", nargs="?")
 
-    parser_check = subparsers.add_parser("check", help="Check environment sanity")
+    parser_check = subparsers.add_parser("check", help=check.__argparse_help__)
     parser_check.set_defaults(func=check)
+    parser_check.add_argument("directory", nargs="?")
 
-    parser_compute = subparsers.add_parser("compute", help="Compute the simulation")
+    parser_compute = subparsers.add_parser("compute", help=compute.__argparse_help__)
     parser_compute.set_defaults(func=compute)
+    parser_compute.add_argument("directory", nargs="?")
 
-    parser_julia = subparsers.add_parser(
-        "julia", help="Run Julia within the simulation environment"
-    )
+    parser_julia = subparsers.add_parser("julia", help=julia.__argparse_help__)
     parser_julia.set_defaults(func=julia)
     parser_julia.add_argument(
         "args",
@@ -295,8 +322,16 @@ def main(**kwargs):
         metavar="ARGS",
         help="Optional arguments passed to Julia executable",
     )
+    return ap
 
-    args = ap.parse_args(**kwargs)
+
+def main(**kwargs):
+    """Package script entry-point for the multiscale-run CLI utility.
+
+    Args:
+        kwargs: optional arguments passed to the argument parser.
+    """
+    args = argument_parser().parse_args(**kwargs)
     args = vars(args)
 
     verbosity = args.pop("verbose")
@@ -311,7 +346,7 @@ def main(**kwargs):
         try:
             callback(**args)
         except Exception as e:
-            logging.error(e)
+            logging.exception(e)
             sys.exit(1)
     else:
         ap.error("a subcommand is required.")

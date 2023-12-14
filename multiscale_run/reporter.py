@@ -14,7 +14,7 @@ class MsrReporterException(Exception):
 
 class MsrReporter:
     """A class to handle the reporting of multiscale simulations.
-    
+
     Attributes:
         config (config.MsrConfig): Configuration object containing simulation parameters.
         t_unit (str): The time units for the simulation.

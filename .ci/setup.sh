@@ -1,28 +1,15 @@
-#!/bin/bash
+fatal_error() {
+  RED='\033[0;31m'
+  NC='\033[0m' # No Color
+  >&2 printf "${RED}Error${NC}: $@\n${RED}Abort.${NC}\n"
+  exit 1
+}
 
-set -e
-# blueprint for a setup step of the CI. Since we install stuff in the base pipeline directory, it is a little different
-# from the general setup for running the program manually. For the sake of clarity, all of this is hidden in the .ci folder
-
-# This works only in the CI
-
-. ${SPACK_ROOT}/share/spack/setup-env.sh
-source .utils.sh
-
-export STARTING_DIR=${PWD}
-echo "STARTING_DIR=${STARTING_DIR}"
-ls -la
-
-source $setup_file
-
-echo "Put envvars variables in " $envfile.env
-# this is a trick because gitlab ci does not support array variables
-eval $envvars
-
-for str in ${envvars[@]}; do
-  eval temp=\$$str
-  echo ${str}=${temp} >> ${envfile}.env
-  echo ${str}=${temp}
-done
-echo "Done"
-
+set_test_environment() {
+  module load unstable intel-oneapi-mkl py-pytest
+  export JULIA_DEPOT_PATH=/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment/latest/julia
+  export JULIA_PROJECT=/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment/latest/julia_environment
+  if ! [ -e "$JULIA_DEPOT_PATH" ] ; then
+    fatal_error "Julia depot does not exist: '$JULIA_DEPOT_PATH'"
+  fi
+}

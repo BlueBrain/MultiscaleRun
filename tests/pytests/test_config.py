@@ -1,9 +1,6 @@
 import logging
 import os
-import sys
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).resolve().parent / "../.."))
 
 from multiscale_run import config
 

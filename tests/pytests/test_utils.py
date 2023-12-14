@@ -1,11 +1,6 @@
 import logging
-
 import shutil
-import sys
 from pathlib import Path
-
-
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 
 import numpy as np
 from scipy import sparse

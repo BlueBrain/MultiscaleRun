@@ -1,10 +1,6 @@
-import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
-
 import numpy as np
-from scipy.sparse import diags
 
 # this needs to be before "import neurodamus" and before MPI4PY otherwise mpi hangs
 from neuron import h
@@ -23,7 +19,6 @@ from multiscale_run import (
     neurodamus_manager,
     preprocessor,
 )
-from multiscale_run.data import DEFAULT_CIRCUIT
 
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
@@ -69,7 +64,7 @@ def test_autogen_mesh(f, n):
     conf = config.MsrConfig(base_path_or_dict=base_path())
     utils.remove_path(conf.mesh_path.parent)
 
-    prep = preprocessor.MsrPreprocessor(config=conf)
+    prep = preprocessor.MsrPreprocessor(conf)
 
     pts = None
     if rank == 0:
@@ -79,7 +74,7 @@ def test_autogen_mesh(f, n):
 
     prep.autogen_mesh(pts=pts)
 
-    steps_m = steps_manager.MsrStepsManager(config=conf)
+    steps_m = steps_manager.MsrStepsManager(conf)
 
     steps_m.check_pts_inside_mesh_bbox(pts_list=[pts * conf.mesh_scale])
     utils.remove_path(conf.mesh_path.parent)
@@ -92,13 +87,13 @@ def test_gen_msh():
     This function tests mesh generation using specific configurations and managers. It includes steps to create, manage, and clean up the mesh.
 
     """
-    conf = config.MsrConfig(base_path_or_dict=DEFAULT_CIRCUIT)
+    conf = config.MsrConfig.rat_sscxS1HL_V6()
     tmp_mesh_path = conf.mesh_path.parent.name + "_tmp"
     utils.rename_path(
         conf.mesh_path.parent, conf.mesh_path.parent.with_name(tmp_mesh_path)
     )
 
-    pp = preprocessor.MsrPreprocessor(config=conf)
+    pp = preprocessor.MsrPreprocessor(conf)
     ndam_m = neurodamus_manager.MsrNeurodamusManager(conf)
     bf_m = bloodflow_manager.MsrBloodflowManager(
         vasculature_path=ndam_m.get_vasculature_path(),
