@@ -256,6 +256,7 @@ class MsrSimulation:
         self.ndam_m.ndamus.sonata_spikes()
         TimerManager.timeit_show_stats()
         comm.Barrier()
+        self.ndam_m.ndamus._touch_file(self.ndam_m.ndamus._success_file)
 
 
 def main():

@@ -18,7 +18,7 @@ comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
 
-class MrException(Exception):
+class MsrException(Exception):
     """Custom exception class"""
 
     pass
