@@ -27,17 +27,6 @@ def test_load():
     b = config.MsrConfig(base_path_or_dict=a.d)
 
 
-def test_env_overrides():
-    sp = base_path()
-    a = config.MsrConfig(base_path_or_dict=sp)
-    assert a.a == 2, a.a
-
-    os.environ["a"] = "5"
-    a = config.MsrConfig(base_path_or_dict=sp)
-    assert a.a == 5, a.a
-    os.environ.pop("a", None)
-
-
 if __name__ == "__main__":
     test_load()
     test_env_overrides()

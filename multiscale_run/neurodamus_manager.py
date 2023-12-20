@@ -1,13 +1,10 @@
-import json
 import logging
-import os
 
 import numpy as np
 from scipy import sparse
 
 import neurodamus
 import steps
-from bluepysnap import Circuit
 from mpi4py import MPI as MPI4PY
 from neurodamus.connection_manager import SynapseRuleManager
 

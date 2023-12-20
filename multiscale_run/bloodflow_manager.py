@@ -2,7 +2,6 @@ import logging
 from collections import defaultdict
 
 import numpy as np
-from scipy import sparse
 
 from astrovascpy import bloodflow
 from astrovascpy.utils import create_entry_largest_nodes, Graph
@@ -266,7 +265,7 @@ class MsrBloodflowManager:
 
         def eq_radii(v):
             v = np.array(v)
-            """compute x from: 1/x^2 = \sum_n 1/(n*r_i^2)"""
+            r"""compute x from: 1/x^2 = \sum_n 1/(n*r_i^2)"""
             return np.sqrt(v.dot(v) / len(v))
 
         vasc_ids = [self.graph.edge_properties.index[i] for i in vasc_ids]

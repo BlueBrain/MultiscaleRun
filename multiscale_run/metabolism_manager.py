@@ -1,5 +1,3 @@
-##https://stackoverflow.com/questions/57441384/trouble-getting-differential-equation-to-solve-via-diffeqpy
-
 import logging
 
 import numpy as np

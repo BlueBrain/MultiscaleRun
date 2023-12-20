@@ -25,12 +25,6 @@ pushd "$sim_name" >/dev/null
 mv msr_config.json.bak msr_config.json
 cat msr_config.json
 popd >/dev/null
-
-# FIXME Tristan
-# utils.load_from_env is problematic since it silently overrides the JSON config files.
-# Is makes the reproducibility process more complex than it should be since the environment needs
-# be taken into account. The simpler, the better.
-# This is too error prone, this capability needs to disappear.
 unset steps bloodflow metabolism sim_end
 
 module load unstable intel-oneapi-mkl

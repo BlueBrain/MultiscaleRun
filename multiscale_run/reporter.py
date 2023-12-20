@@ -118,7 +118,7 @@ class MsrReporter:
 
                 with h5py.File(path, "a", driver="mpio", comm=comm) as file:
                     file[f"{self.data_loc}/data"][
-                        idt, self.offset : self.offset + len(self.gids)
+                        idt, self.offset: self.offset + len(self.gids)
                     ] = v
 
         self.reset_buffers()

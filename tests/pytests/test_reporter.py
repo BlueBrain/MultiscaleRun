@@ -1,9 +1,7 @@
-import h5py
-import numpy as np
-import sys
-import os
 from pathlib import Path
 
+import h5py
+import numpy as np
 from mpi4py import MPI as MPI4PY
 
 from multiscale_run import reporter, utils, config
@@ -74,24 +72,6 @@ def test_simple_report():
                 assert data.attrs["units"] == t_unit
 
     utils.remove_path(conf.results_path)
-
-
-def test_env_imports():
-    """Test that we the env variables override config correctly"""
-    conf = config.MsrConfig(base_path_or_dict=base_path())
-    assert conf.q == 1
-    assert conf.a == 2, conf
-    assert conf.with_steps
-    os.environ["a"] = "3"
-    os.environ["q"] = "3"
-    os.environ["with_steps"] = "0"
-    conf = config.MsrConfig(base_path_or_dict=base_path())
-    assert conf.a == 3
-    assert conf.q == 3
-    assert not conf.with_steps
-    os.environ.pop("a", None)
-    os.environ.pop("q", None)
-    os.environ.pop("with_steps", None)
 
 
 if __name__ == "__main__":

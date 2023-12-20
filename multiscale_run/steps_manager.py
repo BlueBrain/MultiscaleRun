@@ -443,7 +443,7 @@ class MsrStepsManager:
             numpy.ndarray: An array of the specified quantity.
         """
 
-        if idxs == None:
+        if idxs is None:
             idxs = np.array(range(self.ntets), dtype=np.int64)
 
         ans = np.zeros(len(idxs), dtype=float)

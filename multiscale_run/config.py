@@ -13,7 +13,7 @@ from .data import DATA_DIR, DEFAULT_CIRCUIT
 class MsrConfig(dict):
     """Multiscale run Config class
 
-    This class is composed from a chain of json files. We start from "base_path" which can
+    This class is composed of a chain of json files. We start from "base_path" which can
     be provided or deducted from environment. We look for a file named: <base_path>/msr_config.json.
     This provides the first hook. We load the file as a dict (child) and look recursively if there is a
     "parent_config_path" marked. In that case we add that dict as parent and merge them using the
@@ -49,11 +49,7 @@ class MsrConfig(dict):
 
         self.base_path = base_path_or_dict
         if self.base_path is None:
-            self.base_path = utils.load_from_env(
-                "base_path",
-                (self.cwd_path / "config"),
-                lambda x: str(x),
-            )
+            self.base_path = self.cwd_path / "config"
         self.base_path = Path(self.base_path)
         self.config_path = self.base_path / "msr_config.json"
 
@@ -214,48 +210,8 @@ class MsrConfig(dict):
 
         # get msr_dts and fix dts
         self.compute_msr_ndts()
-        self.env_overrides()
         # do it again, after the overrides
         self.compute_msr_ndts()
-
-    def env_overrides(self):
-        """
-        Apply environment variable overrides to the dictionary-like object.
-
-        This function iterates over the items in the dictionary-like object, and for each
-        key-value pair, it attempts to load a corresponding value from the environment
-        variable. If the environment variable exists, it replaces the original value in
-        the object with the environment variable value, converting it to the same data
-        type as the original value.
-
-        Args:
-            self (dict-like object): The dictionary-like object to which environment
-                variable overrides will be applied.
-
-        Returns:
-            None
-
-        Example:
-            Suppose `self` is a dictionary-like object with key-value pairs, and you
-            have environment variables set for the same keys. After calling
-            `env_overrides`, the values in `self` will be updated with the values from
-            the corresponding environment variables.
-
-        Note:
-            This function uses a lambda to convert environment variable values to the
-            same data type as the original values in the dictionary-like object.
-
-            Since bool('0') is True in python we need to use f
-
-        """
-
-        def f(base, a):
-            if isinstance(base, bool):
-                return utils.strtobool(a)
-            return type(base)(a)
-
-        for k in self.keys():
-            self[k] = utils.load_from_env(k, self[k], lambda a: f(self[k], a))
 
     def debug_overrides(self):
         """

@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import pickle
 import re
 import shutil
@@ -238,7 +237,7 @@ def cache_decorator(
                     logging.info(f"load {field} from {full_path}")
                     try:
                         obj = sparse.load_npz(full_path)
-                    except:
+                    except IOError:
                         with open(full_path, "rb") as f:
                             obj = pickle.load(f)
                     setattr(self, field, obj)
@@ -403,7 +402,7 @@ def merge_dicts(parent, child):
             return child[k]
         if k not in child:
             return parent[k]
-        if type(parent[k]) != type(child[k]):
+        if type(parent[k]) is not type(child[k]):
             raise TypeError(
                 f"Field type missmatch for the values of key {k}: {parent[k]} ({type(parent[k])}) != {child[k]} ({type(child[k])})"
             )
@@ -412,13 +411,6 @@ def merge_dicts(parent, child):
         return child[k]
 
     return {k: merge_vals(k, parent, child) for k in set(parent) | set(child)}
-
-
-def load_from_env(env_name, default, t):
-    """Either load from environment or set with default (env takes priority)"""
-    var = os.getenv(env_name)
-
-    return t(var) if var is not None else default
 
 
 def get_dict_from_json(p):
