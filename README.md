@@ -178,3 +178,27 @@ multiscale-run compute
 ```
 sbatch simulation.sbatch
 ```
+
+# Release notes
+
+## 0.3
+
+* new `post-processing` command creates an HTML report based on simulation results. Usage: `multiscale-run post-processing [sim-path]`. Use `multiscale-run post-processing -h` for more information.
+* `init` command:
+  * new option `--no-check` to skip the tests of Julia environment which lasts several minutes
+  * new keys in `msr_config.json`:
+    * `config_format`: an integer, the version of this file structure
+    * `msr_version`: a string indicating the version of multiscale-run that created this config
+* `compute` command: now creates a Neurodamus success file at the end of the simulation
+* Compatibility notes for simulations created with previous versions of multiscale-run
+  * rename directory `julia_environment` to `.julia_environment`
+  * it is not possible to override the JSON configuration keys with environment variables.
+* GitLab CI on BB5 now relies on spack
+
+## 0.2
+
+* Rework reporting [BBPP40-402, BBPP40-407, BBPP40-410, BBPP40-411, BBPP40-415]
+
+## 0.1
+
+First release of the code shipped as a Python package
