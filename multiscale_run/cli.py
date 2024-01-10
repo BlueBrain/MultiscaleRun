@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 
+from nbconvert.nbconvertapp import main as NbConvertApp
 import diffeqpy
 
 from .simulation import MsrSimulation
@@ -267,6 +268,22 @@ def check(**kwargs):
     LOGGER.warning("The simulation environment looks sane")
 
 
+@command
+def post_processing(notebook: str, **kwargs) -> Path:
+    """Execute a Jupyter notebook over the simulation results to generate an HTML document
+
+    Returns:
+      Path to the created HTML report
+    """
+    from .config import MsrConfig
+
+    results = MsrConfig().results_path
+    NbConvertApp(
+        ["--execute", "--to", "html", "--no-input", f"--output-dir={results}", notebook]
+    )
+    return Path(results) / (Path(notebook).stem + ".html")
+
+
 def argument_parser():
     ap = argparse.ArgumentParser()
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -314,6 +331,17 @@ def argument_parser():
     parser_compute.set_defaults(func=compute)
     parser_compute.add_argument("directory", nargs="?")
 
+    parser_postproc = subparsers.add_parser(
+        "post-processing", help=post_processing.__argparse_help__
+    )
+    parser_postproc.set_defaults(func=post_processing)
+    parser_postproc.add_argument(
+        "--notebook",
+        default=MSR_POSTPROC.name,
+        help="path to the Jupyter notebook to execute. Default is %(default)s",
+    )
+    parser_postproc.add_argument("directory", nargs="?")
+
     parser_julia = subparsers.add_parser("julia", help=julia.__argparse_help__)
     parser_julia.set_defaults(func=julia)
     parser_julia.add_argument(
@@ -331,7 +359,8 @@ def main(**kwargs):
     Args:
         kwargs: optional arguments passed to the argument parser.
     """
-    args = argument_parser().parse_args(**kwargs)
+    ap = argument_parser()
+    args = ap.parse_args(**kwargs)
     args = vars(args)
 
     verbosity = args.pop("verbose")
@@ -343,10 +372,6 @@ def main(**kwargs):
     logging.basicConfig(level=log_level)
 
     if callback := args.pop("func", None):
-        try:
-            callback(**args)
-        except Exception as e:
-            logging.exception(e)
-            sys.exit(1)
+        callback(**args)
     else:
         ap.error("a subcommand is required.")

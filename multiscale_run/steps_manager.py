@@ -23,6 +23,7 @@ from . import utils
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
+
 class MsrStepsManager:
     """
     Manages STEPS simulations and mesh operations.
@@ -499,9 +500,14 @@ class MsrStepsManager:
         if negative_indices[0].size > 0:
             negative_values = conc[negative_indices]
             error_message = "Negative values found at indices and values: "
-            error_message += ", ".join([f"({idx}, {val})" for idx, val in zip(negative_indices[0], negative_values)])
+            error_message += ", ".join(
+                [
+                    f"({idx}, {val})"
+                    for idx, val in zip(negative_indices[0], negative_values)
+                ]
+            )
             raise ValueError(error_message)
-        
+
         if idxs == None:
             idxs = np.array(range(self.ntets), dtype=np.int64)
 

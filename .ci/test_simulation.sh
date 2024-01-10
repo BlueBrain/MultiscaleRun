@@ -18,6 +18,7 @@ if [ -z ${sim_name:x} ]; then
   fatal_error "expected environment variable 'SIM_NAME'."
 fi
 
+rm -rf "$sim_name"
 multiscale-run init --no-check -f "$sim_name"
 
 pushd "$sim_name" >/dev/null
@@ -29,3 +30,4 @@ unset steps bloodflow metabolism sim_end
 
 module load unstable intel-oneapi-mkl
 srun --overlap -n $bb5_ntasks multiscale-run compute "$sim_name"
+multiscale-run post-processing "$sim_name"
