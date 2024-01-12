@@ -313,7 +313,7 @@ class MsrStepsManager:
                     ]
                 )
 
-                # Chritos and Katta: We tried to use Gather but there was no significant speed-up
+                # Christos and Katta: We tried to use Gather but there was no significant speed-up
                 data = comm.gather(data, root=i)
 
                 if i == rank:

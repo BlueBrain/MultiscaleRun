@@ -1,4 +1,10 @@
 import json
+import os
+from pathlib import Path
+import platform
+import subprocess
+import stat
+import textwrap
 
 import pytest
 
@@ -67,3 +73,69 @@ def test_valid_commands(tmp_path):
         ap.parse_args(["julia", 'print("Foo")', 'Pkg.install("Foo")'])
     except:
         pytest.fail("Parsing of valid commands failed")
+
+
+def test_virtualenv(tmp_path):
+    venv = tmp_path / "venv"
+    subprocess.check_call(["multiscale-run", "virtualenv", "--venv", str(venv)])
+    assert (venv / "bin" / "multiscale-run").exists()
+
+    venvdo = tmp_path / "venvdo.sh"
+    with venvdo.open("w") as ostr:
+        ostr.write(
+            textwrap.dedent(
+                f"""\
+            #!/bin/bash
+
+            unset PYTHONPATH
+            unset PATH
+            source {venv}/bin/activate
+
+            $@
+        """
+            )
+        )
+    st = venvdo.stat()
+    os.chmod(venvdo, st.st_mode | stat.S_IEXEC)
+
+    subprocess.check_call([str(venvdo), "multiscale-run", "--version"])
+    assert "multiscale_run" in subprocess.check_output(
+        [str(venvdo), "pip", "list", "-e"], cwd=str(tmp_path), encoding="utf-8"
+    )
+
+
+def test_edit_mod_files(tmp_path):
+    path = str(tmp_path)
+
+    def msr(*args, check=True, **kwargs):
+        command = ["multiscale-run"] + list(args)
+        if check:
+            return subprocess.check_call(command, **kwargs)
+        return subprocess.call(command, **kwargs)
+
+    msr("init", "--force", "--julia", "no", path)
+
+    msr("edit-mod-files", path)
+    mod_dir = tmp_path / "mod"
+    libnrnmech = tmp_path / platform.machine() / "libnrnmech.so"
+    assert mod_dir.is_dir()
+    assert libnrnmech.is_file()
+
+    # But NRNMECH_LIB_PATH is not pointing at new the new libnrnmech.so
+    assert msr("check", path, check=False) == 1
+
+    proper_env = os.environ.copy()
+    proper_env["NRNMECH_LIB_PATH"] = str(libnrnmech.resolve())
+    # this time, "check" doesn't complain
+    msr("check", path, env=proper_env)
+
+    # Let's make libnrnmech.so outdated by modifying one of the mod files
+    (mod_dir / "Ca.mod").touch()
+    # the "check" command is able to detect that and emit a warning about it
+    assert msr("check", path, env=proper_env, check=False) == 1
+
+    # let's update the mechanisms library
+    subprocess.check_call(["build_neurodamus.sh", "mod"], cwd=path)
+
+    # this time, "check" doesn't complain
+    msr("check", path, env=proper_env)
