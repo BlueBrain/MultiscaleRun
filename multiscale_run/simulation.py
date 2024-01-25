@@ -7,6 +7,8 @@ them to perform the simulation
 
 import logging
 
+# Important: do not import msr stuff here as MPI may not close correctly
+
 
 def _run_once(f):
     """Decorator to ensure a function is called only once."""

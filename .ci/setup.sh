@@ -6,7 +6,7 @@ fatal_error() {
 }
 
 set_test_environment() {
-  module load unstable intel-oneapi-mkl py-pytest
+  module load unstable intel-oneapi-mkl py-pytest gmsh
   export JULIA_DEPOT_PATH=/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment/latest/julia
   export JULIA_PROJECT=/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment/latest/julia_environment
   if ! [ -e "$JULIA_DEPOT_PATH" ] ; then

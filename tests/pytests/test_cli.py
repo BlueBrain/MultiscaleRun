@@ -8,8 +8,10 @@ import textwrap
 
 import pytest
 
+from multiscale_run import utils
 from multiscale_run.cli import argument_parser, main
 from multiscale_run.data import BB5_JULIA_ENV
+
 
 
 def test_init_without_metabolism(tmp_path):
@@ -75,12 +77,25 @@ def test_valid_commands(tmp_path):
         pytest.fail("Parsing of valid commands failed")
 
 
-def test_virtualenv(tmp_path):
-    venv = tmp_path / "venv"
+def test_virtualenv():
+    """ Run virtualenv in the base multiscale run folder 
+    
+    - move to multiscale run base folder
+    - remove old venv folders
+    - run the venv command
+    - clean up
+    """
+
+    # # clean up before
+    venv = Path.cwd() / "venv"
+    venvdo = Path.cwd() / "venvdo.sh"
+    utils.remove_path(venv)
+    utils.remove_path(venvdo)
+
     subprocess.check_call(["multiscale-run", "virtualenv", "--venv", str(venv)])
     assert (venv / "bin" / "multiscale-run").exists()
 
-    venvdo = tmp_path / "venvdo.sh"
+    
     with venvdo.open("w") as ostr:
         ostr.write(
             textwrap.dedent(
@@ -100,8 +115,11 @@ def test_virtualenv(tmp_path):
 
     subprocess.check_call([str(venvdo), "multiscale-run", "--version"])
     assert "multiscale_run" in subprocess.check_output(
-        [str(venvdo), "pip", "list", "-e"], cwd=str(tmp_path), encoding="utf-8"
+        [str(venvdo), "pip", "list", "-e"], cwd=".", encoding="utf-8"
     )
+    # clean up after
+    utils.remove_path(venv)
+    utils.remove_path(venvdo)
 
 
 def test_edit_mod_files(tmp_path):

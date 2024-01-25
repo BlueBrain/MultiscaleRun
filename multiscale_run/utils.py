@@ -235,9 +235,9 @@ def cache_decorator(
                         continue
 
                     logging.info(f"load {field} from {full_path}")
-                    try:
+                    if full_path.suffix == ".npz":
                         obj = sparse.load_npz(full_path)
-                    except IOError:
+                    else:
                         with open(full_path, "rb") as f:
                             obj = pickle.load(f)
                     setattr(self, field, obj)
@@ -493,6 +493,8 @@ def remove_path(path):
     if rank == 0:
         try:
             shutil.rmtree(path)
+        except NotADirectoryError:
+            shutil.os.remove(path)
         except FileNotFoundError:
             pass
     comm.Barrier()

@@ -23,6 +23,9 @@ import textwrap
 from nbconvert.nbconvertapp import main as NbConvertApp
 import diffeqpy
 
+# Important: do not import msr stuff here (apart from what is already there)
+# as MPI may not close correctly
+
 from .simulation import MsrSimulation
 from . import __version__
 from .data import (
@@ -66,6 +69,7 @@ def replace_in_file(file, old, new, count=-1):
         content = istr.read()
     new_content = content.replace(old, new, count)
     if new_content != content:
+        LOGGER.warning(f"In: {file}, replace {content} -> {new_content}")
         with open(file, "w") as ostr:
             ostr.write(new_content)
 
@@ -149,6 +153,8 @@ def julia(args=None, **kwargs):
 
 @command
 def init(directory, circuit, julia="shared", check=True, force=False):
+    from .config import MsrConfig
+
     """Setup a new simulation"""
     if not force and next(Path(".").iterdir(), None) is not None:
         raise IOError(
@@ -177,19 +183,17 @@ def init(directory, circuit, julia="shared", check=True, force=False):
     )
     sbatch_params["loaded_modules"] = loaded_modules
     SBATCH_TEMPLATE.stream(sbatch_params).dump("simulation.sbatch")
-    shutil.copy(MSR_CONFIG_JSON, MSR_CONFIG_JSON.name)
-    replace_in_file(
-        MSR_CONFIG_JSON.name,
-        '"msr_version": "develop"',
-        f'"msr_version": "{__version__}"',
-    )
+    conf = MsrConfig(MSR_CONFIG_JSON.parent)
+    conf.msr_version = str(__version__)
+    conf.config_path = MSR_CONFIG_JSON
+    conf.dump(MSR_CONFIG_JSON.name)
 
     shutil.copy(MSR_POSTPROC, MSR_POSTPROC.name)
 
     shutil.copytree(
         str(circuit),
-        "config",
-        ignore=shutil.ignore_patterns("cache"),
+        ".",
+        ignore=shutil.ignore_patterns("cache", "msr*"),
         dirs_exist_ok=True,
     )
     if julia == "no":
@@ -255,7 +259,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
 def compute(**kwargs):
     """Compute the simulation"""
     _check_local_neuron_mechanisms()
-    sim = MsrSimulation(Path("config"))
+    sim = MsrSimulation()
     sim.main()
 
 
@@ -265,7 +269,7 @@ def check(**kwargs):
     """Check environment sanity"""
     sane = True
     LOGGER.warning("Running minimalist checks to test environment sanity")
-    sim = MsrSimulation(Path("config"))
+    sim = MsrSimulation()
     sim.configure()
 
     sane &= _check_local_neuron_mechanisms()

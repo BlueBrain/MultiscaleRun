@@ -49,7 +49,7 @@ class MsrConfig(dict):
 
         self.base_path = base_path_or_dict
         if self.base_path is None:
-            self.base_path = self.cwd_path / "config"
+            self.base_path = self.cwd_path
         self.base_path = Path(self.base_path)
         self.config_path = self.base_path / "msr_config.json"
 
@@ -76,7 +76,8 @@ class MsrConfig(dict):
 
         if key in self:
             if isinstance(self[key], dict):
-                return MsrConfig(self[key])
+                self[key] = MsrConfig(self[key])
+                return self[key]
             if key.endswith("_path") and isinstance(self[key], str):
                 return Path(self[key])
 
@@ -205,7 +206,7 @@ class MsrConfig(dict):
         self.update(d)
 
         # finalize computing a few additional entries
-        if "mr_debug" in self and self.mr_debug:
+        if "msr_debug" in self and self.msr_debug:
             self.debug_overrides()
 
         # get msr_dts and fix dts
@@ -280,6 +281,24 @@ class MsrConfig(dict):
             l.append(self.msr_ndts)
 
         self.msr_ndts = int(np.gcd.reduce(l if len(l) else 10000))
+
+    def dump(self, file_path, indent=4):
+        """Convenience function to dump the config in a file."""
+        file_path = Path(file_path)
+
+        d = {
+            k: self[k]
+            for k in sorted(
+                self,
+                key=lambda x: "0" + x[4:]
+                if x.startswith("with")
+                else "0" + x[3:]
+                if x.startswith("msr")
+                else x,
+            )
+        }
+        with open(file_path, "w") as file:
+            json.dump(d, file, indent=indent)
 
     def __str__(self):
         """
