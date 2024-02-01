@@ -32,6 +32,7 @@ class MsrNeurodamusManager:
             logging_level=config.logging_level,
             enable_coord_mapping=True,
             cleanup_atexit=False,
+            lb_mode="RoundRobin",
         )
         logging.info("ndam sim init")
         self.ndamus.sim_init()

@@ -191,11 +191,14 @@ class MsrSimulation:
                             )
 
                             units = [
-                                getattr(
-                                    getattr(self.conf.species, k[0]).neurodamus, k[1]
-                                ).unit
-                                if isinstance(k, tuple)
-                                else ""
+                                (
+                                    getattr(
+                                        getattr(self.conf.species, k[0]).neurodamus,
+                                        k[1],
+                                    ).unit
+                                    if isinstance(k, tuple)
+                                    else ""
+                                )
                                 for k in self.metab_m.ndam_vars.keys()
                             ]
                             self.rep.set_group(

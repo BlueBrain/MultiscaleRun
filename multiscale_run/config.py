@@ -26,7 +26,7 @@ class MsrConfig(dict):
     We use json files (over json) because in this way we can have proper comments
     """
 
-    def __init__(self, base_path_or_dict=None):
+    def __init__(self, config_path_or_dict=None):
         """Multiscale run Config class
 
         This class is composed from a chain of json files. We start from "base_path" which can
@@ -41,19 +41,15 @@ class MsrConfig(dict):
         We use json files (over json) because in this way we can have proper comments
         """
 
-        if isinstance(base_path_or_dict, dict):
-            self.update(base_path_or_dict)
+        if isinstance(config_path_or_dict, dict):
+            self.update(config_path_or_dict)
             return
 
-        self.cwd_path = Path.cwd()
+        if config_path_or_dict is None:
+            config_path_or_dict = Path.cwd() / "msr_config.json"
+        config_path_or_dict = Path(config_path_or_dict)
 
-        self.base_path = base_path_or_dict
-        if self.base_path is None:
-            self.base_path = self.cwd_path
-        self.base_path = Path(self.base_path)
-        self.config_path = self.base_path / "msr_config.json"
-
-        self.load()
+        self._load(config_path_or_dict)
 
     def __getattr__(self, key):
         """
@@ -77,9 +73,8 @@ class MsrConfig(dict):
         if key in self:
             if isinstance(self[key], dict):
                 self[key] = MsrConfig(self[key])
-                return self[key]
             if key.endswith("_path") and isinstance(self[key], str):
-                return Path(self[key])
+                self[key] = Path(self[key])
 
             return self[key]
         raise AttributeError(
@@ -138,41 +133,6 @@ class MsrConfig(dict):
         for key in self:
             yield getattr(self, key)
 
-    def _get_dict_from_json(self, path, rd):
-        """
-        Recursively load and compose a dictionary from JSON files with priority merging.
-
-        This method recursively loads JSON configuration files and composes a dictionary. The merging of configurations
-        follows the priority dictated by the 'utils.merge_dicts' function, giving higher priority to 'parent_config_path'
-        in the JSON files.
-
-        Args:
-            path (Path): The path of the current configuration file to load and merge.
-
-        Returns:
-            dict: A dictionary representing the composed configuration.
-
-        Note:
-            - The method recursively processes JSON files, starting from the specified 'path.'
-            - Configuration merging considers the presence of a 'parent_config_path' in the JSON files, which allows for
-            inheritance of settings from a parent configuration.
-            - The 'base_path' is used to resolve relative paths within the loaded configuration.
-
-        Example:
-            >>> config = _get_dict_from_json(Path("config.json"))
-        """
-
-        child = utils.get_dict_from_json(path)
-        utils.recursive_replace(child, rd)
-
-        parent = {}
-        if "parent_config_path" in child:
-            parent = self._get_dict_from_json(child["parent_config_path"], rd)
-            utils.recursive_replace(parent, rd)
-            del child["parent_config_path"]
-
-        return utils.merge_dicts(parent=parent, child=child)
-
     def merge_without_priority(self, d):
         """
         Add a dictionary to the configuration without overriding existing entries.
@@ -188,21 +148,34 @@ class MsrConfig(dict):
 
         self.update({k: v for k, v in d.items() if k not in self})
 
-    def load(self):
+    @staticmethod
+    def dump(config_path, to_path, replace_dict, indent=4):
+        """Convenience function to dump the config in a file, collapsing the jsons in case it is necessary
+
+        No sbustitutions are performed except for the parent path. Parent path is removed.
+        """
+        d = utils.load_jsons(config_path, parent_path_key="parent_config_path")
+        d = utils.merge_dicts(child=replace_dict, parent=d)
+        with open(to_path, "w") as file:
+            json.dump(d, file, indent=indent)
+
+    def _load(self, config_path):
         """
         Convenience function to load the configuration files recursively.
 
-        This method is a convenience function that triggers the recursive loading of configuration files to compose the final configuration. It processes the JSON files, looks for parent configurations, and resolves relative paths.
+        This method is a convenience function that triggers the recursive
+        loading of configuration files to compose the final configuration.
+        It processes the JSON files, looks for parent configurations, and
+        resolves relative paths.
 
-        Example:
-            >>> config.load()
         """
-        rd = dict(
-            base_path=str(self.base_path),
-            pkg_data_path=str(DATA_DIR),
-            timestr=time.strftime("%Y%m%d%H"),
-        )
-        d = self._get_dict_from_json(self.config_path, rd)
+        d = utils.load_jsons(config_path, parent_path_key="parent_config_path")
+        base_path = Path(d["base_path"])
+        if not base_path.is_absolute():
+            d["base_path"] = str(config_path.parent / base_path)
+        d["pkg_data_path"] = str(DATA_DIR)
+        d["timestr"] = time.strftime("%Y%m%d%H")
+        utils.resolve_replaces(d)
         self.update(d)
 
         # finalize computing a few additional entries
@@ -282,24 +255,6 @@ class MsrConfig(dict):
 
         self.msr_ndts = int(np.gcd.reduce(l if len(l) else 10000))
 
-    def dump(self, file_path, indent=4):
-        """Convenience function to dump the config in a file."""
-        file_path = Path(file_path)
-
-        d = {
-            k: self[k]
-            for k in sorted(
-                self,
-                key=lambda x: "0" + x[4:]
-                if x.startswith("with")
-                else "0" + x[3:]
-                if x.startswith("msr")
-                else x,
-            )
-        }
-        with open(file_path, "w") as file:
-            json.dump(d, file, indent=indent)
-
     def __str__(self):
         """
         Convert the configuration to a formatted string.
@@ -313,7 +268,9 @@ class MsrConfig(dict):
             >>> config_str = str(config)
             >>> print(config_str)
         """
-        d = {k: self[k] for k in self}
+        d = {
+            k: self[k] if not isinstance(self[k], Path) else str(self[k]) for k in self
+        }
 
         s = f"""
     -----------------------------------------------------

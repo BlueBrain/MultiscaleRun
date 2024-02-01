@@ -16,6 +16,7 @@ from mpi4py import MPI as MPI4PY
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
+logging.basicConfig(level=logging.INFO)
 
 cache = "cache_tests"
 
@@ -125,45 +126,6 @@ def test_heavy_duty_MPI_gather():
         assert (final_mat == final_mat2).all()
 
 
-def test_recursive_replace():
-    d = {"key1": "This is ${token1}"}
-    rd = {"token1": "value1"}
-    utils.recursive_replace(d, rd)
-    assert d["key1"] == "This is value1"
-
-    d = {"key1": "This is ${token1}", "key2": "Another ${token2} example"}
-    rd = {"token1": "value1", "token2": "value2"}
-    utils.recursive_replace(d, rd)
-    assert d["key1"] == "This is value1"
-    assert d["key2"] == "Another value2 example"
-
-    d = {"key1": "This is ${token1} with ${token3}"}
-    rd = {"token1": "value1", "token2": "value2"}
-    try:
-        utils.recursive_replace(d, rd)
-    except ValueError as e:
-        assert "token3" in str(e)
-
-    d = {"outer": {"inner": "Nested ${token1}"}}
-    rd = {"token1": "value1"}
-    utils.recursive_replace(d, rd)
-    assert d["outer"]["inner"] == "Nested value1"
-
-    d = {
-        "A": "bau",
-        "B": "fusto",
-        "C": "pera",
-        "F": {"D": "${A}/miao", "L": {"E": "${D}/${M}/bau"}},
-        "K": "aaa/${Q}/hola",
-        "AA": "${BB}/${B}",
-        "BB": "${A}/${B}",
-    }
-    rd = {"M": "zio", "Q": "pio", "R": "wak"}
-
-    utils.recursive_replace(d, rd)
-    assert d["F"]["L"]["E"] == "bau/miao/zio/bau"
-
-
 def test_clear_and_replace_files_decorator():
     p = Path("bau")
 
@@ -191,9 +153,41 @@ def test_clear_and_replace_files_decorator():
     utils.remove_path(p)
 
 
+def test_replacing_algos():
+    d = {"a": "${q}/${p}/d", "p": "p", "q": "${p}/q"}
+    d_copy = {"a": "${q}/${p}/d", "p": "p", "q": "${p}/q"}
+    v = utils.get_resolved_value(d, "a")
+    assert v == "p/q/p/d", v
+    assert d == d_copy, d
+
+    d = {
+        "a": "${m}/${q}/${p}/d",
+        "miao": {"p": "p", "pera": {"q": "${m}/${p}/q", 1: 3}},
+    }
+    utils.resolve_replaces(d, {"m": "bau"})
+    assert d == {
+        "a": "bau/bau/p/q/p/d",
+        "miao": {"p": "p", "pera": {"q": "bau/p/q", 1: 3}},
+    }
+
+
+def test_load_jsons():
+    path = (
+        Path(__file__).parent
+        / "test_folder"
+        / "test_folder1"
+        / "test_folder2"
+        / "msr_config.json"
+    )
+    d = utils.load_jsons(path, parent_path_key="parent_config_path")
+    utils.resolve_replaces(d)
+    print(d)
+
+
 if __name__ == "__main__":
+    test_load_jsons()
+    test_replacing_algos()
     test_cache_decor()
     test_logs_decorator()
     test_heavy_duty_MPI_gather()
-    test_recursive_replace()
     test_clear_and_replace_files_decorator()

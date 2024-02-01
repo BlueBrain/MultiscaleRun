@@ -12,8 +12,10 @@ from multiscale_run import config, preprocessor, steps_manager, utils
 comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
+
 def get_mesh_path():
     return Path.cwd() / "tmp/test_mesh.msh"
+
 
 def gen_segments_in_bbox(msh):
     max0, min0 = np.array(msh.bbox.max.tolist()), np.array(msh.bbox.min.tolist())
@@ -38,7 +40,6 @@ def test_steps_connections_mats():
     utils.remove_path(Path(conf.mesh_path).parent)
     config.cache_load = False
     config.cache_save = False
-    
 
     prep = preprocessor.MsrPreprocessor(conf)
 
@@ -67,8 +68,9 @@ def test_steps_connections_mats():
 
     utils.remove_path(Path(conf.mesh_path).parent)
 
+
 def test_steps_with_minimesh():
-    """ To be used manually with multiple ranks to see if omega_h complains """
+    """To be used manually with multiple ranks to see if omega_h complains"""
 
     conf = config.MsrConfig.rat_sscxS1HL_V6()
     conf.mesh_path = str(get_mesh_path())

@@ -413,7 +413,7 @@ def merge_dicts(parent, child):
     return {k: merge_vals(k, parent, child) for k in set(parent) | set(child)}
 
 
-def get_dict_from_json(p):
+def get_dict_from_json(path):
     """Convenience function to load json files
 
     Args:
@@ -422,9 +422,30 @@ def get_dict_from_json(p):
     Returns:
         dict
     """
-    with open(str(p), "r") as json_file:
-        logging.info(f"reading: {str(p)}")
+    logging.info(f"reading: {str(path)}")
+    with open(str(path), "r") as json_file:
         return json.load(json_file)
+
+
+def load_jsons(path, replacing_dict=None, parent_path_key=None):
+    if replacing_dict is None:
+        replacing_dict = {}
+    path = Path(path)
+
+    child = get_dict_from_json(path)
+    replacing_dict.update({k: v for k, v in child.items() if isinstance(v, str)})
+    if parent_path_key is None or str(parent_path_key) not in child:
+        return child
+    parent_path = Path(get_resolved_value(replacing_dict, parent_path_key))
+
+    if not parent_path.is_absolute():
+        parent_path = path.parent / parent_path
+    parent_path = str(parent_path.resolve())
+    parent = load_jsons(
+        parent_path, replacing_dict=replacing_dict, parent_path_key=parent_path_key
+    )
+    del child[parent_path_key]
+    return merge_dicts(parent=parent, child=child)
 
 
 def heavy_duty_MPI_Gather(v: np.ndarray, root=0):
@@ -521,57 +542,87 @@ def rename_path(path, new_path):
     comm.Barrier()
 
 
-def recursive_replace(d: dict, rd: dict) -> None:
+def get_subs_d(d):
     """
-    Recursively replaces placeholders in a dictionary with values.
+    Recursively extracts and filters string key-value pairs from a nested dictionary.
 
-    This function iterates through a dictionary `d` and replaces placeholders
-    in string values with corresponding values from the dictionary `rd`. Placeholders
-    are represented as `${placeholder_name}` and are replaced by the corresponding
-    values from `rd`. If a placeholder cannot be replaced, the function raises a
-    `ValueError`.
+    This function traverses the input dictionary recursively, retaining only the key-value pairs
+    where both the key and the value are strings. It returns a new dictionary with these filtered pairs.
 
     Parameters:
-        d (dict): The dictionary to be processed for placeholder replacement.
-        rd (dict): A dictionary containing placeholder-value pairs for replacement.
+    - d (dict): The input dictionary to process.
 
-    Raises:
-        ValueError: If unresolved placeholders are found in the values of `d`.
-
-    Example:
-        d = {"key1": "This is ${token1}", "key2": "Some text ${token2}"}
-        rd = {"token1": "value1", "token2": "value2"}
-        recursive_replace(d, rd)
-
-    Note:
-        This function modifies the input dictionary `d` in place.
-
+    Returns:
+    dict: A new dictionary containing only string key-value pairs.
     """
-    cont = True
-    while cont:
-        cont = False
+    ans = {k: v for k, v in d.items() if isinstance(k, str) and isinstance(v, str)}
+    for k, v in d.items():
+        if isinstance(k, str) and isinstance(v, dict):
+            ans.update(get_subs_d(v))
+    return ans
+
+
+def get_resolved_value(d, key, in_place=False):
+    """
+    Get the value of a key, replacing ${token} placeholders with corresponding values in the same dictionary.
+
+    This function retrieves the value associated with the specified key in the input dictionary (d),
+    and recursively resolves ${token} placeholders in the value using other key-value pairs in the same dictionary.
+
+    Parameters:
+    - d (dict): The input dictionary containing key-value pairs.
+    - key (str): The key whose value needs to be retrieved and resolved.
+    - in_place (bool, optional): If True, performs in-place substitution of values in the input dictionary. Defaults to False.
+
+    Returns:
+    str: The resolved value associated with the specified key.
+    """
+    v = d[key]
+    tokens = set(re.findall(r"\${(.*?)}", v))
+    if not len(tokens):
+        return v
+    for token in tokens:
+        v = v.replace(f"${{{token}}}", get_resolved_value(d, token, in_place))
+    if in_place:
+        d[key] = v
+    return v
+
+
+def resolve_replaces(d: dict, base_subs_d=None) -> None:
+    """
+    Resolve ${token} placeholders in string values of a nested dictionary, using specified substitution values.
+
+    This function processes a nested dictionary (d) and applies token substitution to string values.
+    It first extracts and filters string key-value pairs from the dictionary, then resolves ${token}
+    placeholders in those values using a combination of the original dictionary and additional base substitution values.
+
+    Parameters:
+    - d (dict): The input nested dictionary to process.
+    - base_subs_d (dict, optional): Additional base substitution values. Defaults to an empty dictionary.
+
+    Returns:
+    None: The function performs in-place substitution on the input dictionary (d).
+    """
+    if base_subs_d is None:
+        base_subs_d = {}
+
+    subs_d = get_subs_d(d)
+    subs_d.update(base_subs_d)
+    for k in subs_d.keys():
+        get_resolved_value(subs_d, k, True)
+
+    def _rep(d, subs_d):
         for k, v in d.items():
-            if isinstance(v, str):
-                tokens = set(re.findall(r"\${(.*?)}", v))
-                intersection = tokens & rd.keys()
-                for token in intersection:
-                    v = v.replace(f"${{{token}}}", rd[token])
-                    cont = True
-                d[k] = v
-                if len(intersection) == len(tokens):
-                    rd[k] = v
+            if isinstance(v, dict):
+                _rep(v, subs_d)
+            elif (
+                isinstance(k, str)
+                and isinstance(v, str)
+                and len(set(re.findall(r"\${(.*?)}", v)))
+            ):
+                d[k] = subs_d[k]
 
-    for k, v in d.items():
-        if isinstance(v, str):
-            tokens = set(re.findall(r"\${(.*?)}", v))
-            if len(tokens):
-                raise ValueError(
-                    f"Found unresolved tokens in the value of key '{k}': {', '.join(tokens)}"
-                )
-
-    for k, v in d.items():
-        if isinstance(v, dict):
-            recursive_replace(v, rd)
+    _rep(d, subs_d)
 
 
 def bbox(pts):

@@ -183,25 +183,16 @@ def init(directory, circuit, julia="shared", check=True, force=False):
     )
     sbatch_params["loaded_modules"] = loaded_modules
     SBATCH_TEMPLATE.stream(sbatch_params).dump("simulation.sbatch")
-    conf = MsrConfig(MSR_CONFIG_JSON.parent)
-    conf.msr_version = str(__version__)
-    conf.config_path = MSR_CONFIG_JSON
-    conf.dump(MSR_CONFIG_JSON.name)
-
     shutil.copy(MSR_POSTPROC, MSR_POSTPROC.name)
-
     shutil.copytree(
         str(circuit),
         ".",
         ignore=shutil.ignore_patterns("cache", "msr*"),
         dirs_exist_ok=True,
     )
+    rd = {"msr_version": str(__version__)}
     if julia == "no":
-        replace_in_file(
-            MSR_CONFIG_JSON.name,
-            '"with_metabolism": true,',
-            '"with_metabolism": false,',
-        )
+        rd["with_metabolism"] = False
     else:
         if julia == "shared" and not BB5_JULIA_ENV.exists():
             LOGGER.warning("Cannot find shared Julia environment at %s", BB5_JULIA_ENV)
@@ -228,11 +219,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
             LOGGER.warning("Precompiling all Julia packages")
             julia_cmd("Pkg.instantiate(; verbose=true)")
 
-            replace_in_file(
-                MSR_CONFIG_JSON.name,
-                '"with_metabolism": false,',
-                '"with_metabolism": true,',
-            )
+            rd["with_metabolism"] = True
 
         @julia_env
         def check_julia_env():
@@ -242,6 +229,10 @@ def init(directory, circuit, julia="shared", check=True, force=False):
 
         if check:
             check_julia_env()
+
+    MsrConfig.dump(
+        config_path=MSR_CONFIG_JSON, to_path=MSR_CONFIG_JSON.name, replace_dict=rd
+    )
 
     LOGGER.warning(
         "Preparation of the simulation configuration and environment succeeded"

@@ -41,7 +41,15 @@ There are 2 ways to do that:
 
 ### Multiscale run virtualenv (python-venv)
 
-To do once to create a Python virtual environment `.venv`
+First, you need one version (and only one) of `py-multiscale-run@develop` in your spack (you need this only once):
+
+```
+spack uninstall --all py-multiscale-run@develop
+spack install
+```
+
+Then, you can install your Python virtual environment `.venv` with this simple series of commands:
+
 ```bash
 git clone git@bbpgitlab.epfl.ch:molsys/multiscale_run.git /path/to/multiscale_run
 cd /path/to/multiscale_run
@@ -231,6 +239,13 @@ multiscale-run edit-mod-files [/path/to/my-sim]
 For more on how to use ARM MAP check [here](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
 
 # Release notes
+
+## 0.5 - 2024-01-29
+
+* Improved README
+* `msr_config.json` is a template now. Prepared for the bbp workflow
+* `base_path` is now specified in the main config file. This is breaking change. Add to your `msr_config.json` file a field: `"base_path": "."`
+* `ndam` is now forced to use `RoundRobin`
 
 ## 0.4 - 2024-01-19
 

@@ -13,7 +13,6 @@ from multiscale_run.cli import argument_parser, main
 from multiscale_run.data import BB5_JULIA_ENV
 
 
-
 def test_init_without_metabolism(tmp_path):
     sim_path = tmp_path / "sim"
     main(args=["init", "--julia=no", str(sim_path)])
@@ -78,8 +77,8 @@ def test_valid_commands(tmp_path):
 
 
 def test_virtualenv():
-    """ Run virtualenv in the base multiscale run folder 
-    
+    """Run virtualenv in the base multiscale run folder
+
     - move to multiscale run base folder
     - remove old venv folders
     - run the venv command
@@ -95,7 +94,6 @@ def test_virtualenv():
     subprocess.check_call(["multiscale-run", "virtualenv", "--venv", str(venv)])
     assert (venv / "bin" / "multiscale-run").exists()
 
-    
     with venvdo.open("w") as ostr:
         ostr.write(
             textwrap.dedent(

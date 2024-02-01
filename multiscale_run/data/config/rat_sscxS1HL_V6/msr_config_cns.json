@@ -1,4 +1,5 @@
 {
+    "base_path": ".",
     "parent_config_path": "${base_path}/../msr_config.json",
     "metabolism": {
         "type": "cns",
