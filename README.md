@@ -41,14 +41,7 @@ There are 2 ways to do that:
 
 ### Multiscale run virtualenv (python-venv)
 
-First, you need one version (and only one) of `py-multiscale-run@develop` in your spack (you need this only once):
-
-```
-spack uninstall --all py-multiscale-run@develop
-spack install
-```
-
-Then, you can install your Python virtual environment `.venv` with this simple series of commands:
+Create a Python virtual environment `.venv` with this simple series of commands:
 
 ```bash
 git clone git@bbpgitlab.epfl.ch:molsys/multiscale_run.git /path/to/multiscale_run
@@ -57,7 +50,7 @@ module load unstable py-multiscale-run
 multiscale-run virtualenv
 ```
 
-Then activate the virtualenv environment to work with your working-copy: `.venv/bin/activate`
+Then activate the virtualenv environment to work with your working-copy: `source .venv/bin/activate`
 
 ```bash
 $ .env/bin/multiscale-run --version
@@ -82,7 +75,7 @@ git clone git@bbpgitlab.epfl.ch:molsys/multiscale_run.git
 git clone git@github.com:BlueBrain/neurodamus.git
 ```
 
-Our environemnt will be called `spackenv`. Let's create and activate it:
+Our environment will be called `spackenv`. Let's create and activate it:
 
 ```
 spack env create -d spackenv
