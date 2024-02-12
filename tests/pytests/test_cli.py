@@ -100,9 +100,13 @@ def test_virtualenv():
                 f"""\
             #!/bin/bash
 
-            unset PYTHONPATH
-            unset PATH
             source {venv}/bin/activate
+
+            if ! echo $PYTHONPATH | grep -q multiscale-run ; then
+                echo "Error: multiscale-run should not be available in PYTHONPATH: " >&2
+                echo $PYTHONPATH | tr : "\n" | grep multiscale-run >&2
+                exit 1
+            fi
 
             $@
         """

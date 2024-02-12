@@ -357,8 +357,23 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
             )
         raise ValueError("Cannot locate spack installation")
 
-    spack("install", "--only", "dependencies", spec)
-    dependencies_env = spack("load", "--only", "dependencies", "--sh", spec)
+    spec_out = spack("spec", "--very-long", "--install-status", spec)
+    # read output of `spack spec ...` command to extract:
+    # - whether the spec is installed or not
+    # - the hash of the spec
+    sep = "\nConcretized\n--------------------------------\n"
+    offset = spec_out.find(sep)
+    assert offset != -1
+    spec_out = spec_out[offset + len(sep):]
+    spec_out = spec_out.split("\n", 1)[0]
+    pkg_name = spec.split("@", 1)[0]
+    assert pkg_name in spec_out
+    installed = spec_out.startswith("[+]")
+    spec_hash = spec_out[3:].split()[0]
+    # ------------------------------------------------------
+    if not installed:
+        spack("install", "--only", "dependencies", f"/{spec_hash}")
+    dependencies_env = spack("load", "--only", "dependencies", "--sh", f"/{spec_hash}")
 
     # Generate a shell-script to create the virtualenv
     fd, installer_path = tempfile.mkstemp(
@@ -380,6 +395,8 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
         fd,
         textwrap.dedent(
             f"""\
+        # remove previous references of multiscale-run in PYTHONPATH
+        export PYTHONPATH=$(echo $PYTHONPATH | sed -e "s@/[^:]*multiscale-run[^:]*@@g")
         # cleanup previous build artifacts
         rm -rf build multiscale_run.egg-info
         python -m venv {venv}
@@ -418,6 +435,7 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
         ostr.write(dependencies_env)
         if spack_env:
             ostr.write(cleanup_environment)
+        ostr.write("export PYTHONPATH=$(echo $PYTHONPATH | sed -e \"s@/[^:]*multiscale-run[^:]*@@g\")\n")
         ostr.write(activate_content)
     print(
         textwrap.dedent(
