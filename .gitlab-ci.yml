@@ -72,3 +72,14 @@ nrun_[steps, metab, bf]:
     - steps: ["false", "true"]
       metabolism: ["false", "true"]
       bloodflow: ["false", "true"]
+
+init_julia_create_test:
+  extends: [.spack_test]
+  timeout: 1 hours
+  when: manual
+  variables:
+    bb5_duration: "01:00:00"
+    bb5_ntasks: 2
+  script:
+  - spack ${SPACK_EXTRA_FLAGS} load /${SPACK_INSTALLED_HASH}
+  - ${SPACK_SOURCE_DIR}/.ci/test_init_julia_create.sh

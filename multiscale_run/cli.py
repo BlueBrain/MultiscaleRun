@@ -112,6 +112,14 @@ def julia_cmd(*instructions):
     for instruction in instructions:
         julia_cmds.append(instruction)
     cmd = ["julia", "-e", ";".join(julia_cmds)]
+
+    def print_os_var(var):
+        LOGGER.warning(f"{var}: {os.environ.get(var, 'NOT_FOUND')}")
+
+    print_os_var("JULIA_PROJECT")
+    print_os_var("JULIA_DEPOT_PATH")
+
+    LOGGER.warning(f"Running the command '{cmd}' in {Path.cwd()}")
     subprocess.check_call(cmd)
 
 
@@ -148,6 +156,7 @@ def julia(args=None, **kwargs):
     command = ["julia"]
     if args is not None:
         command += args
+
     subprocess.check_call(command)
 
 
@@ -210,16 +219,21 @@ def init(directory, circuit, julia="shared", check=True, force=False):
         elif julia == "create":
             Path(".julia").mkdir(exist_ok=True)
             Path(".julia_environment").mkdir(exist_ok=True)
-            LOGGER.warning("Installing Julia package 'IJulia'")
-            julia_pkg("add", "IJulia")
-            LOGGER.warning(
-                "Installing Julia packages required to solve differential equations"
-            )
-            diffeqpy.install()
-            LOGGER.warning("Precompiling all Julia packages")
-            julia_cmd("Pkg.instantiate(; verbose=true)")
 
-            rd["with_metabolism"] = True
+            @julia_env
+            def create():
+                LOGGER.warning("Installing Julia package 'IJulia'")
+                julia_pkg("add", "IJulia")
+                LOGGER.warning(
+                    "Installing Julia packages required to solve differential equations"
+                )
+                diffeqpy.install()
+                LOGGER.warning("Precompiling all Julia packages")
+                julia_cmd("Pkg.instantiate(; verbose=true)")
+
+                rd["with_metabolism"] = True
+
+            create()
 
         @julia_env
         def check_julia_env():

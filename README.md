@@ -131,16 +131,17 @@ Now you are ready to test your multiscale run (follow the section **How to use t
 module load py-multiscale-run
 ```
 
-with this line (assuming that your spackenv is in ~. Change the location accordingly):
+with these lines (assuming that your spackenv is in ~. Change the location accordingly):
 
 ```
+module load llvm
 spack env activate -d ~/spackenv
 ```
 
-You may also need to load `gmsh`:
+If you want to run an interactive session instead you need the following modules too:
 
 ```
-module load unstable gmsh
+module load unstable gmsh llvm
 ```
 
 **Important:**
@@ -215,9 +216,12 @@ sbatch simulation.sbatch
 ## Custom Neuron mechanisms
 
 This operation clones the Neurodamus mod files library for local editing.
+
 ```shell
+module load unstable intel-oneapi-compilers
 multiscale-run edit-mod-files [/path/to/my-sim]
 ```
+
 
 # Other operations
 
@@ -239,6 +243,10 @@ multiscale-run edit-mod-files [/path/to/my-sim]
 For more on how to use ARM MAP check [here](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
 
 # Release notes
+
+## 0.5.1 - 2024-02-07
+
+* Fix: init with julia create was not pointing to the correct location
 
 ## 0.5 - 2024-01-29
 
