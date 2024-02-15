@@ -393,8 +393,7 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
         os.write(fd, cleanup_environment.encode("utf-8"))
     os.write(
         fd,
-        textwrap.dedent(
-            f"""\
+        textwrap.dedent(f"""\
         # remove previous references of multiscale-run in PYTHONPATH
         export PYTHONPATH=$(echo $PYTHONPATH | sed -e "s@/[^:]*multiscale-run[^:]*@@g")
         # cleanup previous build artifacts
@@ -419,8 +418,7 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
             activate_content = activate_content[pos:]
     with activate_f.open("w") as ostr:
         ostr.write(
-            textwrap.dedent(
-                """\
+            textwrap.dedent("""\
             _LAST_MODIFIED=$(stat -c "%Y" ${BASH_SOURCE[0]})
             _NOW=$(date +%s)
             if [ $(($_NOW - $_LAST_MODIFIED)) -gt 14515200 ]; then
@@ -523,7 +521,11 @@ def edit_mod_files(**kwargs):
 
     if (ndam_root := os.environ.get("NEURODAMUS_NEOCORTEX_ROOT")) is None:
         raise Exception(
-            "Environment variable 'NEURODAMUS_NEOCORTEX_ROOT' is not defined"
+            "Environment variable 'NEURODAMUS_NEOCORTEX_ROOT' is missing"
+        )
+    if os.environ.get("NRNMECH_LIB_PATH") is None:
+        raise Exception(
+            "Environment variable 'NRNMECH_LIB_PATH' is missing"
         )
     ndam_mod = Path(ndam_root) / "lib" / "mod"
     if not ndam_mod.exists():
@@ -532,7 +534,11 @@ def edit_mod_files(**kwargs):
     print("copying neocortex mod files library locally")
     shutil.copytree(ndam_mod, "mod")
     print("building local mod files")
-    subprocess.check_call(["build_neurodamus.sh", ndam_mod])
+    intel_compiler = subprocess.run("readelf -p .comment $NRNMECH_LIB_PATH | grep -q 'Intel(R) oneAPI'", shell=True).returncode == 0
+    build_cmd = f"build_neurodamus.sh '{ndam_mod}'"
+    if BB5_JULIA_ENV.exists() and intel_compiler:
+        build_cmd = "module load unstable intel-oneapi-compilers ; " + build_cmd
+    subprocess.check_call(build_cmd, shell=True)
     nrn_mechanims = (Path(platform.machine()) / "libnrnmech.so").resolve()
     if not nrn_mechanims.exists():
         raise Exception(

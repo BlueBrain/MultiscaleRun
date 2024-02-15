@@ -96,15 +96,14 @@ def test_virtualenv():
 
     with venvdo.open("w") as ostr:
         ostr.write(
-            textwrap.dedent(
-                f"""\
+            textwrap.dedent(f"""\
             #!/bin/bash
 
             source {venv}/bin/activate
 
-            if ! echo $PYTHONPATH | grep -q multiscale-run ; then
+            if echo $PYTHONPATH | grep -q multiscale-run ; then
                 echo "Error: multiscale-run should not be available in PYTHONPATH: " >&2
-                echo $PYTHONPATH | tr : "\n" | grep multiscale-run >&2
+                echo $PYTHONPATH | tr : "\\n" | grep multiscale-run >&2
                 exit 1
             fi
 
@@ -117,7 +116,7 @@ def test_virtualenv():
 
     subprocess.check_call([str(venvdo), "multiscale-run", "--version"])
     assert "multiscale_run" in subprocess.check_output(
-        [str(venvdo), "pip", "list", "-e"], cwd=".", encoding="utf-8"
+        [str(venvdo.resolve()), "pip", "list", "-e"], cwd="..", encoding="utf-8"
     )
     # clean up after
     utils.remove_path(venv)
@@ -155,7 +154,11 @@ def test_edit_mod_files(tmp_path):
     assert msr("check", path, env=proper_env, check=False) == 1
 
     # let's update the mechanisms library
-    subprocess.check_call(["build_neurodamus.sh", "mod"], cwd=path)
+    intel_compiler = subprocess.run("readelf -p .comment $NRNMECH_LIB_PATH | grep -q 'Intel(R) oneAPI'", shell=True).returncode == 0
+    build_cmd = "build_neurodamus.sh mod"
+    if BB5_JULIA_ENV.exists and intel_compiler:
+        build_cmd = "module load unstable intel-oneapi-compilers ; " + build_cmd
+    subprocess.check_call(build_cmd, shell=True, cwd=path)
 
     # this time, "check" doesn't complain
     msr("check", path, env=proper_env)
