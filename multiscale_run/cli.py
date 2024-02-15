@@ -364,7 +364,7 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
     sep = "\nConcretized\n--------------------------------\n"
     offset = spec_out.find(sep)
     assert offset != -1
-    spec_out = spec_out[offset + len(sep):]
+    spec_out = spec_out[offset + len(sep) :]
     spec_out = spec_out.split("\n", 1)[0]
     pkg_name = spec.split("@", 1)[0]
     assert pkg_name in spec_out
@@ -393,7 +393,8 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
         os.write(fd, cleanup_environment.encode("utf-8"))
     os.write(
         fd,
-        textwrap.dedent(f"""\
+        textwrap.dedent(
+            f"""\
         # remove previous references of multiscale-run in PYTHONPATH
         export PYTHONPATH=$(echo $PYTHONPATH | sed -e "s@/[^:]*multiscale-run[^:]*@@g")
         # cleanup previous build artifacts
@@ -418,7 +419,8 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
             activate_content = activate_content[pos:]
     with activate_f.open("w") as ostr:
         ostr.write(
-            textwrap.dedent("""\
+            textwrap.dedent(
+                """\
             _LAST_MODIFIED=$(stat -c "%Y" ${BASH_SOURCE[0]})
             _NOW=$(date +%s)
             if [ $(($_NOW - $_LAST_MODIFIED)) -gt 14515200 ]; then
@@ -433,7 +435,9 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
         ostr.write(dependencies_env)
         if spack_env:
             ostr.write(cleanup_environment)
-        ostr.write("export PYTHONPATH=$(echo $PYTHONPATH | sed -e \"s@/[^:]*multiscale-run[^:]*@@g\")\n")
+        ostr.write(
+            'export PYTHONPATH=$(echo $PYTHONPATH | sed -e "s@/[^:]*multiscale-run[^:]*@@g")\n'
+        )
         ostr.write(activate_content)
     print(
         textwrap.dedent(
@@ -520,13 +524,9 @@ def edit_mod_files(**kwargs):
         )
 
     if (ndam_root := os.environ.get("NEURODAMUS_NEOCORTEX_ROOT")) is None:
-        raise Exception(
-            "Environment variable 'NEURODAMUS_NEOCORTEX_ROOT' is missing"
-        )
+        raise Exception("Environment variable 'NEURODAMUS_NEOCORTEX_ROOT' is missing")
     if os.environ.get("NRNMECH_LIB_PATH") is None:
-        raise Exception(
-            "Environment variable 'NRNMECH_LIB_PATH' is missing"
-        )
+        raise Exception("Environment variable 'NRNMECH_LIB_PATH' is missing")
     ndam_mod = Path(ndam_root) / "lib" / "mod"
     if not ndam_mod.exists():
         raise Exception(f"Directory '{ndam_mod}' does not exist")
@@ -534,7 +534,13 @@ def edit_mod_files(**kwargs):
     print("copying neocortex mod files library locally")
     shutil.copytree(ndam_mod, "mod")
     print("building local mod files")
-    intel_compiler = subprocess.run("readelf -p .comment $NRNMECH_LIB_PATH | grep -q 'Intel(R) oneAPI'", shell=True).returncode == 0
+    intel_compiler = (
+        subprocess.run(
+            "readelf -p .comment $NRNMECH_LIB_PATH | grep -q 'Intel(R) oneAPI'",
+            shell=True,
+        ).returncode
+        == 0
+    )
     build_cmd = f"build_neurodamus.sh '{ndam_mod}'"
     if BB5_JULIA_ENV.exists() and intel_compiler:
         build_cmd = "module load unstable intel-oneapi-compilers ; " + build_cmd
