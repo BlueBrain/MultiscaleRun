@@ -211,7 +211,6 @@ sbatch simulation.sbatch
 This operation clones the Neurodamus mod files library for local editing.
 
 ```shell
-module load unstable intel-oneapi-compilers
 multiscale-run edit-mod-files [/path/to/my-sim]
 ```
 
