@@ -8,6 +8,10 @@
         "miao_path": "${bau_path}/${results}/hola",
         "bau_path": "${results}/bbb"
     },
+    "includes": [
+        "${results_path}/a",
+        "${results_path}/b"
+    ],
     "msr_sim_end": 1000,
     "preprocessor": {
         "node_sets": {

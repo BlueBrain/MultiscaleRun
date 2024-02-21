@@ -324,7 +324,13 @@ class MsrConnectionManager:
             # based on Jolivet 2015 DOI:10.1371/journal.pcbi.1004036 page 6 botton eq 1
             qak = 0.92
             return (atpiwm / 2) * (
-                -qak + np.sqrt(qak * qak + 4 * qak * ((metab_m.ATDPtot_n / atpiwm) - 1))
+                -qak
+                + np.sqrt(
+                    qak * qak
+                    + 4
+                    * qak
+                    * ((self.config.metabolism.constants.ATDPtot_n / atpiwm) - 1)
+                )
             )
 
         adpi_weighted_mean = np.array([f(i) for i in atpi_weighted_mean])  # 0.03

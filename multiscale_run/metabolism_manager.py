@@ -101,7 +101,8 @@ class MsrMetabolismManager:
         ].tolist()
         self.load_metabolism_data(main)
         self.gen_metabolism_model(main)
-        self.vm = {}
+        self.vm = {}  # read/write values for metab
+        self.params = {}  # read values for metab
         self.tspan_m = (-1, -1)
         self.ndam_vars = {}
         self.steps_vars = {}
@@ -117,62 +118,24 @@ class MsrMetabolismManager:
 
         Args:
             main: An instance of the main class.
-
-        Returns:
-            None
         """
-
-        self.ATDPtot_n = 1.4449961078157665
-
         if self.config.metabolism.type != "main":
-            return None
+            return
 
-        main.eval(
-            """
-        modeldirname = "/gpfs/bbp.cscs.ch/project/proj34/metabolismndam/sim/metabolism_unit_models/"
-
-        include(string(modeldirname,"FINAL_CLEAN/data_model_full/u0_db_refined_selected_oct2021.jl"))
-
-        pardirname = string(modeldirname,"optimiz_unit/enzymes/enzymes_preBigg/COMBO/parameters_GLYCOGEN_cleaned4bigg/")
-
-        include(string(pardirname,"general_parameters.jl"))
-        include(string(pardirname,"ephys_parameters.jl"))
-        include(string(pardirname,"bf_input.jl"))
-        include(string(pardirname,"generalisations.jl")) # Jolivet NADH shuttles, resp
-        include(string(pardirname,"GLC_transport.jl"))
-        include(string(pardirname,"GLYCOLYSIS.jl"))
-        include(string(pardirname,"glycogen.jl"))
-
-        include(string(pardirname,"creatine.jl"))
-
-        include(string(pardirname,"ATDMP.jl"))
-
-        include(string(pardirname,"pyrTrCytoMito.jl"))
-        include(string(pardirname,"lactate.jl"))
-        include(string(pardirname,"TCA.jl"))
-
-        include(string(pardirname,"ETC.jl"))
-
-        include(string(pardirname,"PPP_n.jl"))
-        include(string(pardirname,"PPP_a.jl"))
-        include(string(pardirname,"gshgssg.jl"))
-
-        include(string(pardirname,"MAS.jl"))
-        include(string(pardirname,"gltgln.jl"))
-        include(string(pardirname,"pyrCarb.jl"))
-        include(string(pardirname,"ketones.jl"))
-
-        # for NEmodulation
-        xNEmod = 0.025 # 0.1 #0.00011
-        KdNEmod = 3.0e-4 # 3.6e-5  # 3.0e-4 #
-
-        Iinj = 0.0
-        synInput = 0.0
-
-        """
+        # includes
+        cmd = (
+            "\n".join(
+                [f'include("{item}")' for item in self.config.metabolism.model.includes]
+            )
+            + "\n"
+            + "\n".join(
+                [
+                    f"{k} = {v}"
+                    for k, v in self.config.metabolism.model.constants.items()
+                ]
+            )
         )
-
-        return None
+        main.eval(cmd)
 
     @utils.logs_decorator
     def gen_metabolism_model(self, main):
@@ -282,8 +245,10 @@ class MsrMetabolismManager:
         # c_gid: ndam is 1-based while libsonata and bluepysnap are 0-based
         idx = self.neuro_df.get(c_gid - 1).layer - 1
 
-        glycogen_au = np.array(self.config.metabolism.glycogen_au)
-        mito_volume_fraction = np.array(self.config.metabolism.mito_volume_fraction)
+        glycogen_au = np.array(self.config.metabolism.constants.glycogen_au)
+        mito_volume_fraction = np.array(
+            self.config.metabolism.constants.mito_volume_fraction
+        )
         glycogen_scaled = glycogen_au * (14.0 / max(glycogen_au))
         mito_volume_fraction_scaled = mito_volume_fraction * (
             1.0 / max(mito_volume_fraction)
@@ -344,9 +309,20 @@ class MsrMetabolismManager:
 
         self.vm[c_gid][idx_adpn] = 0.5 * 1.384727988648391 / 2 * (
             -0.92
-            + np.sqrt(0.92 * 0.92 + 4 * 0.92 * (self.ATDPtot_n / 1.384727988648391 - 1))
+            + np.sqrt(
+                0.92 * 0.92
+                + 4
+                * 0.92
+                * (self.config.metabolism.constants.ATDPtot_n / 1.384727988648391 - 1)
+            )
         ) + 0.5 * atpi_mean / 2 * (
-            -0.92 + np.sqrt(0.92 * 0.92 + 4 * 0.92 * (self.ATDPtot_n / atpi_mean - 1))
+            -0.92
+            + np.sqrt(
+                0.92 * 0.92
+                + 4
+                * 0.92
+                * (self.config.metabolism.constants.ATDPtot_n / atpi_mean - 1)
+            )
         )
 
         self.vm[c_gid][idx_nai] = nais_mean

@@ -611,18 +611,23 @@ def resolve_replaces(d: dict, base_subs_d=None) -> None:
     for k in subs_d.keys():
         get_resolved_value(subs_d, k, True)
 
-    def _rep(d, subs_d):
-        for k, v in d.items():
-            if isinstance(v, dict):
-                _rep(v, subs_d)
-            elif (
-                isinstance(k, str)
-                and isinstance(v, str)
-                and len(set(re.findall(r"\${(.*?)}", v)))
-            ):
-                d[k] = subs_d[k]
+    def _rep(obj, subs_d):
+        if isinstance(obj, str):
+            tokens = set(re.findall(r"\${(.*?)}", obj))
+            for token in tokens:
+                obj = obj.replace(f"${{{token}}}", subs_d[token])
 
-    _rep(d, subs_d)
+        if isinstance(obj, list):
+            for idx, item in enumerate(obj):
+                obj[idx] = _rep(item, subs_d)
+
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                obj[k] = _rep(v, subs_d)
+
+        return obj
+
+    d = _rep(d, subs_d)
 
 
 def bbox(pts):

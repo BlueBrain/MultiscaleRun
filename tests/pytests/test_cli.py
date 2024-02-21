@@ -96,7 +96,8 @@ def test_virtualenv():
 
     with venvdo.open("w") as ostr:
         ostr.write(
-            textwrap.dedent(f"""\
+            textwrap.dedent(
+                f"""\
             #!/bin/bash
 
             source {venv}/bin/activate
@@ -154,7 +155,13 @@ def test_edit_mod_files(tmp_path):
     assert msr("check", path, env=proper_env, check=False) == 1
 
     # let's update the mechanisms library
-    intel_compiler = subprocess.run("readelf -p .comment $NRNMECH_LIB_PATH | grep -q 'Intel(R) oneAPI'", shell=True).returncode == 0
+    intel_compiler = (
+        subprocess.run(
+            "readelf -p .comment $NRNMECH_LIB_PATH | grep -q 'Intel(R) oneAPI'",
+            shell=True,
+        ).returncode
+        == 0
+    )
     build_cmd = "build_neurodamus.sh mod"
     if BB5_JULIA_ENV.exists and intel_compiler:
         build_cmd = "module load unstable intel-oneapi-compilers ; " + build_cmd
