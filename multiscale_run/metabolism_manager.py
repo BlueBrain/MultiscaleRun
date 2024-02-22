@@ -84,7 +84,7 @@ class MsrMetabParameters:
 class MsrMetabolismManager:
     """Wrapper to manage the metabolism julia model"""
 
-    def __init__(self, config, main, neuron_pop_name):
+    def __init__(self, config, main, neuron_pop_name, ncs):
         """Initialize the MsrMetabolismManager.
 
         Args:
@@ -96,9 +96,6 @@ class MsrMetabolismManager:
             None
         """
         self.config = config
-        self.u0 = pd.read_csv(self.config.metabolism.u0_path, sep=",", header=None)[
-            0
-        ].tolist()
         self.load_metabolism_data(main)
         self.gen_metabolism_model(main)
         self.vm = {}  # read/write values for metab
@@ -109,6 +106,7 @@ class MsrMetabolismManager:
         self.bloodflow_vars = {}
         self.failed_cells = {}
         self.neuro_df = Circuit(config.circuit_path).nodes[neuron_pop_name]
+        self.reset(ncs)
 
     @utils.logs_decorator
     def load_metabolism_data(self, main):
@@ -154,7 +152,7 @@ class MsrMetabolismManager:
         self.model = main.eval(julia_code)
 
     @utils.logs_decorator
-    def _advance_gid(self, c_gid, i_metab, param):
+    def _advance_gid(self, c_gid):
         """Advance metabolism simulation for a specific GID (Global ID).
 
         This method advances the metabolism simulation for a specific GID using the provided parameters.
@@ -170,7 +168,9 @@ class MsrMetabolismManager:
 
         from diffeqpy import de
 
-        prob = de.ODEProblem(self.model, self.vm[c_gid], self.tspan_m, list(param))
+        prob = de.ODEProblem(
+            self.model, self.vm[c_gid], self.tspan_m, list(self.params[c_gid])
+        )
         try:
             logging.info("   solve ODE problem")
             sol = de.solve(
@@ -209,22 +209,25 @@ class MsrMetabolismManager:
             failed_cells: A dictionary containing information about neurons with failed simulations.
         """
 
+        self.tspan_m = (
+            1e-3 * float(i_metab) * metab_dt,
+            1e-3 * (float(i_metab) + 1.0) * metab_dt,
+        )
+
         self.failed_cells = {}
         for inc, nc in enumerate(ncs):
             c_gid = int(nc.CCell.gid)
 
-            param = self.init_inputs(
-                c_gid=c_gid, inc=inc, i_metab=i_metab, metab_dt=metab_dt
-            )
+            self.init_inputs(c_gid=c_gid, inc=inc)
 
             try:
-                param.is_valid()
+                self.params[c_gid].is_valid()
             except MsrMetabParameterException as e:
                 self.failed_cells[c_gid] = str(e)
                 logging.warning(self.failed_cells[c_gid])
                 continue
 
-            self._advance_gid(c_gid=c_gid, i_metab=i_metab, param=param)
+            self._advance_gid(c_gid=c_gid)
 
         return self.failed_cells
 
@@ -259,7 +262,39 @@ class MsrMetabolismManager:
         )
 
     @utils.logs_decorator
-    def init_inputs(self, c_gid, inc, i_metab, metab_dt):
+    def reset(self, ncs):
+        """Reset the parameters and initial conditions for metabolic simulation.
+
+        Args:
+            ncs (list): List of cells to reset.
+
+        Returns:
+            None
+        """
+        u0 = pd.read_csv(self.config.metabolism.u0_path, sep=",", header=None)[
+            0
+        ].tolist()
+        for nc in ncs:
+            c_gid = int(nc.CCell.gid)
+
+            self.params[c_gid] = MsrMetabParameters(
+                metab_type=self.config.metabolism.type
+            )
+            self.params[
+                c_gid
+            ].bf_Fin = self.config.metabolism.constants.base_bloodflow.Fin
+            self.params[
+                c_gid
+            ].bf_Fout = self.config.metabolism.constants.base_bloodflow.Fout
+            self.params[
+                c_gid
+            ].bf_vol = self.config.metabolism.constants.base_bloodflow.vol
+            _, self.params[c_gid].mito_scale = self._get_GLY_a_and_mito_vol_frac(c_gid)
+
+            self.vm[c_gid] = u0
+
+    @utils.logs_decorator
+    def init_inputs(self, c_gid, inc) -> None:
         """Initialize parameters for metabolism simulation.
 
         This method initializes parameters for metabolism simulation based on the provided neuron's characteristics.
@@ -274,29 +309,15 @@ class MsrMetabolismManager:
             param: An instance of MsrMetabParameters containing initialized parameters.
         """
 
-        param = MsrMetabParameters(metab_type=self.config.metabolism.type)
-
         kis_mean = self.ndam_vars[("K", "conci")][inc]
         atpi_mean = self.ndam_vars[("atp", "conci")][inc]
         nais_mean = self.ndam_vars[("Na", "conci")][inc]
-        param.ina_density = self.ndam_vars[("Na", "curr")][inc]
-        param.ik_density = self.ndam_vars[("K", "curr")][inc]
+        self.params[c_gid].ina_density = self.ndam_vars[("Na", "curr")][inc]
+        self.params[c_gid].ik_density = self.ndam_vars[("K", "curr")][inc]
 
-        GLY_a, param.mito_scale = self._get_GLY_a_and_mito_vol_frac(c_gid)
-
-        self.tspan_m = (
-            1e-3 * float(i_metab) * metab_dt,
-            1e-3 * (float(i_metab) + 1.0) * metab_dt,
-        )  # tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0))
+        # tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0))
 
         # um[(0, c_gid)][127] = GLY_a
-        if c_gid not in self.vm:
-            if i_metab != 0:
-                raise MsrMetabManagerException(
-                    f"i_metab = {i_metab} (not 0) and neuron id: {c_gid} not registered in vm.\n vm keys: {self.vm.keys()}"
-                )
-            self.vm[c_gid] = self.u0
-
         # vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
         # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
 
@@ -336,20 +357,20 @@ class MsrMetabolismManager:
             else 3.0 - 1.33 * (kis_mean - 140.0)
         )
 
-        param.bf_Fout = param.bf_Fin = 0.0001
         if "Fin" in self.bloodflow_vars:
-            param.bf_Fout = param.bf_Fin = self.bloodflow_vars["Fin"][inc]
-        param.bf_vol = 0.023
+            self.params[c_gid].bf_Fout = self.params[
+                c_gid
+            ].bf_Fin = self.bloodflow_vars["Fin"][inc]
         if "vol" in self.bloodflow_vars:
-            param.bf_vol = self.bloodflow_vars["vol"][inc]
+            self.params[c_gid].bf_vol = self.bloodflow_vars["vol"][inc]
         l = [
             *[
                 f"vm[{c_gid}][{i}]: {utils.ppf(self.vm[c_gid][i])}"
                 for i in self.config.metabolism.vm_idxs.values()
             ],
             f"kis_mean[{c_gid}]: {utils.ppf(kis_mean)}",
-            f"bf_Fin: {param.bf_Fin}",
-            f"bf_vol: {param.bf_vol}",
+            f"bf_Fin: {self.params[c_gid].bf_Fin}",
+            f"bf_vol: {self.params[c_gid].bf_vol}",
         ]
         l = "\n".join(l)
         logging.info(f"metab VIP vars:\n{l}")
@@ -374,5 +395,3 @@ class MsrMetabolismManager:
         # 2.2 should coincide with the BC METypePath field & with u0_path
         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects
         # will be counted twice for metab model
-
-        return param

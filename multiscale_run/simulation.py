@@ -118,6 +118,7 @@ class MsrSimulation:
                     config=self.conf,
                     main=JMain,
                     neuron_pop_name=self.ndam_m.neuron_manager.population_name,
+                    ncs=self.ndam_m.ncs,
                 )
 
     @_run_once
