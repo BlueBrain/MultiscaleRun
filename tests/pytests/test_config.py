@@ -1,5 +1,4 @@
 import logging
-import os
 from pathlib import Path
 
 from multiscale_run import config
@@ -8,7 +7,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def base_path():
-    return str(
+    return (
         Path(__file__).resolve().parent
         / "test_folder"
         / "test_folder1"
@@ -20,16 +19,24 @@ def base_path():
 def test_load():
     """Test if we are loading correctly"""
     sp = base_path()
-    a = config.MsrConfig(config_path_or_dict=sp)
 
-    assert a.a == 2, a.a
-    assert a.c == 1, a.c
-    assert a.d != {"q": 0}, a.d
-    assert a.e == 1, a.e
-    assert str(a.d.miao_path) == "aaa/bbb/aaa/hola"
-    assert a.includes == ["RESULTS/a", "RESULTS/b"]
+    def _test_config(conf):
+        assert conf.a == 2, conf.a
+        assert conf.c == 1, conf.c
+        assert conf.d != {"q": 0}, conf.d
+        assert conf.e == 1, conf.e
+        assert str(conf.d.miao_path) == "aaa/bbb/aaa/hola"
+        assert conf.includes == ["RESULTS/a", "RESULTS/b"]
 
-    b = config.MsrConfig(config_path_or_dict=a.d)
+    # config can be a pathlib.Path to a JSON file
+    conf1 = config.MsrConfig(config_path_or_dict=sp)
+    _test_config(conf1)
+    # config can be a pathlib.Path to a directory
+    _test_config(config.MsrConfig(config_path_or_dict=sp.parent))
+    # config can also be a str to a file or directory
+    _test_config(config.MsrConfig(config_path_or_dict=str(sp)))
+    # finally, config can be a Python dict
+    config.MsrConfig(config_path_or_dict=conf1.d)
 
 
 if __name__ == "__main__":

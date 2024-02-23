@@ -11,26 +11,13 @@ from .data import DATA_DIR, DEFAULT_CIRCUIT
 
 
 class MsrConfig(dict):
-    """Multiscale run Config class
-
-    This class is composed of a chain of json files. We start from "base_path" which can
-    be provided or deducted from environment. We look for a file named: <base_path>/msr_config.json.
-    This provides the first hook. We load the file as a dict (child) and look recursively if there is a
-    "parent_config_path" marked. In that case we add that dict as parent and merge them using the
-    priority rules of utils.merge_dicts. After all of that, the assigned env variables that match
-    the entries of this class are replaced.
-
-    All the paths are PosixPaths at the end.
-    There is no check if the paths really exist except for the various config paths.
-
-    We use json files (over json) because in this way we can have proper comments
-    """
+    """Multiscale run Config class"""
 
     def __init__(self, config_path_or_dict=None):
-        """Multiscale run Config class
+        """Multiscale run Config constructor
 
-        This class is composed from a chain of json files. We start from "base_path" which can
-        be provided or deducted from the environment. We look for a file named: <base_path>/msr_config.json.
+        This class is composed from a chain of json files. We start from "config_path" which can
+        be provided or deducted from the environment. We look for a file named: <config_path>/msr_config.json.
         This provides the first hook. We load the file as a dict (child) and look recursively if there is a
         "parent_config_path" marked. In that case, we add that dict as parent and merge them using the
         priority rules of utils.merge_dicts.
@@ -38,16 +25,31 @@ class MsrConfig(dict):
         All the paths are PosixPaths at the end.
         There is no check if the paths really exist except for the various config paths.
 
-        We use json files (over json) because in this way we can have proper comments
+        Args:
+          config_path_or_dict: The path to the top configuration
+          - if `None`, then a file "msr_config.json" is expected to be found in the
+          current working directory.
+          - otherwise, if this is a `pathlib.Path` instance pointing to a directory,
+          then a file "msr_config.json" is expected to be found in this directory.
+          - Otherwise, if this is a `pathlib.Path` instance to a file, it is considered
+          to be the JSON file to load.
+          - Finally, the argument is expected to be a `dict` instance representing the configuration to use.
         """
 
         if isinstance(config_path_or_dict, dict):
             self.update(config_path_or_dict)
             return
+        elif isinstance(config_path_or_dict, str):
+            config_path_or_dict = Path(config_path_or_dict)
 
         if config_path_or_dict is None:
-            config_path_or_dict = Path.cwd() / "msr_config.json"
-        config_path_or_dict = Path(config_path_or_dict)
+            config_path_or_dict = Path.cwd()
+
+        if not isinstance(config_path_or_dict, Path):
+            raise TypeError("Expected type are str, pathlib.Path, or dict")
+
+        if config_path_or_dict.resolve().is_dir():
+            config_path_or_dict /= "msr_config.json"
 
         self._load(config_path_or_dict)
 

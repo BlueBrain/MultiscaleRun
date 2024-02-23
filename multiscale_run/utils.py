@@ -417,7 +417,7 @@ def get_dict_from_json(path):
     """Convenience function to load json files
 
     Args:
-        path (Path or str): path that should be estracted
+        path (Path or str): path that should be extracted
 
     Returns:
         dict

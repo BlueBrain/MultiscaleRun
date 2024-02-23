@@ -9,6 +9,12 @@ set_test_environment
 
 pushd "${SCRIPT_DIR}/.."
 
+num_errors=0
+count_errors() {
+    ((num_errors++))
+}
+trap count_errors ERR
+
 #python -mpytest ${SPACK_SOURCE_DIR}/tests/pytests hangs!
 # related issue in: https://bbpteam.epfl.ch/project/issues/browse/BBPP40-412
 python -mpytest -v tests/pytests/test_bloodflow.py
@@ -23,3 +29,4 @@ python -mpytest -v tests/pytests/test_reporter.py
 srun --overlap -n 4 python -mpytest -v tests/pytests/test_reporter.py
 
 popd
+exit $num_errors

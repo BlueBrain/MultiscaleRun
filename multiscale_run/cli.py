@@ -313,6 +313,9 @@ def spack(*args, log=True):
     env = os.environ.copy()
     # release space in the command-line to prevent saturation
     env.pop("PYTHONPATH", None)
+    # run command outside any spack environment
+    env.pop("SPACK_ENV", None)
+    env.pop("SPACK_ENV_VENV", None)
     if log:
         print(" ".join(command))
     return subprocess.check_output(command, encoding="utf-8", env=env)
@@ -372,7 +375,7 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
     spec_hash = spec_out[3:].split()[0]
     # ------------------------------------------------------
     if not installed:
-        spack("install", "--only", "dependencies", f"/{spec_hash}")
+        spack("install", spec)
     dependencies_env = spack("load", "--only", "dependencies", "--sh", f"/{spec_hash}")
 
     # Generate a shell-script to create the virtualenv

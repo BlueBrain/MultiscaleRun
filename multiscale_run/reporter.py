@@ -27,7 +27,7 @@ class MsrReporter:
         """
         Initializes the MsrReporter object.
 
-        Parameters:
+        Args:
             config (config.MsrConfig): Configuration object containing simulation parameters.
             gids (list): List of global identifiers for the nodes.
             t_unit (str, optional): Time units for the simulation. Defaults to 'ms'.

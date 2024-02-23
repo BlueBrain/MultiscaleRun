@@ -31,9 +31,6 @@ class MsrMetabParameters:
 
         Args:
             metab_type (str): The type of metabolism, e.g., "main" or another value.
-
-        Returns:
-            None
         """
         self.metab_type = metab_type
         for i in self.l:
@@ -91,9 +88,7 @@ class MsrMetabolismManager:
             config: The configuration for the metabolism manager.
             main: An instance of the main class.
             neuron_pop_name: The name of the neuron population.
-
-        Returns:
-            None
+            ncs: list of cells to reset.
         """
         self.config = config
         self.load_metabolism_data(main)
