@@ -101,9 +101,6 @@ class MsrMetabolismManager:
         self.vm = {}  # read/write values for metab
         self.params = {}  # read values for metab
         self.tspan_m = (-1, -1)
-        self.ndam_vars = {}
-        self.steps_vars = {}
-        self.bloodflow_vars = {}
         self.failed_cells = {}
         self.neuro_df = Circuit(config.circuit_path).nodes[neuron_pop_name]
         self.reset(ncs)
@@ -214,11 +211,19 @@ class MsrMetabolismManager:
             1e-3 * (float(i_metab) + 1.0) * metab_dt,
         )
 
+        # the order of these sets is important
+        if hasattr(self, "ndam_vars"):
+            self.set_ndam_vars(ncs=ncs, ndam_vars=self.ndam_vars)
+        if hasattr(self, "steps_vars"):
+            self.set_steps_vars(ncs=ncs, steps_vars=self.steps_vars)
+        if hasattr(self, "bloodflow_vars"):
+            self.set_bloodflow_vars(ncs=ncs, bloodflow_vars=self.bloodflow_vars)
+
         self.failed_cells = {}
-        for inc, nc in enumerate(ncs):
+        for nc in ncs:
             c_gid = int(nc.CCell.gid)
 
-            self.init_inputs(c_gid=c_gid, inc=inc)
+            self.init_inputs(c_gid=c_gid)
 
             try:
                 self.params[c_gid].is_valid()
@@ -294,7 +299,72 @@ class MsrMetabolismManager:
             self.vm[c_gid] = u0
 
     @utils.logs_decorator
-    def init_inputs(self, c_gid, inc) -> None:
+    def set_bloodflow_vars(self, ncs, bloodflow_vars):
+        """Used only during initialization. Overrules the previous values in params"""
+        for inc, nc in enumerate(ncs):
+            c_gid = int(nc.CCell.gid)
+
+            # set params
+            self.params[c_gid].bf_Fin = bloodflow_vars["Fin"][inc]
+            # for bloodflow, Fin is always == Fout. No need to transfer 2 numbers
+            self.params[c_gid].bf_Fout = bloodflow_vars["Fin"][inc]
+            self.params[c_gid].bf_vol = bloodflow_vars["vol"][inc]
+
+    @utils.logs_decorator
+    def set_ndam_vars(self, ncs, ndam_vars):
+        """Used only during initialization. Overrules the previous values in params"""
+
+        vm_idxs = self.config.metabolism.vm_idxs
+
+        for inc, nc in enumerate(ncs):
+            c_gid = int(nc.CCell.gid)
+
+            # set params
+            self.params[c_gid].ina_density = ndam_vars[("Na", "curr")][inc]
+            self.params[c_gid].ik_density = ndam_vars[("K", "curr")][inc]
+
+            # set vm
+            atpi_mean = self.ndam_vars[("atp", "conci")][inc]
+            self.vm[c_gid][vm_idxs.atpn] = 0.5 * 1.384727988648391 + 0.5 * atpi_mean
+            self.vm[c_gid][vm_idxs.adpn] = 0.5 * 1.384727988648391 / 2 * (
+                -0.92
+                + np.sqrt(
+                    0.92 * 0.92
+                    + 4
+                    * 0.92
+                    * (
+                        self.config.metabolism.constants.ATDPtot_n / 1.384727988648391
+                        - 1
+                    )
+                )
+            ) + 0.5 * atpi_mean / 2 * (
+                -0.92
+                + np.sqrt(
+                    0.92 * 0.92
+                    + 4
+                    * 0.92
+                    * (self.config.metabolism.constants.ATDPtot_n / atpi_mean - 1)
+                )
+            )
+            self.vm[c_gid][vm_idxs.nai] = self.ndam_vars[("Na", "conci")][inc]
+            self.vm[c_gid][vm_idxs.ko] = 3.0 - 1.33 * (
+                self.ndam_vars[("K", "conci")][inc] - 140.0
+            )
+
+    @utils.logs_decorator
+    def set_steps_vars(self, ncs, steps_vars):
+        """Used only during initialization. Overrules the previous values in params"""
+
+        vm_idxs = self.config.metabolism.vm_idxs
+
+        for inc, nc in enumerate(ncs):
+            c_gid = int(nc.CCell.gid)
+
+            k_steps_name = self.config.species.K.steps.name
+            self.vm[c_gid][vm_idxs.ko] = steps_vars[k_steps_name][inc]
+
+    @utils.logs_decorator
+    def init_inputs(self, c_gid) -> None:
         """Initialize parameters for metabolism simulation.
 
         This method initializes parameters for metabolism simulation based on the provided neuron's characteristics.
@@ -309,66 +379,21 @@ class MsrMetabolismManager:
             param: An instance of MsrMetabParameters containing initialized parameters.
         """
 
-        kis_mean = self.ndam_vars[("K", "conci")][inc]
-        atpi_mean = self.ndam_vars[("atp", "conci")][inc]
-        nais_mean = self.ndam_vars[("Na", "conci")][inc]
-        self.params[c_gid].ina_density = self.ndam_vars[("Na", "curr")][inc]
-        self.params[c_gid].ik_density = self.ndam_vars[("K", "curr")][inc]
-
         # tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0))
 
         # um[(0, c_gid)][127] = GLY_a
         # vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
         # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
 
-        idx_atpn = self.config.metabolism.vm_idxs.atpn
-        idx_adpn = self.config.metabolism.vm_idxs.adpn
-        idx_nai = self.config.metabolism.vm_idxs.nai
-        idx_ko = self.config.metabolism.vm_idxs.ko
-
-        self.vm[c_gid][idx_atpn] = 0.5 * 1.384727988648391 + 0.5 * atpi_mean
-
-        self.vm[c_gid][idx_adpn] = 0.5 * 1.384727988648391 / 2 * (
-            -0.92
-            + np.sqrt(
-                0.92 * 0.92
-                + 4
-                * 0.92
-                * (self.config.metabolism.constants.ATDPtot_n / 1.384727988648391 - 1)
-            )
-        ) + 0.5 * atpi_mean / 2 * (
-            -0.92
-            + np.sqrt(
-                0.92 * 0.92
-                + 4
-                * 0.92
-                * (self.config.metabolism.constants.ATDPtot_n / atpi_mean - 1)
-            )
-        )
-
-        self.vm[c_gid][idx_nai] = nais_mean
-
         # KKconc is computed in 3 different simulators: ndam, metab, steps. We calculate all of them to do computations later
 
-        k_steps_name = self.config.species.K.steps.name
-        self.vm[c_gid][idx_ko] = (
-            self.steps_vars[k_steps_name][inc]
-            if k_steps_name in self.steps_vars
-            else 3.0 - 1.33 * (kis_mean - 140.0)
-        )
+        vm_idxs = self.config.metabolism.vm_idxs
 
-        if "Fin" in self.bloodflow_vars:
-            self.params[c_gid].bf_Fout = self.params[
-                c_gid
-            ].bf_Fin = self.bloodflow_vars["Fin"][inc]
-        if "vol" in self.bloodflow_vars:
-            self.params[c_gid].bf_vol = self.bloodflow_vars["vol"][inc]
         l = [
             *[
                 f"vm[{c_gid}][{i}]: {utils.ppf(self.vm[c_gid][i])}"
-                for i in self.config.metabolism.vm_idxs.values()
+                for i in vm_idxs.values()
             ],
-            f"kis_mean[{c_gid}]: {utils.ppf(kis_mean)}",
             f"bf_Fin: {self.params[c_gid].bf_Fin}",
             f"bf_vol: {self.params[c_gid].bf_vol}",
         ]
@@ -383,14 +408,13 @@ class MsrMetabolismManager:
             if not (min0 <= val <= max0):
                 raise MsrMetabManagerException(f"{ss} {min0} <= {val} <= {max0}")
 
-        check_VIP_value(0.25, 2.5, self.vm[c_gid][idx_atpn], "atp out of range:")
+        check_VIP_value(0.25, 2.5, self.vm[c_gid][vm_idxs.atpn], "atp out of range:")
         check_VIP_value(
-            5, 30, self.vm[c_gid][idx_nai], "nai out of range (usually around 10):"
+            5, 30, self.vm[c_gid][vm_idxs.nai], "nai out of range (usually around 10):"
         )
-        check_VIP_value(100, 160, kis_mean, "kis_mean (ki) out of range:")
         # TODO remove this if when https://bbpteam.epfl.ch/project/issues/browse/BBPP40-371 is fixed
         if self.config.with_steps:
-            check_VIP_value(1, 10, self.vm[c_gid][idx_ko], "ko out of range:")
+            check_VIP_value(1, 10, self.vm[c_gid][vm_idxs.ko], "ko out of range:")
 
         # 2.2 should coincide with the BC METypePath field & with u0_path
         # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects
