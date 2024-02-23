@@ -26,14 +26,18 @@ class MsrConfig(dict):
         There is no check if the paths really exist except for the various config paths.
 
         Args:
-          config_path_or_dict: The path to the top configuration
-          - if `None`, then a file "msr_config.json" is expected to be found in the
-          current working directory.
-          - otherwise, if this is a `pathlib.Path` instance pointing to a directory,
-          then a file "msr_config.json" is expected to be found in this directory.
-          - Otherwise, if this is a `pathlib.Path` instance to a file, it is considered
-          to be the JSON file to load.
-          - Finally, the argument is expected to be a `dict` instance representing the configuration to use.
+          config_path_or_dict: The path to the top configuration:
+
+            * if `None`, then a file "msr_config.json" is expected to be found
+              in the current working directory.
+            * otherwise, if this is a `pathlib.Path` instance pointing to a
+              directory, then a file "msr_config.json" is expected to be found
+              in this directory.
+            * Otherwise, if this is a `pathlib.Path` instance to a file, it is
+              considered to be the JSON file to load.
+            * Finally, the argument is expected to be a `dict` instance
+              representing the configuration to use.
+
         """
 
         if isinstance(config_path_or_dict, dict):
@@ -111,7 +115,8 @@ class MsrConfig(dict):
         Yields:
             Tuple: A tuple containing a key-value pair, where the first element is the key (attribute) and the second element is the corresponding value.
 
-        Example:
+        Example::
+
             >>> for key, value in config.items():
             ...     print(key, value)
         """
@@ -127,7 +132,8 @@ class MsrConfig(dict):
         Yields:
             Any: The value associated with a specific configuration key.
 
-        Example:
+        Example::
+
             >>> for value in config.values():
             ...     print(value)
         """
@@ -144,7 +150,8 @@ class MsrConfig(dict):
         Args:
             d (dict): A dictionary to be added to the configuration.
 
-        Example:
+        Example::
+
             >>> config.merge_without_priority({"new_key": "new_value"})
         """
 
@@ -154,7 +161,7 @@ class MsrConfig(dict):
     def dump(config_path, to_path, replace_dict, indent=4):
         """Convenience function to dump the config in a file, collapsing the jsons in case it is necessary
 
-        No sbustitutions are performed except for the parent path. Parent path is removed.
+        No substitutions are performed except for the parent path. Parent path is removed.
         """
         d = utils.load_jsons(config_path, parent_path_key="parent_config_path")
         d = utils.merge_dicts(child=replace_dict, parent=d)
@@ -195,7 +202,8 @@ class MsrConfig(dict):
 
         This method sets debug-specific configuration overrides by modifying specific configuration entries. It is intended for debugging and development purposes.
 
-        Example:
+        Example::
+
             >>> config.debug_overrides()
         """
 
@@ -206,12 +214,12 @@ class MsrConfig(dict):
         """
         Get the time step (dt) for a given token.
 
-        Parameters:
-        - token (str, optional): Token specifying the type of time step.
-        Defaults to "neurodamus".
+        Args:
+          token (str, optional): Token specifying the type of time step.
+          Defaults to "neurodamus".
 
         Returns:
-        - float: The time step for the specified token.
+          float: The time step for the specified token.
         """
         if token == "neurodamus":
             return self.DT
@@ -228,7 +236,8 @@ class MsrConfig(dict):
         Note:
             - The 'msr_ndts' attribute is updated with the calculated value.
 
-        Example:
+        Example::
+
             >>> config.compute_msr_ndts()
         """
 

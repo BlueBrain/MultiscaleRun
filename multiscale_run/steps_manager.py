@@ -28,33 +28,12 @@ class MsrStepsManager:
     """
     Manages STEPS simulations and mesh operations.
 
-    Args:
-        config: Configuration data for the simulation.
-
     Attributes:
         config: Configuration data for the simulation.
         mdl: The STEPS model.
         msh: The mesh for the simulation.
         ntets: Number of tetrahedra in the mesh.
         tet_vols: Array of tetrahedra volumes.
-
-    Methods:
-        init_sim(): Initialize the STEPS simulation.
-        init_concentrations(): Initialize concentrations of species.
-        _init_model(): Initialize the STEPS model.
-        init_mesh(mesh_path): Initialize the mesh for the simulation.
-        _auto_select_mesh(mesh_path): Automatically select the mesh file for parallel simulations.
-        _init_solver(): Initialize the STEPS solver.
-        bbox(): Get the bounding box of the mesh.
-        get_tetXtetMat(): Get a matrix for measuring species dispersion in tetrahedra.
-        get_tetXtetInvMmat(): Get the inverse of the tetrahedra matrix for debugging.
-        check_pts_inside_mesh_bbox(pts_list): Check if points are inside the mesh bounding box.
-        get_nsegXtetMat(local_pts): Get a matrix of section ratios in tetrahedra.
-        get_tetXbfSegMat(pts): Get a matrix of bloodflow segments in tetrahedra.
-        get_tet_counts(species, idxs=None): Get tetrahedra species counts.
-        get_tet_concs(species_name, idxs=None): Get tetrahedra species concentrations.
-        get_tet_quantity(species_name, f, idxs=None): Get a specific quantity for tetrahedra.
-        update_concs(species, curr, DT, idxs=None): Update species concentrations based on membrane currents.
     """
 
     def __init__(self, config):

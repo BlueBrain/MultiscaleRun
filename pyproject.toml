@@ -28,6 +28,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
 dependencies = [
+    "astrovascpy",
     "bluepysnap",
     "diffeqpy",
     "gmsh",
@@ -39,11 +40,17 @@ dependencies = [
     "numpy",
     "pandas",
     "psutil",
+    "pyyaml",
     "scipy",
     "tqdm",
-    "pyyaml",
+    "trimesh",
 ]
 dynamic = ["version"]
 
 [project.scripts]
 multiscale-run = "multiscale_run.cli:main"
+
+[project.urls]
+Homepage = "https://bbpgitlab.epfl.ch/molsys/multiscale_run"
+Source = "ssh://git@bbpgitlab.epfl.ch:molsys/multiscale_run.git"
+Tracker = "https://bbpteam.epfl.ch/project/issues/projects/BBPP40"

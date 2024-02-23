@@ -1,7 +1,18 @@
 include:
   - project: hpc/gitlab-pipelines
-    file: 
-      - spack-build.gitlab-ci.yml
+    file:
+    - spack-build.gitlab-ci.yml
+  - project: nse/ci
+    file:
+    - /ci/lib/tox-bb5.yml
+    - /ci/jobs/docs.yml
+    - /ci/jobs/publish-docs.yml
+
+stages:
+- .pre
+- build
+- test
+- publish
 
 variables:
   SPACK_PACKAGE: py-multiscale-run
@@ -12,6 +23,26 @@ spack_build:
   timeout: 2 hours
   variables:
     bb5_duration: "02:00:00"
+
+.tox-template:
+  tags: [bb5_map]
+  variables:
+    EXTRA_MODULES:
+      unstable:gcc
+      unstable:gmsh
+      unstable:hpe-mpi
+      unstable:julia/1.9.3
+      unstable:neurodamus-neocortex-multiscale
+      unstable:petsc
+      unstable:petsc
+      unstable:py-libsonata
+      unstable:py-mpi4py
+      unstable:py-mpi4py
+      unstable:py-notebook
+      unstable:py-numpy
+      unstable:py-petsc4py
+      unstable:py-scipy
+      unstable:steps
 
 pytest:
   extends: .spack_test
@@ -24,7 +55,7 @@ integration:
     bb5_ntasks: 2
 
 .nrun_test:
-  extends: [.spack_test]
+  extends: .spack_test
   timeout: 3 hours
   artifacts:
     when: always
@@ -40,7 +71,7 @@ integration:
   - ${SPACK_SOURCE_DIR}/.ci/test_simulation.sh
 
 .dualrun_test:
-  extends: [.nrun_test]
+  extends: .nrun_test
   timeout: 2 hours
   variables:
     steps: "true"
@@ -48,25 +79,25 @@ integration:
     bloodflow: "false"
 
 dualrun_test 1/16:
-  extends: [.dualrun_test]
+  extends: .dualrun_test
   variables:
     bb5_ntasks: 1
     bb5_duration: "02:00:00"
     sim_end: 105
 
 dualrun_test 2/16:
-  extends: [.dualrun_test]
+  extends: .dualrun_test
   variables:
     bb5_ntasks: 2
     sim_end: 105
 
 dualrun_test 16/16:
-  extends: [.dualrun_test]
+  extends: .dualrun_test
   variables:
     bb5_ntasks: 16
 
 nrun_[steps, metab, bf]:
-  extends: [.nrun_test]
+  extends: .nrun_test
   parallel:
     matrix:
     - steps: ["false", "true"]
@@ -74,7 +105,7 @@ nrun_[steps, metab, bf]:
       bloodflow: ["false", "true"]
 
 init_julia_create_test:
-  extends: [.spack_test]
+  extends: .spack_test
   timeout: 1 hours
   when: manual
   variables:

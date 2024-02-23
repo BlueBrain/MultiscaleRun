@@ -35,40 +35,10 @@ class MsrBloodflowManager:
     It provides methods for retrieving bloodflow segment points, flows, volumes, entry nodes, and more.
     It also handles loading vasculature data and applying boundary flows to entry nodes.
 
-    Args:
-        vasculature_path (str): The path to the vasculature data file.
-        params (dict): A dictionary containing parameters for bloodflow calculations.
-
     Attributes:
         entry_nodes (list): List of entry nodes for bloodflow simulation.
         boundary_flows (numpy.ndarray): Boundary flows for entry nodes.
         graph (PointVasculature): The vasculature graph.
-
-    Methods:
-        get_seg_points(scale):
-            Get a series of disjoint segments described by their extreme points.
-
-        get_flows():
-            Get the flow in each bloodflow segment.
-
-        get_vols():
-            Get the volume in each bloodflow segment.
-
-        get_entry_nodes():
-            Get the bloodflow input nodes (entry nodes).
-
-        load_circuit(vasculature_path):
-            Load vasculature data from a SONATA file.
-
-        get_boundary_flows():
-            Apply input boundary flows to entry nodes.
-
-        update_static_flow():
-            Update flows and volumes for quasi-static computation.
-
-        set_radii(vasc_ids, radii):
-            Set the radii of vasculature sections identified by their IDs.
-
     """
 
     def __init__(self, vasculature_path, params):
@@ -82,12 +52,6 @@ class MsrBloodflowManager:
         Args:
             vasculature_path (str): The path to the vasculature data file.
             params (dict): A dictionary containing parameters for bloodflow calculations.
-
-        Attributes:
-            entry_nodes (list): List of entry nodes for bloodflow simulation.
-            boundary_flows (numpy.ndarray): Boundary flows for entry nodes.
-            graph (PointVasculature): The vasculature graph.
-
         """
 
         logging.info("init MsrBloodflowManager")

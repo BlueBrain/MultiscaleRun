@@ -54,26 +54,6 @@ LOGGER = _cli_logger()
 del _cli_logger
 
 
-def replace_in_file(file, old, new, count=-1):
-    """
-    In-place string replacement in a file
-
-    Params:
-      file: the file path to replace
-      old: the string to be replaced
-      new: the replacement string
-      count: maximum number of occurrences to replace within the file.
-            -1 (the default value) means replace all occurrences.
-    """
-    with open(file) as istr:
-        content = istr.read()
-    new_content = content.replace(old, new, count)
-    if new_content != content:
-        LOGGER.warning(f"In: {file}, replace {content} -> {new_content}")
-        with open(file, "w") as ostr:
-            ostr.write(new_content)
-
-
 def julia_env(func):
     """Decorator to define the required Julia environment variables"""
 

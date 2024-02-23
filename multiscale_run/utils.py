@@ -26,7 +26,10 @@ class MsrException(Exception):
 def timesteps(end: float, step: float):
     """Timestep generator
 
-    Ex: timesteps(1, 0.2) -> [0.2, 0.4, ..., 1.0]
+    Example::
+
+       >>> timesteps(1, 0.2)
+       [0.2, 0.4, ..., 1.0]
     """
     return ((i + 1) * step for i in range(int(end / step)))
 
@@ -42,11 +45,12 @@ def inspect(v, affix=""):
 
     This function provides a detailed view of the variable and its subcomponents, including lists, dictionaries, and NumPy arrays, along with their statistics (mean, min, max).
 
-    Parameters:
-        v (any): The variable to inspect.
-        affix (str): A prefix to add to the printed output for formatting.
+    Args:
+      v (any): The variable to inspect.
+      affix (str): A prefix to add to the printed output for formatting.
 
-    Example:
+    Example::
+
         inspect(my_data, "  ")
     """
 
@@ -94,7 +98,7 @@ def inspect(v, affix=""):
 def delete_rows_csr(mat, indices):
     """Remove the rows denoted by ``indices`` from the CSR sparse matrix ``mat``.
 
-    Parameters:
+    Args:
         mat (scipy.sparse.csr_matrix): The CSR sparse matrix.
         indices (iterable): The indices of rows to be deleted.
 
@@ -104,7 +108,8 @@ def delete_rows_csr(mat, indices):
     Raises:
         ValueError: If the input matrix is not in CSR format.
 
-    Example:
+    Example::
+
         new_csr_matrix = delete_rows_csr(sparse_csr_matrix, [2, 4, 6])
     """
 
@@ -121,7 +126,7 @@ def delete_rows_csr(mat, indices):
 def delete_cols_csr(mat, indices):
     """Remove the columns denoted by ``indices`` from the CSR sparse matrix ``mat``.
 
-    Parameters:
+    Args:
         mat (scipy.sparse.csr_matrix): The CSR sparse matrix.
         indices (iterable): The indices of columns to be deleted.
 
@@ -131,7 +136,8 @@ def delete_cols_csr(mat, indices):
     Raises:
         ValueError: If the input matrix is not in CSR format.
 
-    Example:
+    Example::
+
         new_csr_matrix = delete_cols_csr(sparse_csr_matrix, [2, 4, 6])
     """
 
@@ -148,14 +154,15 @@ def delete_cols_csr(mat, indices):
 def rank_print(*args, **kwargs):
     """Print with rank information.
 
-    Parameters:
+    Args:
         *args: Variable length positional arguments for print.
         **kwargs: Variable length keyword arguments for print.
 
     Note:
         This function appends the rank of the process to the output.
 
-    Example:
+    Example::
+
         rank_print("Hello, World!")
     """
     print(f"rank {comm.Get_rank()}:", *args, **kwargs, flush=True)
@@ -170,7 +177,7 @@ def cache_decorator(
 
     The function should not return any values at the moment.
 
-    Parameters:
+    Args:
         field_names (str or list of str): The name(s) of the field(s) to be cached.
         path (str or Path, optional): The path to the cache directory. Defaults to None.
         is_save (bool, optional): If True, data is saved to the cache. Defaults to None.
@@ -183,7 +190,8 @@ def cache_decorator(
     Note:
         This decorator facilitates the caching of data in memory.
 
-    Example:
+    Example::
+
         @cache_decorator("my_field", path="/cache", is_save=True, is_load=True)
         def my_method(self, *args, **kwargs):
             # Your method implementation here
@@ -326,13 +334,14 @@ def logs_decorator(foo):
 
     This decorator logs the start and end of a function's execution, its memory usage, and elapsed time.
 
-    Parameters:
+    Args:
         foo (function): The function to be wrapped by the decorator.
 
     Returns:
         function: The wrapped function.
 
-    Example:
+    Example::
+
         @logs_decorator
         def my_function(arg1, arg2):
             # Your function implementation here
@@ -368,19 +377,19 @@ def merge_dicts(parent, child):
     """Merge dictionaries recursively (in case of nested dicts) giving priority to child over parent
     for ties. Values of matching keys must match or a TypeError is raised.
 
-    Example:
-        parent: {"A":1, "B":{"a":1, "b":2}, "C": 2}
-        child: {"A":2, "B":{"a":2, "c":3}, "D": 3}
-
-        ans: {"A":2, "B":{"a":2, "b":2, "c":3}, "C": 2, "D": 3}
-
     Args:
         parent (dict): parent dict
         child (dict): child dict (priority)
 
-
     Returns:
         dict: merged dict following the rules listed before
+
+    Example::
+
+        >>> parent = {"A":1, "B":{"a":1, "b":2}, "C": 2}
+        >>> child = {"A":2, "B":{"a":2, "c":3}, "D": 3}
+        >>> merge_dicts(parent, child)
+        {"A":2, "B":{"a":2, "b":2, "c":3}, "C": 2, "D": 3}
     """
 
     def merge_vals(k, parent, child):
@@ -456,7 +465,7 @@ def heavy_duty_MPI_Gather(v: np.ndarray, root=0):
     one custom object per rank.
 
     Args:
-        v (np.ndarray): it can be a 1 or 2D array of ints or floats
+        np.ndarray: it can be a 1 or 2D array of ints or floats
         root (int, optional): MPI root
 
     Returns:
@@ -507,7 +516,8 @@ def remove_path(path):
     Note:
         This function is intended for use on rank 0 in a parallel or distributed computing context. It attempts to remove the specified directory and ignores `FileNotFoundError` if the directory does not exist.
 
-    Example:
+    Example::
+
         remove_path("/path/to/directory")
     """
 
@@ -562,20 +572,20 @@ def get_subs_d(d):
     return ans
 
 
-def get_resolved_value(d, key, in_place=False):
+def get_resolved_value(d: dict, key: str, in_place: bool = False):
     """
     Get the value of a key, replacing ${token} placeholders with corresponding values in the same dictionary.
 
     This function retrieves the value associated with the specified key in the input dictionary (d),
     and recursively resolves ${token} placeholders in the value using other key-value pairs in the same dictionary.
 
-    Parameters:
-    - d (dict): The input dictionary containing key-value pairs.
-    - key (str): The key whose value needs to be retrieved and resolved.
-    - in_place (bool, optional): If True, performs in-place substitution of values in the input dictionary. Defaults to False.
+    Args:
+      d: The input dictionary containing key-value pairs.
+      key: The key whose value needs to be retrieved and resolved.
+      in_place: If True, performs in-place substitution of values in the input dictionary. Defaults to False.
 
     Returns:
-    str: The resolved value associated with the specified key.
+      str: The resolved value associated with the specified key.
     """
     v = d[key]
     tokens = set(re.findall(r"\${(.*?)}", v))
@@ -588,7 +598,7 @@ def get_resolved_value(d, key, in_place=False):
     return v
 
 
-def resolve_replaces(d: dict, base_subs_d=None) -> None:
+def resolve_replaces(d: dict, base_subs_d: dict = None) -> None:
     """
     Resolve ${token} placeholders in string values of a nested dictionary, using specified substitution values.
 
@@ -596,9 +606,9 @@ def resolve_replaces(d: dict, base_subs_d=None) -> None:
     It first extracts and filters string key-value pairs from the dictionary, then resolves ${token}
     placeholders in those values using a combination of the original dictionary and additional base substitution values.
 
-    Parameters:
-    - d (dict): The input nested dictionary to process.
-    - base_subs_d (dict, optional): Additional base substitution values. Defaults to an empty dictionary.
+    Args:
+      d: The input nested dictionary to process.
+      base_subs_d: Additional base substitution values. Defaults to an empty dictionary.
 
     Returns:
     None: The function performs in-place substitution on the input dictionary (d).
@@ -634,16 +644,17 @@ def bbox(pts):
     """
     Calculate the bounding box of a set of 3D points.
 
-    Parameters:
-    pts (np.ndarray): An array of 3D points with shape (n, 3).
+    Args:
+      pts (np.ndarray): An array of 3D points with shape (n, 3).
 
     Returns:
-    np.ndarray: An array containing the minimum and maximum coordinates of the bounding box.
-               The first element is the minimum coordinates, and the second element is the maximum coordinates.
+      np.ndarray: An array containing the minimum and maximum coordinates of the bounding box.
+      The first element is the minimum coordinates, and the second element is the maximum coordinates.
 
-    Example:
-    pts = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-    bbox(pts) returns an array with the minimum and maximum coordinates of the bounding box.
+    Example::
+
+       pts = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+       bbox(pts) # returns an array with the minimum and maximum coordinates of the bounding box.
 
     """
     return np.array([np.min(pts, axis=0), np.max(pts, axis=0)])
@@ -653,16 +664,18 @@ def generate_cube_corners(a, b, n):
     """
     Generate an array of n cube corner points between two given points a and b.
 
-    Parameters:
-    a (array-like): The lower corner of the cube.
-    b (array-like): The upper corner of the cube.
-    n (int): The number of corner points to generate.
+    Args:
+      a (array-like): The lower corner of the cube.
+      b (array-like): The upper corner of the cube.
+      n (int): The number of corner points to generate.
 
     Returns:
-    np.ndarray: An array of n corner points.
+      np.ndarray: An array of n corner points.
 
-    Example:
-    generate_cube_corners([1, 1, 1], [2, 3, 3], 8) returns an array of 8 corner points within the specified cube.
+    Example::
+
+        generate_cube_corners([1, 1, 1], [2, 3, 3], 8)
+        # returns an array of 8 corner points within the specified cube.
 
     """
     l = [a, b]

@@ -17,7 +17,7 @@ salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 
 module load unstable py-multiscale-run
 ```
 
-## As a spack package:
+## As a spack package
 
 ```
 spack install py-multiscale-run@develop
@@ -64,7 +64,7 @@ multiscale-run 0.3.dev9+g6b660cb
 
 This section is a specialization of this [generic spack guide](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md). 
 
-As a concrete example, let's say that we want to make some modifications in neurodamus and multiscale run and see how the code performs in rat V6. Let's also assume that we are on BB5 with a working spack. If it is not the case please check [here](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/setup_bb5.md) on how to install spack on BB5. 
+As a concrete example, let's say that we want to make some modifications in neurodamus and multiscale run and see how the code performs in rat V6. Let's also assume that we are on BB5 with a working spack. If it is not the case please check [the spack documentation on BB5](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/setup_bb5.md) on how to install spack on BB5. 
 
 It is **recommended to allocated a node** before starting. Compiling in the log in node is deprecated. 
 
@@ -143,7 +143,7 @@ Remember that every time you add a modification to the code you need to call `sp
 
 > :rainbow: **This may also work on your spack-powered machine!**
 
-# How to use the `multiscale-run` executable?
+# How to use the multiscale-run executable?
 
 This program provides several commands to initialize, configure and execute simulations
 
@@ -190,8 +190,7 @@ multiscale-run compute [/path/to/my-sim]
 
 > :ledger: **See `multiscale-run compute --help` for more information**
 
-> :exclamation: **You may need to load the `intel-oneapi-mkl` module on BB5 if not already loaded**
-> otherwise you will probably experience the following error when running the _compute_ phase: `libmkl_intel_thread.so.1: undefined symbol: omp_get_num_procs`
+> :exclamation: **You may need to load the `intel-oneapi-mkl` module on BB5 if not already loaded** otherwise you will probably experience the following error when running the _compute_ phase: `libmkl_intel_thread.so.1: undefined symbol: omp_get_num_procs`
 
 Three more folders will be created during the simulation: 
 * `cache`: it keeps some cached communication matrices, useful for subsequent runs
@@ -232,7 +231,7 @@ multiscale-run edit-mod-files [/path/to/my-sim]
 1. Run the simulation: `map --profile --output OUT.map srun [...] multiscale-run compute [/path/to/my-sim]`
 1. Open `OUT.map` with the Arm Forge Client (locally)
 
-For more on how to use ARM MAP check [here](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
+For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
 
 # Release notes
 
