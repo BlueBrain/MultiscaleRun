@@ -25,7 +25,7 @@ rank, size = comm.Get_rank(), comm.Get_size()
 
 
 def base_path():
-    return str(Path(__file__).resolve().parent)
+    return Path(__file__).resolve().parent
 
 
 def generate_random_points_in_cube(a, b, n):
@@ -61,7 +61,7 @@ def test_autogen_mesh(f, n):
     This function generates points using the provided function, creates a mesh, and performs various tests on the generated mesh.
 
     """
-    conf = config.MsrConfig(base_path_or_dict=base_path())
+    conf = config.MsrConfig(base_path())
     utils.remove_path(conf.mesh_path.parent)
 
     prep = preprocessor.MsrPreprocessor(conf)

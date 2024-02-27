@@ -29,14 +29,14 @@ def test_load():
         assert conf.includes == ["RESULTS/a", "RESULTS/b"]
 
     # config can be a pathlib.Path to a JSON file
-    conf1 = config.MsrConfig(config_path_or_dict=sp)
+    conf1 = config.MsrConfig(sp)
     _test_config(conf1)
     # config can be a pathlib.Path to a directory
-    _test_config(config.MsrConfig(config_path_or_dict=sp.parent))
+    _test_config(config.MsrConfig(sp.parent))
     # config can also be a str to a file or directory
-    _test_config(config.MsrConfig(config_path_or_dict=str(sp)))
+    _test_config(config.MsrConfig(str(sp)))
     # finally, config can be a Python dict
-    config.MsrConfig(config_path_or_dict=conf1.d)
+    config.MsrConfig._from_dict(conf1.d)
 
 
 if __name__ == "__main__":

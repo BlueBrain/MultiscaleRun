@@ -11,13 +11,12 @@ rank, size = comm.Get_rank(), comm.Get_size()
 
 
 def config_path():
-    return str(
-        Path(__file__).resolve().parent / "test_folder/test_folder1/test_folder2"
-    )
+    return Path(__file__).resolve().parent / "test_folder/test_folder1/test_folder2"
+
 
 
 def test_simple_report():
-    conf = config.MsrConfig(config_path_or_dict=config_path())
+    conf = config.MsrConfig(config_path())
     conf.merge_without_priority({"DT": 0.025})
 
     pop_name = conf.preprocessor.node_sets.neuron_population_name

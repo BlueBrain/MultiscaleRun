@@ -13,7 +13,7 @@ from .data import DATA_DIR, DEFAULT_CIRCUIT
 class MsrConfig(dict):
     """Multiscale run Config class"""
 
-    def __init__(self, config_path_or_dict=None):
+    def __init__(self, path=None):
         """Multiscale run Config constructor
 
         This class is composed from a chain of json files. We start from "config_path" which can
@@ -26,7 +26,7 @@ class MsrConfig(dict):
         There is no check if the paths really exist except for the various config paths.
 
         Args:
-          config_path_or_dict: The path to the top configuration:
+          path: The path to the top configuration:
 
             * if `None`, then a file "msr_config.json" is expected to be found
               in the current working directory.
@@ -35,27 +35,27 @@ class MsrConfig(dict):
               in this directory.
             * Otherwise, if this is a `pathlib.Path` instance to a file, it is
               considered to be the JSON file to load.
-            * Finally, the argument is expected to be a `dict` instance
-              representing the configuration to use.
-
         """
 
-        if isinstance(config_path_or_dict, dict):
-            self.update(config_path_or_dict)
-            return
-        elif isinstance(config_path_or_dict, str):
-            config_path_or_dict = Path(config_path_or_dict)
+        if isinstance(path, str):
+            path = Path(path)
 
-        if config_path_or_dict is None:
-            config_path_or_dict = Path.cwd()
+        if path is None:
+            path = Path.cwd()
 
-        if not isinstance(config_path_or_dict, Path):
-            raise TypeError("Expected type are str, pathlib.Path, or dict")
+        if not isinstance(path, Path):
+            raise TypeError("Expected type are str, pathlib.Path")
 
-        if config_path_or_dict.resolve().is_dir():
-            config_path_or_dict /= "msr_config.json"
+        if path.resolve().is_dir():
+            path /= "msr_config.json"
 
-        self._load(config_path_or_dict)
+        self._load(path)
+
+    @classmethod
+    def _from_dict(cls, data):
+        obj = cls.__new__(cls, data)
+        super(MsrConfig, obj).__init__(data)
+        return obj
 
     def __getattr__(self, key):
         """
@@ -78,7 +78,7 @@ class MsrConfig(dict):
 
         if key in self:
             if isinstance(self[key], dict):
-                self[key] = MsrConfig(self[key])
+                self[key] = MsrConfig._from_dict(self[key])
             if key.endswith("_path") and isinstance(self[key], str):
                 self[key] = Path(self[key])
 

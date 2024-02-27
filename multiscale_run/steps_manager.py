@@ -487,7 +487,7 @@ class MsrStepsManager:
             )
             raise ValueError(error_message)
 
-        if idxs == None:
+        if idxs is None:
             idxs = np.array(range(self.ntets), dtype=np.int64)
 
         # only owned tets are set
