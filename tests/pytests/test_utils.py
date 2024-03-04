@@ -3,6 +3,7 @@ import shutil
 from pathlib import Path
 
 import numpy as np
+import pytest
 from scipy import sparse
 
 # this needs to be before "import neurodamus" and before MPI4PY
@@ -184,7 +185,70 @@ def test_load_jsons():
     print(d)
 
 
+def test_get_var_name():
+    a = 3
+    b = {3: 3}
+
+    def _test(v, val):
+        assert utils.get_var_name() == val
+
+    _test(a, "a")
+    _test(b[3], "b[3]")
+    _test(b[a], "b[a]")
+
+    def _test(a, b, val):
+        assert utils.get_var_name(pos=1) == val
+
+    _test(3, b[a], "b[a]")
+
+    def _test(v, val):
+        def _test2(v, val):
+            assert utils.get_var_name() == "v"
+            assert utils.get_var_name(lvl=2) == val
+
+        _test2(v, val)
+
+    _test(b[a], "b[a]")
+
+
+def test_check_value():
+    utils.check_value(3, 2)
+    utils.check_value(3, 2.0)
+    utils.check_value(3.0, 2.0)
+    utils.check_value(3.0, 4e-1)
+    utils.check_value(3.1e-1, 4e-2)
+    utils.check_value(2)
+
+    with pytest.raises(utils.MsrException):
+        utils.check_value(None)
+    with pytest.raises(utils.MsrException):
+        utils.check_value(float("inf"))
+    with pytest.raises(utils.MsrException):
+        utils.check_value("AAA")
+    with pytest.raises(utils.MsrException):
+        utils.check_value(3, lb=4)
+    with pytest.raises(utils.MsrException):
+        utils.check_value(0, leb=0.0)
+    with pytest.raises(utils.MsrException):
+        utils.check_value(5, hb=4)
+    with pytest.raises(utils.MsrException):
+        utils.check_value(0.0, heb=0)
+    with pytest.raises(utils.MsrException) as exc_info:
+        a = 3
+        utils.check_value(a, heb=0)
+    assert str(exc_info.value) == "a: 3 >= 0"
+
+    class CustomException(Exception):
+        pass
+
+    with pytest.raises(CustomException) as exc_info:
+        a = 3
+        utils.check_value(a, heb=0, err=CustomException)
+
+
 if __name__ == "__main__":
+    test_get_var_name()
+    test_check_value()
     test_load_jsons()
     test_replacing_algos()
     test_cache_decor()

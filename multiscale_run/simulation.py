@@ -118,7 +118,22 @@ class MsrSimulation:
                     config=self.conf,
                     main=JMain,
                     neuron_pop_name=self.ndam_m.neuron_manager.population_name,
-                    ncs=self.ndam_m.ncs,
+                    gids=self.ndam_m.gids(),
+                )
+
+            # sync for the initial conditions
+            self.conn_m.ndam2metab_sync(
+                gids=self.ndam_m.gids(), ndam_m=self.ndam_m, metab_m=self.metab_m
+            )
+            if self.conf.with_bloodflow:
+                self.conn_m.ndam2bloodflow_sync(ndam_m=self.ndam_m, bf_m=self.bf_m)
+                self.bf_m.update_static_flow()
+                self.conn_m.bloodflow2metab_sync(
+                    gids=self.ndam_m.gids(), bf_m=self.bf_m, metab_m=self.metab_m
+                )
+            if self.conf.with_steps:
+                self.conn_m.steps2metab_sync(
+                    gids=self.ndam_m.gids(), steps_m=self.steps_m, metab_m=self.metab_m
                 )
 
     @_run_once
@@ -188,7 +203,9 @@ class MsrSimulation:
                         lgids = self.ndam_m.gids()
                         with timeit(name="neurodamus_2_metabolism"):
                             self.conn_m.ndam2metab_sync(
-                                ndam_m=self.ndam_m, metab_m=self.metab_m
+                                gids=self.ndam_m.gids(),
+                                ndam_m=self.ndam_m,
+                                metab_m=self.metab_m,
                             )
 
                             units = [
@@ -209,7 +226,9 @@ class MsrSimulation:
                         if self.conf.with_steps:
                             with timeit(name="steps_2_metabolism"):
                                 self.conn_m.steps2metab_sync(
-                                    steps_m=self.steps_m, metab_m=self.metab_m
+                                    gids=self.ndam_m.gids(),
+                                    steps_m=self.steps_m,
+                                    metab_m=self.metab_m,
                                 )
                                 self.rep.set_group(
                                     "steps",
@@ -221,7 +240,9 @@ class MsrSimulation:
                         if self.conf.with_bloodflow and self.conf.with_steps:
                             with timeit(name="bloodflow_2_metabolism"):
                                 self.conn_m.bloodflow2metab_sync(
-                                    bf_m=self.bf_m, metab_m=self.metab_m
+                                    gids=self.ndam_m.gids(),
+                                    bf_m=self.bf_m,
+                                    metab_m=self.metab_m,
                                 )
 
                                 self.rep.set_group(
@@ -237,18 +258,16 @@ class MsrSimulation:
 
                         with timeit(name="solve_metabolism"):
                             failed_cells = self.metab_m.advance(
-                                self.ndam_m.ncs,
-                                i_metab,
-                                self.conf.metabolism_ndts * self.conf.DT,
+                                gids=self.ndam_m.gids(),
+                                i_metab=i_metab,
+                                metab_dt=self.conf.metabolism_ndts * self.conf.DT,
                             )
 
                         self.ndam_m.remove_gids(failed_cells, self.conn_m)
 
                         with timeit(name="metabolism_2_neurodamus"):
                             self.conn_m.metab2ndam_sync(
-                                metab_m=self.metab_m,
-                                ndam_m=self.ndam_m,
-                                i_metab=i_metab,
+                                metab_m=self.metab_m, ndam_m=self.ndam_m
                             )
 
                         comm.Barrier()

@@ -14,7 +14,6 @@ def config_path():
     return Path(__file__).resolve().parent / "test_folder/test_folder1/test_folder2"
 
 
-
 def test_simple_report():
     conf = config.MsrConfig(config_path())
     conf.merge_without_priority({"DT": 0.025})

@@ -13,12 +13,13 @@ comm = MPI4PY.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
 
-class MsrMetabParameterException(Exception):
-    pass
-
-
 class MsrMetabManagerException(Exception):
-    pass
+    """Generic Metabolism Manager Exception"""
+
+
+class MsrKickNeuronException(Exception):
+    """This error should be recoverable. We just want to kick the neuron out
+    of the simulation because it is misbehaving"""
 
 
 class MsrMetabParameters:
@@ -48,47 +49,18 @@ class MsrMetabParameters:
         for i in self.l:
             yield getattr(self, i)
 
-    def is_valid(self):
-        """Check the validity of parameter values and their data types.
-
-        This method validates the parameter values by checking if they are not None, are of float data type, and not NaN or Inf. It also checks specific validity conditions for "bf_vol" when the metabolism type is "main".
-
-        Raises:
-            MsrMetabParameterException: If any of the parameter values are not valid.
-
-        Returns:
-            None
-        """
-        for k in self.l:
-            v = getattr(self, k)
-            msg = f"{k}: {v} is "
-            if v is None:
-                raise MsrMetabParameterException(msg + "None")
-            try:
-                float(v)
-            except:
-                raise MsrMetabParameterException(msg + "not float")
-
-            if np.isnan(v):
-                raise MsrMetabParameterException(msg + "NaN")
-            if np.isinf(v):
-                raise MsrMetabParameterException(msg + "Inf")
-
-        if self.metab_type == "main" and self.bf_vol <= 0:
-            raise MsrMetabParameterException(f"bf_vol ({self.bf_vol}) <= 0")
-
 
 class MsrMetabolismManager:
     """Wrapper to manage the metabolism julia model"""
 
-    def __init__(self, config, main, neuron_pop_name, ncs):
+    def __init__(self, config, main, neuron_pop_name: str, gids: list[int]):
         """Initialize the MsrMetabolismManager.
 
         Args:
             config: The configuration for the metabolism manager.
             main: An instance of the main class.
             neuron_pop_name: The name of the neuron population.
-            ncs: list of cells to reset.
+            gids: list of cells to reset.
         """
         self.config = config
         self.load_metabolism_data(main)
@@ -98,7 +70,7 @@ class MsrMetabolismManager:
         self.tspan_m = (-1, -1)
         self.failed_cells = {}
         self.neuro_df = Circuit(config.circuit_path).nodes[neuron_pop_name]
-        self.reset(ncs)
+        self.reset(gids)
 
     @utils.logs_decorator
     def load_metabolism_data(self, main):
@@ -144,7 +116,7 @@ class MsrMetabolismManager:
         self.model = main.eval(julia_code)
 
     @utils.logs_decorator
-    def _advance_gid(self, c_gid):
+    def _advance_gid(self, c_gid: int):
         """Advance metabolism simulation for a specific GID (Global ID).
 
         This method advances the metabolism simulation for a specific GID using the provided parameters.
@@ -187,13 +159,13 @@ class MsrMetabolismManager:
         self.vm[c_gid] = sol.u[-1]
 
     @utils.logs_decorator
-    def advance(self, ncs, i_metab, metab_dt):
+    def advance(self, gids: list[int], i_metab: int, metab_dt: float):
         """Advance metabolism simulation for a list of neurons.
 
         This method advances the metabolism simulation for a list of neurons using the provided parameters.
 
         Args:
-            ncs: A list of neurons to simulate.
+            gids: A list of neurons to simulate.
             i_metab: The current metabolism iteration.
             metab_dt: The time step for metabolism simulation.
 
@@ -206,32 +178,22 @@ class MsrMetabolismManager:
             1e-3 * (float(i_metab) + 1.0) * metab_dt,
         )
 
-        # the order of these sets is important
-        if hasattr(self, "ndam_vars"):
-            self.set_ndam_vars(ncs=ncs, ndam_vars=self.ndam_vars)
-        if hasattr(self, "steps_vars"):
-            self.set_steps_vars(ncs=ncs, steps_vars=self.steps_vars)
-        if hasattr(self, "bloodflow_vars"):
-            self.set_bloodflow_vars(ncs=ncs, bloodflow_vars=self.bloodflow_vars)
-
         self.failed_cells = {}
-        for nc in ncs:
-            c_gid = int(nc.CCell.gid)
-
-            self.init_inputs(c_gid=c_gid)
-
+        for c_gid in gids:
             try:
-                self.params[c_gid].is_valid()
-            except MsrMetabParameterException as e:
+                self.check_inputs(c_gid=c_gid)
+            except MsrKickNeuronException as e:
                 self.failed_cells[c_gid] = str(e)
                 logging.warning(self.failed_cells[c_gid])
                 continue
+            except Exception as e:
+                comm.Abort(str(e))
 
             self._advance_gid(c_gid=c_gid)
 
         return self.failed_cells
 
-    def _get_GLY_a_and_mito_vol_frac(self, c_gid):
+    def _get_GLY_a_and_mito_vol_frac(self, c_gid: int):
         """Get glycogen (GLY_a) and mitochondrial volume fraction.
 
         This method calculates glycogen (GLY_a) and mitochondrial volume fraction for a given neuron based on its layer.
@@ -262,11 +224,11 @@ class MsrMetabolismManager:
         )
 
     @utils.logs_decorator
-    def reset(self, ncs):
+    def reset(self, gids: list[int]):
         """Reset the parameters and initial conditions for metabolic simulation.
 
         Args:
-            ncs (list): List of cells to reset.
+            gids: List of cells to reset.
 
         Returns:
             None
@@ -274,9 +236,7 @@ class MsrMetabolismManager:
         u0 = pd.read_csv(self.config.metabolism.u0_path, sep=",", header=None)[
             0
         ].tolist()
-        for nc in ncs:
-            c_gid = int(nc.CCell.gid)
-
+        for c_gid in gids:
             self.params[c_gid] = MsrMetabParameters(
                 metab_type=self.config.metabolism.type
             )
@@ -294,11 +254,20 @@ class MsrMetabolismManager:
             self.vm[c_gid] = u0
 
     @utils.logs_decorator
-    def set_bloodflow_vars(self, ncs, bloodflow_vars):
-        """Used only during initialization. Overrules the previous values in params"""
-        for inc, nc in enumerate(ncs):
-            c_gid = int(nc.CCell.gid)
+    def set_bloodflow_vars(
+        self, gids: list[int], bloodflow_vars: dict[str, list[float]]
+    ):
+        """Set blood flow variables.
 
+        This method overrules the previous values in 'params'.
+
+        Args:
+            gids: gids of the cells.
+            bloodflow_vars: Dictionary containing blood flow variables.
+                Ex: {"Fin": 0.001, "vol": 0.023}. Fout is the same as Fin so it
+                is not included.
+        """
+        for inc, c_gid in enumerate(gids):
             # set params
             self.params[c_gid].bf_Fin = bloodflow_vars["Fin"][inc]
             # for bloodflow, Fin is always == Fout. No need to transfer 2 numbers
@@ -306,20 +275,28 @@ class MsrMetabolismManager:
             self.params[c_gid].bf_vol = bloodflow_vars["vol"][inc]
 
     @utils.logs_decorator
-    def set_ndam_vars(self, ncs, ndam_vars):
-        """Used only during initialization. Overrules the previous values in params"""
+    def set_ndam_vars(
+        self, gids: list[int], ndam_vars: dict[tuple[str, str], list[float]]
+    ):
+        """Set neurodamus variables
+
+        This method overrules the previous values in 'params' and 'vm'.
+        The formulae will change in the near future (Katta).
+
+        Args:
+            gids: cell gids.
+            ndam_vars: Dictionary containing neurodamus variables.
+        """
 
         vm_idxs = self.config.metabolism.vm_idxs
 
-        for inc, nc in enumerate(ncs):
-            c_gid = int(nc.CCell.gid)
-
+        for inc, c_gid in enumerate(gids):
             # set params
             self.params[c_gid].ina_density = ndam_vars[("Na", "curr")][inc]
             self.params[c_gid].ik_density = ndam_vars[("K", "curr")][inc]
 
             # set vm
-            atpi_mean = self.ndam_vars[("atp", "conci")][inc]
+            atpi_mean = ndam_vars[("atp", "conci")][inc]
             self.vm[c_gid][vm_idxs.atpn] = 0.5 * 1.384727988648391 + 0.5 * atpi_mean
             self.vm[c_gid][vm_idxs.adpn] = 0.5 * 1.384727988648391 / 2 * (
                 -0.92
@@ -341,37 +318,49 @@ class MsrMetabolismManager:
                     * (self.config.metabolism.constants.ATDPtot_n / atpi_mean - 1)
                 )
             )
-            self.vm[c_gid][vm_idxs.nai] = self.ndam_vars[("Na", "conci")][inc]
+            self.vm[c_gid][vm_idxs.nai] = ndam_vars[("Na", "conci")][inc]
             self.vm[c_gid][vm_idxs.ko] = 3.0 - 1.33 * (
-                self.ndam_vars[("K", "conci")][inc] - 140.0
+                ndam_vars[("K", "conci")][inc] - 140.0
             )
 
     @utils.logs_decorator
-    def set_steps_vars(self, ncs, steps_vars):
-        """Used only during initialization. Overrules the previous values in params"""
+    def set_steps_vars(self, gids: list[int], steps_vars: dict[str, list[float]]):
+        """Set steps variables
+
+        This method overrules the previous values in 'vm'.
+        The formulae will change in the near future (Katta).
+
+        Args:
+            gids: gids of the cells.
+            steps_vars: Dictionary containing step variables (typically K conc outside).
+        """
 
         vm_idxs = self.config.metabolism.vm_idxs
 
-        for inc, nc in enumerate(ncs):
-            c_gid = int(nc.CCell.gid)
-
+        for inc, c_gid in enumerate(gids):
             k_steps_name = self.config.species.K.steps.name
             self.vm[c_gid][vm_idxs.ko] = steps_vars[k_steps_name][inc]
 
     @utils.logs_decorator
-    def init_inputs(self, c_gid) -> None:
-        """Initialize parameters for metabolism simulation.
+    def check_inputs(self, c_gid: int) -> None:
+        """Check the inputs and parameters related to metabolism for a given cell group ID.
 
-        This method initializes parameters for metabolism simulation based on the provided neuron's characteristics.
+        This function logs information about the metabolism variables and performs
+        value checks on them and the parameters.
+        It also raises exceptions if any values are outside the specified bounds.
 
         Args:
-            c_gid: The Global ID of the neuron.
-            inc: An index for the neuron.
-            i_metab: The current metabolism iteration.
-            metab_dt: The time step for metabolism simulation.
+            self: The instance of the class containing the method.
+            c_gid: The cell group ID for which inputs and parameters are checked.
 
         Returns:
-            param: An instance of MsrMetabParameters containing initialized parameters.
+            None
+
+        Raises:
+            MsrException: if the error is not recoverable.
+                Example: a value is NaN.
+            MsrKickNeuronException: if we recover by kicking the neuron and continuing.
+                Example: there is no blood flow
         """
 
         # tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0))
@@ -399,18 +388,22 @@ class MsrMetabolismManager:
         # macro-problems like K+ accumulation faster. For now the additional computation is minimal.
         # Improvements are possible if needed."
 
-        def check_VIP_value(min0, max0, val, ss):
-            if not (min0 <= val <= max0):
-                raise MsrMetabManagerException(f"{ss} {min0} <= {val} <= {max0}")
+        utils.check_value(v=self.vm[c_gid][vm_idxs.atpn], lb=0.25, hb=2.5)
+        utils.check_value(v=self.vm[c_gid][vm_idxs.nai], lb=5, hb=30)
 
-        check_VIP_value(0.25, 2.5, self.vm[c_gid][vm_idxs.atpn], "atp out of range:")
-        check_VIP_value(
-            5, 30, self.vm[c_gid][vm_idxs.nai], "nai out of range (usually around 10):"
-        )
         # TODO remove this if when https://bbpteam.epfl.ch/project/issues/browse/BBPP40-371 is fixed
         if self.config.with_steps:
-            check_VIP_value(1, 10, self.vm[c_gid][vm_idxs.ko], "ko out of range:")
-
-        # 2.2 should coincide with the BC METypePath field & with u0_path
-        # commented on 13jan2021 because ATPase is in model, so if uncomment, the ATPase effects
-        # will be counted twice for metab model
+            utils.check_value(v=self.vm[c_gid][vm_idxs.ko], lb=1, hb=10)
+        # check params
+        # TODO remove the following lb conditions
+        utils.check_value(v=self.params[c_gid].ina_density)
+        utils.check_value(v=self.params[c_gid].ik_density)
+        utils.check_value(
+            v=self.params[c_gid].bf_vol, leb=0.0, err=MsrKickNeuronException
+        )
+        utils.check_value(
+            v=self.params[c_gid].bf_Fin, leb=0.0, err=MsrKickNeuronException
+        )
+        utils.check_value(
+            v=self.params[c_gid].bf_Fout, leb=0.0, err=MsrKickNeuronException
+        )

@@ -1,4 +1,5 @@
 import json
+import inspect
 import logging
 import pickle
 import re
@@ -40,14 +41,14 @@ def print_once(*args, **kwargs):
         print(*args, *kwargs)
 
 
-def inspect(v, affix=""):
+def describe_obj(v, affix: str = ""):
     """Inspect the structure and statistics of a variable and its contents.
 
     This function provides a detailed view of the variable and its subcomponents, including lists, dictionaries, and NumPy arrays, along with their statistics (mean, min, max).
 
     Args:
-      v (any): The variable to inspect.
-      affix (str): A prefix to add to the printed output for formatting.
+        v: The variable to inspect.
+        affix: A prefix to add to the printed output for formatting.
 
     Example::
 
@@ -73,7 +74,7 @@ def inspect(v, affix=""):
         rank_print(s)
         for idx, i in enumerate(v):
             rank_print(f"{affix}{idx}:")
-            inspect(i, affix + skip)
+            describe_obj(i, affix + skip)
 
     def _dict(v, affix):
         s = f"{affix}dict ({len(v)}): "
@@ -83,7 +84,7 @@ def inspect(v, affix=""):
 
         for k, v in v.items():
             rank_print(f"{affix}{k}:")
-            inspect(v, f"{affix}{skip}")
+            describe_obj(v, f"{affix}{skip}")
 
     def _nparray(v, affix):
         if len(v.shape) == 1:
@@ -95,15 +96,15 @@ def inspect(v, affix=""):
     s.get(type(v), _base)(v, affix)
 
 
-def delete_rows_csr(mat, indices):
+def delete_rows_csr(mat: sparse.csr_matrix, indices: list[int]) -> sparse.csr_matrix:
     """Remove the rows denoted by ``indices`` from the CSR sparse matrix ``mat``.
 
     Args:
-        mat (scipy.sparse.csr_matrix): The CSR sparse matrix.
-        indices (iterable): The indices of rows to be deleted.
+        mat: The CSR sparse matrix.
+        indices: The indices of rows to be deleted.
 
     Returns:
-        scipy.sparse.csr_matrix: The modified CSR matrix with specified rows removed.
+        The modified CSR matrix with specified rows removed.
 
     Raises:
         ValueError: If the input matrix is not in CSR format.
@@ -123,15 +124,15 @@ def delete_rows_csr(mat, indices):
     return mat[mask]
 
 
-def delete_cols_csr(mat, indices):
+def delete_cols_csr(mat: sparse.csr_matrix, indices: list[int]) -> sparse.csr_matrix:
     """Remove the columns denoted by ``indices`` from the CSR sparse matrix ``mat``.
 
     Args:
-        mat (scipy.sparse.csr_matrix): The CSR sparse matrix.
-        indices (iterable): The indices of columns to be deleted.
+        mat: The CSR sparse matrix.
+        indices: The indices of columns to be deleted.
 
     Returns:
-        scipy.sparse.csr_matrix: The modified CSR matrix with specified columns removed.
+        The modified CSR matrix with specified columns removed.
 
     Raises:
         ValueError: If the input matrix is not in CSR format.
@@ -169,20 +170,25 @@ def rank_print(*args, **kwargs):
 
 
 def cache_decorator(
-    field_names, path=None, is_save=None, is_load=None, only_rank0=False
+    field_names,
+    path=None,
+    is_save: bool = None,
+    is_load: bool = None,
+    only_rank0: bool = False,
 ):
     """Caching system for parts of a class.
 
-    This decorator must be applied to a function that adds at least 1 field to a class. The specified field is cached in memory.
+    This decorator must be applied to a function that adds at least 1 field to a class.
+    The specified field is cached in memory.
 
     The function should not return any values at the moment.
 
     Args:
         field_names (str or list of str): The name(s) of the field(s) to be cached.
         path (str or Path, optional): The path to the cache directory. Defaults to None.
-        is_save (bool, optional): If True, data is saved to the cache. Defaults to None.
-        is_load (bool, optional): If True, data is loaded from the cache. Defaults to None.
-        only_rank0 (bool, optional): If True, cache is only used on rank 0. Defaults to False.
+        is_save: If True, data is saved to the cache. Defaults to None.
+        is_load: If True, data is loaded from the cache. Defaults to None.
+        only_rank0: If True, cache is only used on rank 0. Defaults to False.
 
     Returns:
         function: The wrapped method.
@@ -278,7 +284,7 @@ def clear_and_replace_files_decorator(paths):
     calling the decorated function.
 
     Args:
-        paths (str or List[str]): A file path or a list of file paths to be cleared
+        paths (str or list[str]): A file path or a list of file paths to be cleared
             and replaced.
 
     Returns:
@@ -373,13 +379,13 @@ def ppf(n):
     return f"{n:.3}"
 
 
-def merge_dicts(parent, child):
+def merge_dicts(parent: dict, child: dict):
     """Merge dictionaries recursively (in case of nested dicts) giving priority to child over parent
     for ties. Values of matching keys must match or a TypeError is raised.
 
     Args:
-        parent (dict): parent dict
-        child (dict): child dict (priority)
+        parent: parent dict
+        child: child dict (priority)
 
     Returns:
         dict: merged dict following the rules listed before
@@ -392,19 +398,19 @@ def merge_dicts(parent, child):
         {"A":2, "B":{"a":2, "b":2, "c":3}, "C": 2, "D": 3}
     """
 
-    def merge_vals(k, parent, child):
-        """Merging logic
+    def merge_vals(k, parent: dict, child: dict):
+        """Merging logic.
 
         Args:
-            k (key type): the key can be in either parent, child or both
-            parent (dict): parent dict
-            child (dict): child dict (priority)
+            k (key type): the key can be in either parent, child or both.
+            parent: parent dict.
+            child: child dict (priority).
 
         Raises:
-            TypeError: in case the key is present in both parent and child and the type missmatches
+            TypeError: in case the key is present in both parent and child and the type missmatches.
 
         Returns:
-            value type: merged version of the values possibly found in child and/or parent
+            value type: merged version of the values possibly found in child and/or parent.
         """
 
         if k not in parent:
@@ -422,21 +428,33 @@ def merge_dicts(parent, child):
     return {k: merge_vals(k, parent, child) for k in set(parent) | set(child)}
 
 
-def get_dict_from_json(path):
-    """Convenience function to load json files
+def get_dict_from_json(path) -> dict:
+    """Convenience function to load json files.
 
     Args:
-        path (Path or str): path that should be extracted
+        path (Path or str): path that should be extracted.
 
     Returns:
-        dict
+        dict from the json
     """
     logging.info(f"reading: {str(path)}")
     with open(str(path), "r") as json_file:
         return json.load(json_file)
 
 
-def load_jsons(path, replacing_dict=None, parent_path_key=None):
+def load_jsons(path, replacing_dict: dict = None, parent_path_key: str = None):
+    """
+    Recursively loads JSON files starting from the given path and merges them.
+
+    Args:
+        path (str or Path): The path to the JSON file or directory containing JSON files.
+        replacing_dict: A dictionary containing values to replace in the loaded JSON files.
+        parent_path_key: The key in the JSON file containing the parent path to load additional JSON files from.
+
+    Returns:
+        dict: A dictionary containing the merged content of all loaded JSON files.
+    """
+
     if replacing_dict is None:
         replacing_dict = {}
     path = Path(path)
@@ -510,11 +528,13 @@ def stats(v):
 def remove_path(path):
     """Remove a directory at the specified path (rank 0 only).
 
-    Parameters:
+    Args:
         path (str or Path): The path to the directory to be removed.
 
     Note:
-        This function is intended for use on rank 0 in a parallel or distributed computing context. It attempts to remove the specified directory and ignores `FileNotFoundError` if the directory does not exist.
+        This function is intended for use on rank 0 in a parallel or distributed computing context.
+        It attempts to remove the specified directory and ignores `FileNotFoundError`
+        if the directory does not exist.
 
     Example::
 
@@ -535,8 +555,8 @@ def rename_path(path, new_path):
     """
     Rename a file or directory to a new path.
 
-    This function renames a file or directory pointed to by the 'path' argument to the 'new_path' argument. It also logs
-    the renaming process.
+    This function renames a file or directory pointed to by the 'path' argument to
+    the 'new_path' argument. It also logs the renaming process.
 
     Args:
         path (str or Path): The original file or directory path.
@@ -552,15 +572,15 @@ def rename_path(path, new_path):
     comm.Barrier()
 
 
-def get_subs_d(d):
+def get_subs_d(d: dict) -> dict:
     """
     Recursively extracts and filters string key-value pairs from a nested dictionary.
 
     This function traverses the input dictionary recursively, retaining only the key-value pairs
     where both the key and the value are strings. It returns a new dictionary with these filtered pairs.
 
-    Parameters:
-    - d (dict): The input dictionary to process.
+    Args:
+    - d: The input dictionary to process.
 
     Returns:
     dict: A new dictionary containing only string key-value pairs.
@@ -607,11 +627,11 @@ def resolve_replaces(d: dict, base_subs_d: dict = None) -> None:
     placeholders in those values using a combination of the original dictionary and additional base substitution values.
 
     Args:
-      d: The input nested dictionary to process.
-      base_subs_d: Additional base substitution values. Defaults to an empty dictionary.
+        d: The input nested dictionary to process.
+        base_subs_d: Additional base substitution values. Defaults to an empty dictionary.
 
     Returns:
-    None: The function performs in-place substitution on the input dictionary (d).
+        None: The function performs in-place substitution on the input dictionary (d).
     """
     if base_subs_d is None:
         base_subs_d = {}
@@ -640,16 +660,16 @@ def resolve_replaces(d: dict, base_subs_d: dict = None) -> None:
     d = _rep(d, subs_d)
 
 
-def bbox(pts):
+def bbox(pts: np.ndarray):
     """
     Calculate the bounding box of a set of 3D points.
 
     Args:
-      pts (np.ndarray): An array of 3D points with shape (n, 3).
+      pts: An array of 3D points with shape (n, 3).
 
     Returns:
-      np.ndarray: An array containing the minimum and maximum coordinates of the bounding box.
-      The first element is the minimum coordinates, and the second element is the maximum coordinates.
+        np.ndarray: An array containing the minimum and maximum coordinates of the bounding box.
+            The first element is the minimum coordinates, and the second element is the maximum coordinates.
 
     Example::
 
@@ -660,14 +680,14 @@ def bbox(pts):
     return np.array([np.min(pts, axis=0), np.max(pts, axis=0)])
 
 
-def generate_cube_corners(a, b, n):
+def generate_cube_corners(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
     """
     Generate an array of n cube corner points between two given points a and b.
 
     Args:
-      a (array-like): The lower corner of the cube.
-      b (array-like): The upper corner of the cube.
-      n (int): The number of corner points to generate.
+        a: The lower corner of the cube.
+        b: The upper corner of the cube.
+        n: The number of corner points to generate.
 
     Returns:
       np.ndarray: An array of n corner points.
@@ -701,3 +721,70 @@ def strtobool(val):
         return 0
     else:
         raise ValueError("invalid truth value %r" % (val,))
+
+
+def get_var_name(lvl: int = 1, pos: int = 0) -> str:
+    """
+    Get the name of a variable from the caller's scope.
+
+    Args:
+        lvl: The number of levels up in the call stack to look for the variable name (default: 1).
+        pos: The position of the variable in the calling function's argument list (default: 0).
+
+    Returns:
+        The name of the variable.
+
+    """
+    frame = inspect.currentframe()
+    frame = inspect.getouterframes(frame)[lvl + 1]
+    string = inspect.getframeinfo(frame[0]).code_context[0].strip()
+    args = string[string.find("(") + 1 : -1].split(",")
+    return str(args[pos]).strip()
+
+
+def check_value(
+    v: float,
+    lb: float = -float("inf"),
+    hb: float = float("inf"),
+    leb: float = -float("inf"),
+    heb: float = float("inf"),
+    err: Exception = MsrException,
+):
+    """
+    Check if a value is within specified bounds and raise an exception if it's not.
+
+    Args:
+        v: The value to be checked.
+        lb: The lower bound (default: negative infinity).
+        hb: The upper bound (default: positive infinity).
+        leb: The lower or equal bound (default: negative infinity).
+        heb: The higher or equal bound (default: positive infinity).
+        err: The exception class to be raised (default: MsrException).
+
+    Raises:
+        MsrException: If the value is None, not floatable, NaN, or outside the specified bounds.
+
+    """
+
+    def msg():
+        return f"{get_var_name(2, 0)}: {v}"
+
+    if v is None:
+        raise MsrException(msg() + " is None")
+    try:
+        float(v)
+    except:
+        raise MsrException(msg() + " is not floatable")
+    if np.isnan(v):
+        raise MsrException(msg() + " is NaN")
+    if np.isinf(v):
+        raise MsrException(msg() + " is Inf")
+
+    if v < lb:
+        raise err(f"{msg()} < {lb}")
+    if v > hb:
+        raise err(f"{msg()} > {hb}")
+    if v <= leb:
+        raise err(f"{msg()} <= {leb}")
+    if v >= heb:
+        raise err(f"{msg()} >= {heb}")

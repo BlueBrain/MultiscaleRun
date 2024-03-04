@@ -149,16 +149,16 @@ class MsrConnectionManager:
             setattr(self, m, utils.delete_cols_csr(attr, to_be_removed))
 
     @utils.logs_decorator
-    def ndam2steps_sync(self, ndam_m, steps_m, specs, DT):
+    def ndam2steps_sync(self, ndam_m, steps_m, specs: list[str], DT: float):
         """Use neuronal data to correct step concentrations.
 
-        This method employs neuronal data to adjust concentration levels in the StepsModel for specified species and species concentrations. The adjustments take into account factors like segment current and time step (DT).
+        Sync steps concentrations adding the output currents from neurodamus.
 
         Args:
-            ndam_m (NeurodamusModel): The neuronal digital anatomy model.
-            steps_m (StepsModel): The steps model representing the vasculature.
+            ndam_m (MsrNeurodamusManager): neurodamus manager. Source of the data to be synchronized.
+            steps_m (MsrStepsManager): The source manager containing concentration data.
             specs: A list of species and their names.
-            DT: The time step for the simulation.
+            DT: steps dt.
 
         Returns:
             None
@@ -175,20 +175,22 @@ class MsrConnectionManager:
             steps_m.update_concs(species=sp, curr=tet_curr, DT=DT)
 
     @utils.logs_decorator
-    def ndam2metab_sync(self, ndam_m, metab_m):
+    def ndam2metab_sync(self, gids: list[int], ndam_m, metab_m):
         """Use neuronal data to compute current and concentration concentrations for metabolism.
 
-        This method utilizes neuronal data to calculate the current and concentration concentrations for a metabolism model.
+        This method utilizes neurodamus to calculate the current and concentration concentrations for a metabolism model.
 
         Args:
-            ndam_m (NeurodamusModel): The neuronal digital anatomy model.
-            metab_m (MetabolismModel): The metabolism model.
+
+            gids: list of neurons (not kicked, on this rank)
+            ndam_m (MsrNeurodamusManager): neurodamus manager. Source of the data to be synchronized.
+            metab_m (MsrMetabolismManager): metabolism manager to be syncronized.
 
         Returns:
             None
         """
 
-        ans = {}
+        ndam_vars = {}
         d = {
             "area": [i[0] for i in ndam_m.nc_areas],
             "volume": [i[0] for i in ndam_m.nc_vols],
@@ -196,25 +198,32 @@ class MsrConnectionManager:
         for s, t in self.config.metabolism.ndam_input_vars:
             weight = "area" if t == "curr" else "volume"
             var = getattr(getattr(self.config.species, s).neurodamus, t).var
-            ans[(s, t)] = self.nXnsegMatBool.dot(ndam_m.get_var(var=var, weight=weight))
+            ndam_vars[(s, t)] = self.nXnsegMatBool.dot(
+                ndam_m.get_var(var=var, weight=weight)
+            )
 
             l = d.get(weight, None)
-            ans[(s, t)] = np.divide(ans[(s, t)], l)
+            ndam_vars[(s, t)] = np.divide(ndam_vars[(s, t)], l)
 
         gids = ndam_m.gids()
-        ans["valid_gid"] = np.ones(len(gids))
-        metab_m.ndam_vars = ans
+        ndam_vars["valid_gid"] = np.ones(len(gids))
+
+        # necessary for reporting. It will go away in a future MR
+        metab_m.ndam_vars = ndam_vars
+        metab_m.set_ndam_vars(gids=gids, ndam_vars=ndam_vars)
 
     @utils.logs_decorator
-    def steps2metab_sync(self, steps_m, metab_m):
+    def steps2metab_sync(self, gids: list[int], steps_m, metab_m):
         """
         Synchronize concentration data from Steps to Metabolism models for specific species.
 
         This function converts concentration data from a 'steps_m' model to a 'metab_m' model for specified species, taking into account scaling factors.
 
         Args:
-            steps_m (StepsModel): The source model containing concentration data.
-            metab_m (MetabolismModel): The target model where the concentration data will be synchronized.
+
+            gids: list of neurons (not kicked, on this rank)
+            steps_m (MsrStepsManager): The source manager containing concentration data.
+            metab_m (MsrMetabolismManager): metabolism manager to be syncronized.
 
         Returns:
             None
@@ -226,46 +235,28 @@ class MsrConnectionManager:
             getattr(self.config.species, i).steps.name
             for i in self.config.metabolism.steps_input_concs
         ]
-        ans = {}
+        steps_vars = {}
 
         for name in l:
-            ans[name] = steps_m.get_tet_concs(name) * r
-            ans[name] = self.nXtetMat.dot(ans[name])
+            steps_vars[name] = steps_m.get_tet_concs(name) * r
+            steps_vars[name] = self.nXtetMat.dot(steps_vars[name])
 
-        metab_m.steps_vars = ans
-
-    def ndam2bloodflow_sync(self, ndam_m, bf_m):
-        """
-        Synchronize vascular radii data from a ndam model to a bloodflow model.
-
-        This function gathers vascular IDs and radii information from the NDAM (Neuronal Digital Anatomy Model) model and synchronizes it with the bloodflow model. The gathered data is used to set radii in the bloodflow model for corresponding vascular segments.
-
-        Args:
-            ndam_m (NDAMModel): The source model containing vascular radii information.
-            bf_m (BloodflowModel): The target model where the radii data will be synchronized.
-
-        Returns:
-            None
-        """
-
-        vasc_ids, radii = ndam_m.get_vasc_radii()
-        vasc_ids = comm.gather(vasc_ids, root=0)
-        radii = comm.gather(radii, root=0)
-        if rank == 0:
-            vasc_ids = [j for i in vasc_ids for j in i]
-            radii = [j for i in radii for j in i]
-            bf_m.set_radii(vasc_ids=vasc_ids, radii=radii)
+        # necessary for reporting. It will go away in a future MR
+        metab_m.steps_vars = steps_vars
+        metab_m.set_steps_vars(gids=gids, steps_vars=steps_vars)
 
     @utils.logs_decorator
-    def bloodflow2metab_sync(self, bf_m, metab_m):
+    def bloodflow2metab_sync(self, gids: list[int], bf_m, metab_m):
         """
         Synchronize bloodflow parameters including flows and volumes from a bloodflow model to a metabolism model.
 
         This function calculates and synchronizes blood flow and volume data from a bloodflow model to a metabolism model. It performs the necessary transformations and scaling based on the models' data to ensure accurate synchronization.
 
         Args:
-            bf_m (BloodflowModel): The source model containing blood flow and volume data.
-            metab_m (MetabolismModel): The target model where the data will be synchronized.
+
+            gids: list of neurons (not kicked, on this rank)
+            bf_m (MsrBloodflowManager): bloodFlow manager containing bloodflow data.
+            metab_m (MsrMetabolismManager): metabolism manager to be synchronized.
 
         Returns:
             None
@@ -291,18 +282,43 @@ class MsrConnectionManager:
         Fin = self.nXtetMat.dot(Fin)
         vol = self.nXtetMat.dot(vol)
 
-        metab_m.bloodflow_vars = {"Fin": Fin, "vol": vol}
+        bloodflow_vars = {"Fin": Fin, "vol": vol}
 
-    def metab2ndam_sync(self, metab_m, ndam_m, i_metab):
+        # necessary for reporting. It will go away in a future MR
+        metab_m.bloodflow_vars = bloodflow_vars
+        metab_m.set_bloodflow_vars(gids=gids, bloodflow_vars=bloodflow_vars)
+
+    def ndam2bloodflow_sync(self, ndam_m, bf_m):
+        """
+        Synchronize vascular radii data from a ndam model to a bloodflow model.
+
+        This function gathers vascular IDs and radii information from the NDAM (Neuronal Digital Anatomy Model) model and synchronizes it with the bloodflow model. The gathered data is used to set radii in the bloodflow model for corresponding vascular segments.
+
+        Args:
+            ndam_m (MsrNeurodamusManager): neurodamus manager. Source of the radii to be synchronized.
+            bf_m (MsrBloodflowManager): bloodFlow manager containing radii to be corrected.
+
+        Returns:
+            None
+        """
+
+        vasc_ids, radii = ndam_m.get_vasc_radii()
+        vasc_ids = comm.gather(vasc_ids, root=0)
+        radii = comm.gather(radii, root=0)
+        if rank == 0:
+            vasc_ids = [j for i in vasc_ids for j in i]
+            radii = [j for i in radii for j in i]
+            bf_m.set_radii(vasc_ids=vasc_ids, radii=radii)
+
+    def metab2ndam_sync(self, metab_m, ndam_m):
         """
         Synchronize metabolic concentrations from a metabolism model to a NDAM (Neuronal Digital Anatomy Model) for specific variables.
 
-        This function calculates and synchronizes metabolic concentrations, including ATP, ADP, and potassium (K+), from a metabolism model to a NDAM model for specific variables, taking into account weighted means. It constrains the NDAM model with the metabolic output.
+        This function calculates and synchronizes metabolic concentrations, including ATP, ADP, and potassium (K+), from a metabolism model to a NDAM model for specific variables, taking into account weighted means. It corrects ndam with the metabolic output.
 
         Args:
-            metab_m (MetabolismModel): The source model containing metabolic concentration data.
-            ndam_m (NDAMModel): The target model where the data will be synchronized.
-            i_metab: Additional parameter (not described in the function, consider adding a description).
+            metab_m (MsrMetabolismManager): metabolism manager. Source of the data to be synchronized.
+            ndam_m (MsrNeurodamusManager): neurodamus manager. Destination of the data to be synchronized.
 
         Returns:
             None
