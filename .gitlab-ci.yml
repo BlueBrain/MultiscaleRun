@@ -16,13 +16,7 @@ stages:
 
 variables:
   SPACK_PACKAGE: py-multiscale-run
-
-# remove when many dependencies are not rebuilt anymore
-spack_build:
-  extends: .spack_build
-  timeout: 2 hours
-  variables:
-    bb5_duration: "02:00:00"
+  SPACK_PACKAGE_DEPENDENCIES: ^hdf5~cxx
 
 .tox-template:
   tags: [bb5_map]
@@ -114,3 +108,10 @@ init_julia_create_test:
   script:
   - spack ${SPACK_EXTRA_FLAGS} load /${SPACK_INSTALLED_HASH}
   - ${SPACK_SOURCE_DIR}/.ci/test_init_julia_create.sh
+
+publish-docs:
+  tags: []
+  needs: [docs]
+  rules:
+  - if: $CI_COMMIT_TAG
+  image: quay.io/pypa/manylinux2014_x86_64
