@@ -5,6 +5,7 @@ and orchestrate the different models and pass data between
 them to perform the simulation
 """
 
+import functools
 import logging
 
 # Important: do not import msr stuff here as MPI may not close correctly
@@ -13,6 +14,7 @@ import logging
 def _run_once(f):
     """Decorator to ensure a function is called only once."""
 
+    @functools.wraps(f)
     def wrapper(*args, **kwargs):
         if not wrapper.has_run:
             wrapper.has_run = True
@@ -102,7 +104,11 @@ class MsrSimulation:
                     params=self.conf.bloodflow,
                 )
 
-            if self.conf.with_steps:
+            # the communication between bf and ndam is mediated by the steps mesh. We need the
+            # connect calls in this case
+            if self.conf.with_steps or (
+                self.conf.with_bloodflow and self.conf.with_metabolism
+            ):
                 self.prep.autogen_mesh(
                     ndam_m=self.ndam_m,
                     bf_m=self.bf_m if self.conf.with_bloodflow else None,
@@ -121,20 +127,22 @@ class MsrSimulation:
                     gids=self.ndam_m.gids(),
                 )
 
-            # sync for the initial conditions
-            self.conn_m.ndam2metab_sync(
-                gids=self.ndam_m.gids(), ndam_m=self.ndam_m, metab_m=self.metab_m
-            )
-            if self.conf.with_bloodflow:
-                self.conn_m.ndam2bloodflow_sync(ndam_m=self.ndam_m, bf_m=self.bf_m)
-                self.bf_m.update_static_flow()
-                self.conn_m.bloodflow2metab_sync(
-                    gids=self.ndam_m.gids(), bf_m=self.bf_m, metab_m=self.metab_m
+                # sync for the initial conditions
+                self.conn_m.ndam2metab_sync(
+                    gids=self.ndam_m.gids(), ndam_m=self.ndam_m, metab_m=self.metab_m
                 )
-            if self.conf.with_steps:
-                self.conn_m.steps2metab_sync(
-                    gids=self.ndam_m.gids(), steps_m=self.steps_m, metab_m=self.metab_m
-                )
+                if self.conf.with_bloodflow:
+                    self.conn_m.ndam2bloodflow_sync(ndam_m=self.ndam_m, bf_m=self.bf_m)
+                    self.bf_m.update_static_flow()
+                    self.conn_m.bloodflow2metab_sync(
+                        gids=self.ndam_m.gids(), bf_m=self.bf_m, metab_m=self.metab_m
+                    )
+                if self.conf.with_steps:
+                    self.conn_m.steps2metab_sync(
+                        gids=self.ndam_m.gids(),
+                        steps_m=self.steps_m,
+                        metab_m=self.metab_m,
+                    )
 
     @_run_once
     def compute(self):
@@ -237,7 +245,7 @@ class MsrSimulation:
                                     lgids,
                                 )
 
-                        if self.conf.with_bloodflow and self.conf.with_steps:
+                        if self.conf.with_bloodflow:
                             with timeit(name="bloodflow_2_metabolism"):
                                 self.conn_m.bloodflow2metab_sync(
                                     gids=self.ndam_m.gids(),

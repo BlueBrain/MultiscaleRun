@@ -27,11 +27,11 @@ class MsrMetabParameters:
 
     l = ["ina_density", "ik_density", "mito_scale", "bf_Fin", "bf_Fout", "bf_vol"]
 
-    def __init__(self, metab_type):
+    def __init__(self, metab_type: str):
         """Initialize MsrMetabParameters with the given metabolism type.
 
         Args:
-            metab_type (str): The type of metabolism, e.g., "main" or another value.
+            metab_type: The type of metabolism, e.g., "main" or another value.
         """
         self.metab_type = metab_type
         for i in self.l:
@@ -42,9 +42,6 @@ class MsrMetabParameters:
 
         Yields:
             The values of the parameters in the defined order.
-
-        Returns:
-            None
         """
         for i in self.l:
             yield getattr(self, i)
@@ -119,12 +116,10 @@ class MsrMetabolismManager:
     def _advance_gid(self, c_gid: int):
         """Advance metabolism simulation for a specific GID (Global ID).
 
-        This method advances the metabolism simulation for a specific GID using the provided parameters.
+        This method advances the metabolism simulation for a specific GID.
 
         Args:
             c_gid: The Global ID of the neuron.
-            i_metab: The current metabolism iteration.
-            param: An instance of MsrMetabParameters containing metabolism parameters.
 
         Returns:
             None
@@ -202,8 +197,9 @@ class MsrMetabolismManager:
             c_gid: The Global ID of the neuron.
 
         Returns:
-            glycogen: The calculated glycogen value.
-            mito_volume_fraction: The calculated mitochondrial volume fraction.
+            a tuple (glycogen, mito_volume_fraction) where glycogen is
+            the calculated glycogen value, and mito_volume_fraction is
+            the calculated mitochondrial volume fraction.
         """
 
         # idx: layers are 1-based while python vectors are 0-based
@@ -350,7 +346,6 @@ class MsrMetabolismManager:
         It also raises exceptions if any values are outside the specified bounds.
 
         Args:
-            self: The instance of the class containing the method.
             c_gid: The cell group ID for which inputs and parameters are checked.
 
         Returns:

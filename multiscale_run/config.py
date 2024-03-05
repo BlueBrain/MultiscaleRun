@@ -61,7 +61,8 @@ class MsrConfig(dict):
         """
         Provide attribute access to configuration values.
 
-        This method allows you to access configuration values as attributes of the 'MsrConfig' object. If a configuration key exists, you can retrieve its value using attribute-style access.
+        This method allows you to access configuration values as attributes of the 'MsrConfig' object.
+        If a configuration key exists, you can retrieve its value using attribute-style access.
 
         Args:
             key (str): The name of the configuration key to access.
@@ -91,7 +92,8 @@ class MsrConfig(dict):
         """
         Set configuration values using attributes.
 
-        This method allows you to set configuration values using attributes of the 'MsrConfig' object. When you assign a value to an attribute, it is stored as a configuration key-value pair.
+        This method allows you to set configuration values using attributes of the 'MsrConfig' object.
+        When you assign a value to an attribute, it is stored as a configuration key-value pair.
 
         Args:
             key (str): The name of the configuration key to set.
@@ -127,7 +129,8 @@ class MsrConfig(dict):
         """
         Generate values from the configuration.
 
-        This method iterates over the configuration and generates the values associated with each key. It can be used when you only need to access the values in the configuration.
+        This method iterates over the configuration and generates the values associated with each key.
+        It can be used when you only need to access the values in the configuration.
 
         Yields:
             Any: The value associated with a specific configuration key.
@@ -145,7 +148,9 @@ class MsrConfig(dict):
         """
         Add a dictionary to the configuration without overriding existing entries.
 
-        This method allows you to merge an external dictionary into the configuration. It adds new key-value pairs from the provided dictionary to the configuration, but it does not override existing keys.
+        This method allows you to merge an external dictionary into the configuration.
+        It adds new key-value pairs from the provided dictionary to the configuration,
+        but it does not override existing keys.
 
         Args:
             d (dict): A dictionary to be added to the configuration.
@@ -200,7 +205,8 @@ class MsrConfig(dict):
         """
         Set debug-specific configuration overrides.
 
-        This method sets debug-specific configuration overrides by modifying specific configuration entries. It is intended for debugging and development purposes.
+        This method sets debug-specific configuration overrides by modifying specific configuration entries.
+        It is intended for debugging and development purposes.
 
         Example::
 
@@ -231,7 +237,8 @@ class MsrConfig(dict):
         """
         Compute multiscale run n dts based on the active steps, metabolism, and bloodflow ndts.
 
-        This method calculates the number of neurodamus dts required to synchronize simulations based on active simulation steps (if enabled), metabolism, and bloodflow.
+        This method calculates the number of neurodamus dts required to synchronize simulations based
+        on active simulation steps (if enabled), metabolism, and bloodflow.
 
         Note:
             - The 'msr_ndts' attribute is updated with the calculated value.
@@ -296,7 +303,8 @@ class MsrConfig(dict):
         """
         Return a DataFrame of DTS (Delta Time Step) information.
 
-        This method generates a DataFrame with information about delta time steps (DTS) for different simulation components, such as neurodamus, metabolism, bloodflow, and more.
+        This method generates a DataFrame with information about delta time steps (DTS) for different
+        simulation components, such as neurodamus, metabolism, bloodflow, and more.
 
         Returns:
             str: A string containing the DataFrame with DTS information.

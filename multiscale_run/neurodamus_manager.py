@@ -22,9 +22,6 @@ class MsrNeurodamusManager:
 
         Args:
             config: The configuration for the neurodamus manager.
-
-        Returns:
-            None
         """
         logging.info("instantiate ndam")
         self.ndamus = neurodamus.Neurodamus(
@@ -112,21 +109,19 @@ class MsrNeurodamusManager:
         )
 
     @staticmethod
-    def _gen_secs(nc, filter=[]):
+    def _gen_secs(nc, filter=None):
         """Generator of filtered sections for a neuron.
 
         This method generates filtered sections for a neuron based on the provided filter.
 
         Args:
             nc: A neuron to generate sections from.
-            filter: A list of attributes to filter sections by.
+            filter: An optional list of attributes to filter sections by.
 
         Yields:
             Filtered sections for the neuron.
-
-        Returns:
-            None
         """
+        filter = filter if filter is not None else []
         for sec in nc.CellRef.all:
             if not all(hasattr(sec, i) for i in filter):
                 continue
@@ -145,9 +140,6 @@ class MsrNeurodamusManager:
 
         Yields:
             Segments in the neuron section.
-
-        Returns:
-            None
         """
         for seg in sec:
             yield seg
@@ -165,8 +157,13 @@ class MsrNeurodamusManager:
         """
         v = [
             [
-                sum([getattr(seg, f)() for seg in self._gen_segs(sec)])
-                for sec in self._gen_secs(nc)
+                sum(
+                    [
+                        getattr(seg, f)()
+                        for seg in MsrNeurodamusManager._gen_segs(sec=sec)
+                    ]
+                )
+                for sec in MsrNeurodamusManager._gen_secs(nc=nc)
             ]
             for nc in self.ncs
         ]
@@ -232,7 +229,7 @@ class MsrNeurodamusManager:
         self.seg_points = [
             get_seg_extremes(sec, nc.local_to_global_coord_mapping)
             for nc in self.ncs
-            for sec in self._gen_secs(nc)
+            for sec in MsrNeurodamusManager._gen_secs(nc=nc)
         ]
         return [i * scale for i in self.seg_points]
 
@@ -297,7 +294,7 @@ class MsrNeurodamusManager:
         def gen_data():
             itot = 0
             for inc, nc in enumerate(self.ncs):
-                for isec, _ in enumerate(self._gen_secs(nc)):
+                for isec, _ in enumerate(MsrNeurodamusManager._gen_secs(nc=nc)):
                     itot += 1
                     yield self.nc_vols[inc][1][isec] / self.nc_vols[inc][
                         0
@@ -322,7 +319,8 @@ class MsrNeurodamusManager:
     def update(self, conn_m):
         """Update removing GIDs and connection matrices.
 
-        This method updates the removal of GIDs and the corresponding connection matrices. It is essential to pass the connection manager to update the connection matrices.
+        This method updates the removal of GIDs and the corresponding connection matrices.
+        It is essential to pass the connection manager to update the connection matrices.
 
         Args:
             conn_m: The connection manager to update connection matrices.
@@ -334,8 +332,8 @@ class MsrNeurodamusManager:
         def gen_to_be_removed_segs():
             i = 0
             for nc in self.ncs:
-                for sec in self._gen_secs(nc):
-                    for seg in self._gen_segs(sec):
+                for sec in MsrNeurodamusManager._gen_secs(nc=nc):
+                    for seg in MsrNeurodamusManager._gen_segs(sec=sec):
                         i += 1
                         if int(nc.CCell.gid) in self.removed_gids.keys():
                             yield i - 1
@@ -426,7 +424,7 @@ class MsrNeurodamusManager:
             np.array([i for idx, i in enumerate(attr) if idx not in to_be_removed]),
         )
 
-    def get_var(self, var, weight, filter=[]):
+    def get_var(self, var, weight, filter=None):
         """Get variable values per segment weighted by a specific factor (e.g., area or volume).
 
         This method retrieves variable values per segment, weighted by a specific factor (e.g., area or volume).
@@ -434,7 +432,7 @@ class MsrNeurodamusManager:
         Args:
             var: The variable to retrieve.
             weight: The factor for weighting (e.g., "area" or "volume").
-            filter: A list of attributes to filter segments by.
+            filter: An optional list of attributes to filter segments by.
 
         Returns:
             np.ndarray: An array containing the variable values per segment weighted by the specified factor.
@@ -451,14 +449,14 @@ class MsrNeurodamusManager:
             [
                 f(seg)
                 for nc in self.ncs
-                for sec in self._gen_secs(nc, filter=filter)
-                for seg in self._gen_segs(sec)
+                for sec in MsrNeurodamusManager._gen_secs(nc=nc, filter=filter)
+                for seg in MsrNeurodamusManager._gen_segs(sec=sec)
             ]
         )
 
         return ans
 
-    def set_var(self, var, val, filter=[]):
+    def set_var(self, var, val, filter=None):
         """Set a variable to a specific value for all segments.
 
         This method sets a variable to a specific value for all segments based on the provided filter.
@@ -466,14 +464,14 @@ class MsrNeurodamusManager:
         Args:
             var: The variable to set.
             val: The value to set the variable to.
-            filter: A list of attributes to filter segments by.
+            filter: An optional list of attributes to filter segments by.
 
         Returns:
             None
         """
         for inc, nc in enumerate(self.ncs):
-            for sec in self._gen_secs(nc, filter=filter):
-                for seg in self._gen_segs(sec):
+            for sec in MsrNeurodamusManager._gen_secs(nc=nc, filter=filter):
+                for seg in MsrNeurodamusManager._gen_segs(sec=sec):
                     setattr(seg, var, val[inc])
 
     def get_vasculature_path(self):

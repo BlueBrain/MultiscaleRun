@@ -435,7 +435,10 @@ class MsrStepsManager:
         """
         Update concentrations in a STEPS model based on membrane currents.
 
-        This function updates concentrations of a specified species in the model using the provided membrane currents. It calculates the required change in concentration based on the input currents and time step and then adds this change to the existing concentrations. The function also ensures that concentrations remain non-negative and updates the concentrations for a specific set of tetrahedra.
+        This function updates concentrations of a specified species in the model using the provided membrane currents.
+        It calculates the required change in concentration based on the input currents and time step and then adds this
+        change to the existing concentrations. The function also ensures that concentrations remain non-negative and
+        updates the concentrations for a specific set of tetrahedra.
 
         Parameters:
             species_name (str): The name of the species to be updated.

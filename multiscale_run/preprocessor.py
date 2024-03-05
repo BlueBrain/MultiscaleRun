@@ -26,7 +26,11 @@ class MsrPreprocessor:
     """
     Preprocess manager for mesh generation in the Multi-Step Simulation Platform (MSP).
 
-    The MsrPreprocessor class is responsible for various preprocessing tasks related to mesh generation and node set configuration for simulations in the Multi-Step Simulation Platform (MSP). It provides methods for automatically generating node sets, extracting information from a circuit configuration, and generating and refining mesh files for simulations.
+    The MsrPreprocessor class is responsible for various preprocessing tasks related
+    to mesh generation and node set configuration for simulations in the Multi-Step
+    Simulation Platform (MSP). It provides methods for automatically generating node
+    sets, extracting information from a circuit configuration, and generating and
+    refining mesh files for simulations.
 
     Attributes:
         config: A configuration object that holds various settings and file paths for preprocessing tasks.
@@ -39,11 +43,12 @@ class MsrPreprocessor:
     def __init__(self, config):
         self.config = config
 
-    def _check_filename_existance(self, path):
+    def _check_filename_existence(self, path):
         """
         Check the existence of a file and determine whether to auto-generate it.
 
-        This method checks whether a file at the specified path exists and returns the path for auto-generation if the file is missing. It also logs whether the file exists or not.
+        This method checks whether a file at the specified path exists and returns the path for
+        auto-generation if the file is missing. It also logs whether the file exists or not.
 
         Args:
             path (str): The path to the file.
@@ -52,7 +57,7 @@ class MsrPreprocessor:
             str: The path for auto-generation if the file is missing, or None if the file exists.
 
         Example:
-            >>> result = _check_filename_existance('/path/to/file.json')
+            >>> result = _check_filename_existence('/path/to/file.json')
         """
         if Path(path).exists():
             logging.info(f"Use existing {path}")
@@ -70,12 +75,6 @@ class MsrPreprocessor:
         This method generates node sets based on selected neurons and astrocytes and saves the configuration as a JSON file.
         Node sets are defined using a template, and the selected neuron and astrocyte IDs are included in the configuration.
 
-        Parameters:
-            None
-
-        Returns:
-            None
-
         Note:
             - Node sets are generated according to the provided template.
             - The selected neuron and astrocyte IDs are included in the node sets configuration.
@@ -84,7 +83,7 @@ class MsrPreprocessor:
         Example:
             >>> gen_node_sets()
         """
-        output_filename = self._check_filename_existance(self.config.node_sets_path)
+        output_filename = self._check_filename_existence(self.config.node_sets_path)
         if output_filename is None:
             return
 
@@ -111,9 +110,6 @@ class MsrPreprocessor:
         This method is a helper function for generating node sets and is used to extract relevant information from the
         circuit configuration (ngv_config.json). It retrieves data about neurons and astrocytes based on the provided
         neuron population name and optional filtering criteria.
-
-        Parameters:
-            None
 
         Sets Variables:
             - neuro_df (pandas DataFrame): DataFrame with information about selected neurons.
@@ -183,7 +179,7 @@ class MsrPreprocessor:
         This method creates an STL file containing a 3D surface mesh and a GEO file that references the STL file for mesh
         generation.
 
-        Parameters:
+        Args:
             points (np.array): NumPy array of shape (N, 3) containing 3D coordinates of points.
 
         Returns:
@@ -327,12 +323,6 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         7: Delaunay-based frontal algorithm with coarsening.
         8: Red-green refinement (H-adaptivity) for adaptive meshing.
 
-        Parameters:
-            None
-
-        Returns:
-            None
-
         Note:
             The method initializes Gmsh, loads the mesh generation script, sets the generative algorithm, generates the
             initial mesh, refines the mesh for the specified number of steps, performs coherence, removes duplicate facets, and
@@ -381,7 +371,7 @@ Physical Volume("{phys_vol}", 1) = {{1}};
     def _explode_pts(pts, explode_factor):
         return explode_factor * pts + (1.0 - explode_factor) * np.mean(pts, axis=0)
 
-    def _gen_pts(self, ndam_m=None, bf_m=None, pts=[]):
+    def _gen_pts(self, ndam_m=None, bf_m=None, pts=None):
         """
         Generate points for mesh generation.
 
@@ -389,7 +379,7 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         and bloodflow data, and optionally additional custom points provided as input. The points can be scaled and centered
         based on configuration parameters.
 
-        Parameters:
+        Args:
             ndam_m (object): An object that provides neurodamus data, or None if not available.
             bf_m (object): An object that provides bloodflow data, or None if not available.
             pts (list or array): Additional custom points to include in the mesh, if provided.
@@ -405,6 +395,7 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         Example:
             >>> pts = _gen_pts(ndam_m=ndam_m, bf_m=bf_m, pts=custom_pts)
         """
+        pts = pts if pts is not None else []
         scale = 1
         bf_pts = bf_m.get_seg_points(scale=scale) if bf_m else []
         if ndam_m:
@@ -425,17 +416,16 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         return pts
 
     @utils.logs_decorator
-    def autogen_mesh(self, ndam_m=None, bf_m=None, pts=[]):
+    def autogen_mesh(self, ndam_m=None, bf_m=None, pts=None):
         """Generate a STEPS mesh when it is missing based on neuron and vasculature points.
 
         This method creates a STEPS mesh file if it doesn't already exist. It uses neuron and vasculature points
         to generate the mesh. The scale parameter is set to 1 by default, as the code already accounts for rescaling.
 
-        Parameters:
-            None
-
-        Returns:
-            None
+        Args:
+            ndam_m (object): An object that provides neurodamus data, or None if not available.
+            bf_m (object): An object that provides bloodflow data, or None if not available.
+            pts (list or array): Additional custom points to include in the mesh, if provided.
 
         Note:
             The method utilizes the `neurodamus_manager` and `bloodflow_manager` to obtain neuron and vasculature points.
@@ -445,7 +435,7 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         Example:
             >>> gen_mesh()
         """
-
+        pts = pts if pts is not None else []
         mesh_path = Path(self.config.mesh_path)
         mesh_path.parent.mkdir(parents=True, exist_ok=True)
         if mesh_path.exists():

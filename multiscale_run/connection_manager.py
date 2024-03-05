@@ -1,5 +1,4 @@
 import numpy as np
-from scipy import sparse
 
 import neurodamus
 import steps
@@ -25,10 +24,7 @@ class MsrConnectionManager:
         """Initialize the MsrConnectionManager with a given configuration.
 
         Args:
-            config (MrConfig): The multiscale run configuration.
-
-        Returns:
-            None
+            config (MsrConfig): The multiscale run configuration.
         """
         self.config = config
 
@@ -250,7 +246,8 @@ class MsrConnectionManager:
         """
         Synchronize bloodflow parameters including flows and volumes from a bloodflow model to a metabolism model.
 
-        This function calculates and synchronizes blood flow and volume data from a bloodflow model to a metabolism model. It performs the necessary transformations and scaling based on the models' data to ensure accurate synchronization.
+        This function calculates and synchronizes blood flow and volume data from a bloodflow model
+        to a metabolism model. It performs the necessary transformations and scaling based on the models' data to ensure accurate synchronization.
 
         Args:
 
@@ -292,7 +289,8 @@ class MsrConnectionManager:
         """
         Synchronize vascular radii data from a ndam model to a bloodflow model.
 
-        This function gathers vascular IDs and radii information from the NDAM (Neuronal Digital Anatomy Model) model and synchronizes it with the bloodflow model. The gathered data is used to set radii in the bloodflow model for corresponding vascular segments.
+        This function gathers vascular IDs and radii information from the NDAM (Neuronal Digital Anatomy Model)
+        model and synchronizes it with the bloodflow model. The gathered data is used to set radii in the bloodflow model for corresponding vascular segments.
 
         Args:
             ndam_m (MsrNeurodamusManager): neurodamus manager. Source of the radii to be synchronized.
@@ -314,7 +312,8 @@ class MsrConnectionManager:
         """
         Synchronize metabolic concentrations from a metabolism model to a NDAM (Neuronal Digital Anatomy Model) for specific variables.
 
-        This function calculates and synchronizes metabolic concentrations, including ATP, ADP, and potassium (K+), from a metabolism model to a NDAM model for specific variables, taking into account weighted means. It corrects ndam with the metabolic output.
+        This function calculates and synchronizes metabolic concentrations, including ATP, ADP, and potassium (K+),
+        from a metabolism model to a NDAM model for specific variables, taking into account weighted means. It corrects ndam with the metabolic output.
 
         Args:
             metab_m (MsrMetabolismManager): metabolism manager. Source of the data to be synchronized.

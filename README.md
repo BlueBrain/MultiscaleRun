@@ -237,10 +237,13 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 
 ## Upcoming release
 
+## 0.6 - 2024-03-04
+
 * virtualenv command:
   * Improvement: the command now installs spack pkg if necessary. There is no need to run spack commands manually anymore. [!104]
   * Fix issue when multiscale-run was loaded from BB5 module `py-multiscale-run`. [BBPP40-430]
 * edit-mod-file command: load intel compilers module if required (!104)
+* improved the documentation of the Python API
 
 ## 0.5.1 - 2024-02-07
 

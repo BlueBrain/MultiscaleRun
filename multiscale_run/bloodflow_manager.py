@@ -120,7 +120,8 @@ class MsrBloodflowManager:
         """
         Get bloodflow input nodes (entry nodes).
 
-        This method determines the bloodflow input nodes in the vasculature graph. It identifies these nodes based on criteria defined by the 'params' provided when initializing the MsrBloodflowManager.
+        This method determines the bloodflow input nodes in the vasculature graph. It identifies these
+        nodes based on criteria defined by the 'params' provided when initializing the MsrBloodflowManager.
 
         Returns:
             list: A list of bloodflow input nodes as node IDs.
@@ -161,13 +162,8 @@ class MsrBloodflowManager:
         """
         Calculate boundary flows for entry nodes.
 
-        This method calculates the boundary flows for entry nodes based on the specified input flow rate and entry nodes. The calculated boundary flows are stored in the 'boundary_flows' attribute of the MsrBloodflowManager.
-
-        Parameters:
-            None
-
-        Returns:
-            None
+        This method calculates the boundary flows for entry nodes based on the specified input flow
+        rate and entry nodes. The calculated boundary flows are stored in the 'boundary_flows' attribute of the MsrBloodflowManager.
 
         Note:
             - This method requires that the vasculature graph and entry nodes have been initialized.
@@ -187,16 +183,12 @@ class MsrBloodflowManager:
         """
         Update flow and volume for quasi-static computation.
 
-        This method updates the flow and volume properties of the vasculature graph based on the provided boundary flows, blood viscosity, and base pressure. It is used for quasi-static blood flow computations.
-
-        Parameters:
-            None
-
-        Returns:
-            None
+        This method updates the flow and volume properties of the vasculature graph based on the provided
+        boundary flows, blood viscosity, and base pressure. It is used for quasi-static blood flow computations.
 
         Note:
-            - The method takes boundary flows, blood viscosity, and base pressure into account to compute updated flow and volume properties for the vasculature.
+            - The method takes boundary flows, blood viscosity, and base pressure into account to compute
+              updated flow and volume properties for the vasculature.
             - It is typically used in the context of multiscale simulations involving blood flow.
         """
 
@@ -212,9 +204,10 @@ class MsrBloodflowManager:
         """
         Set radii for vasculature sections.
 
-        This method allows you to set radii for specific vasculature sections identified by their indices. It takes care of distributing the radii evenly across the sections to ensure that the total volume is maintained.
+        This method allows you to set radii for specific vasculature sections identified by their indices.
+        It takes care of distributing the radii evenly across the sections to ensure that the total volume is maintained.
 
-        Parameters:
+        Args:
             vasc_ids (List[int]): A list of vasculature section indices to set the radii for.
             radii (List[float]): A list of radii corresponding to the specified vasculature sections.
 

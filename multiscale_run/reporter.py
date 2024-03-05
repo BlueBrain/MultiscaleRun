@@ -15,7 +15,7 @@ class MsrReporterException(Exception):
 class MsrReporter:
     """A class to handle the reporting of multiscale simulations.
 
-    Attributes:
+    Args:
         config (config.MsrConfig): Configuration object containing simulation parameters.
         t_unit (str): The time units for the simulation.
         d_units (dict): Dictionary to store data units for each group.
@@ -44,7 +44,7 @@ class MsrReporter:
         """
         Initializes offsets for data recording based on global identifiers.
 
-        Parameters:
+        Args:
             gids (list): List of global identifiers for the nodes.
         """
         self.gids = gids
@@ -61,7 +61,7 @@ class MsrReporter:
         """
         Registers a group with its columns and units for data reporting.
 
-        Parameters:
+        Args:
             group (str): The name of the group.
             cols (dict): A dictionary of columns and their corresponding data.
             units (list): A list of units corresponding to each column in cols.
@@ -91,7 +91,7 @@ class MsrReporter:
         """
         Sets data for a specific group based on the provided global identifiers (gids).
 
-        Parameters:
+        Args:
             group (str): The name of the group.
             cols (dict): A dictionary of columns and their corresponding data.
             units (list): A list of units corresponding to each column in cols.
@@ -104,12 +104,12 @@ class MsrReporter:
             self.buffers[group][col][rows] = v
 
     @utils.logs_decorator
-    def flush_buffer(self, idt):
+    def flush_buffer(self, idt: int):
         """
         Flushes the buffer data to disk. This method writes the data stored in buffers to an HDF5 file.
 
-        Parameters:
-            idt (int): The index of the timestep at which data is being flushed.
+        Args:
+            idt: The index of the timestep at which data is being flushed.
         """
         for group, d in self.buffers.items():
             for col, v in d.items():
@@ -133,13 +133,13 @@ class MsrReporter:
         """
         return f"/report/{self.config.preprocessor.node_sets.neuron_population_name}"
 
-    def file_path(self, group, name):
+    def file_path(self, group: str, name: str):
         """
         Generates the file path for storing data of a specific group and data name.
 
-        Parameters:
-            group (str): The name of the group.
-            name (str): The name of the data being stored.
+        Args:
+            group: The name of the group.
+            name: The name of the data being stored.
 
         Returns:
             Path: A Path object representing the file path.

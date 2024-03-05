@@ -1,6 +1,8 @@
+import functools
 import json
 import inspect
 import logging
+import os
 import pickle
 import re
 import shutil
@@ -20,8 +22,6 @@ rank, size = comm.Get_rank(), comm.Get_size()
 
 class MsrException(Exception):
     """Custom exception class"""
-
-    pass
 
 
 def timesteps(end: float, step: float):
@@ -44,7 +44,8 @@ def print_once(*args, **kwargs):
 def describe_obj(v, affix: str = ""):
     """Inspect the structure and statistics of a variable and its contents.
 
-    This function provides a detailed view of the variable and its subcomponents, including lists, dictionaries, and NumPy arrays, along with their statistics (mean, min, max).
+    This function provides a detailed view of the variable and its subcomponents, including lists,
+    dictionaries, and NumPy arrays, along with their statistics (mean, min, max).
 
     Args:
         v: The variable to inspect.
@@ -209,6 +210,7 @@ def cache_decorator(
     file_names = field_names if only_rank0 else [f"{i}_rank{rank}" for i in field_names]
 
     def decorator_add_field_method(method):
+        @functools.wraps(method)
         def wrapper(self, *args, path=path, is_save=is_save, is_load=is_load, **kwargs):
             if hasattr(self, "config"):
                 path = self.config.cache_path
@@ -321,6 +323,7 @@ def clear_and_replace_files_decorator(paths):
             Callable: The decorated function.
         """
 
+        @functools.wraps(method)
         def wrapper(*args, **kwargs):
             for path in paths:
                 remove_and_replace_path(path, True)
@@ -335,16 +338,16 @@ def clear_and_replace_files_decorator(paths):
     return decor
 
 
-def logs_decorator(foo):
+def logs_decorator(wrapped):
     """Decorator for logging function execution details.
 
     This decorator logs the start and end of a function's execution, its memory usage, and elapsed time.
 
     Args:
-        foo (function): The function to be wrapped by the decorator.
+        wrapped (callable): The function to be wrapped by the decorator.
 
     Returns:
-        function: The wrapped function.
+        callable: The wrapped function.
 
     Example::
 
@@ -354,11 +357,12 @@ def logs_decorator(foo):
             return result
     """
 
+    @functools.wraps(wrapped)
     def logs(*args, **kwargs):
-        function_name = foo.__name__
+        function_name = wrapped.__name__
         logging.info(f"   {function_name}")
         start = time.perf_counter()
-        res = foo(*args, **kwargs)
+        res = wrapped(*args, **kwargs)
         mem = psutil.Process().memory_info().rss / 1024**2
         stop = time.perf_counter()
         logging.info(f"   /{function_name}: mem: {mem}, time: {stop - start}")
@@ -545,7 +549,7 @@ def remove_path(path):
         try:
             shutil.rmtree(path)
         except NotADirectoryError:
-            shutil.os.remove(path)
+            os.remove(path)
         except FileNotFoundError:
             pass
     comm.Barrier()
