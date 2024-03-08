@@ -5,13 +5,9 @@ from scipy import sparse
 
 import neurodamus
 import steps
-from mpi4py import MPI as MPI4PY
 from neurodamus.connection_manager import SynapseRuleManager
 
 from . import utils
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 
 class MsrNeurodamusManager:
@@ -38,7 +34,7 @@ class MsrNeurodamusManager:
         self.set_managers()
         self.ncs = np.array([nc for nc in self.neuron_manager.cells])
         # useful for reporting
-        self.num_neurons_per_rank = comm.gather(len(self.ncs), root=0)
+        self.num_neurons_per_rank = utils.comm().gather(len(self.ncs), root=0)
         self.init_ncs_len = len(self.ncs)
         self.acs = np.array([nc for nc in self.astrocyte_manager.cells])
         self.nc_vols = self._cumulate_nc_sec_quantity("volume")
@@ -367,10 +363,10 @@ class MsrNeurodamusManager:
         If all neurons were removed, it aborts the simulation.
 
         """
-        removed_gids = comm.gather(self.removed_gids, root=0)
+        removed_gids = utils.comm().gather(self.removed_gids, root=0)
         num_neurons = self.num_neurons_per_rank
 
-        if rank == 0:
+        if utils.rank0():
             working_gids = [
                 total - len(broken) for broken, total in zip(removed_gids, num_neurons)
             ]
@@ -400,7 +396,7 @@ class MsrNeurodamusManager:
                     "All the neurons were removed! There is probably something fishy going on here",
                     flush=True,
                 )
-                comm.Abort(1)
+                utils.comm().Abort(1)
 
     def _update_attr(self, v, to_be_removed):
         """Update a class attribute based on the list of indices to be removed.

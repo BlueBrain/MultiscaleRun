@@ -454,7 +454,10 @@ def _check_local_neuron_mechanisms():
         entry.stat()[stat.ST_MTIME] for entry in os.scandir(mod_files)
     )
 
-    nrn_mechanisms = Path(platform.machine()) / "libnrnmech.so"
+    for ext in [".so", ".dll", ".dylib"]:
+        nrn_mechanisms = Path(platform.machine()) / ("libnrnmech" + ext)
+        if nrn_mechanisms.exists():
+            break
     if (
         not nrn_mechanisms.exists()
         or nrn_mechanisms.stat()[stat.ST_MTIME] < mod_files_mtime

@@ -6,11 +6,7 @@ from neuron import h
 
 h.nrnmpi_init()
 
-from mpi4py import MPI as MPI4PY
 from multiscale_run import config, preprocessor, steps_manager, utils
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 
 def get_mesh_path():
@@ -50,7 +46,7 @@ def test_steps_connections_mats():
     pts = gen_segments_in_bbox(steps_m.msh)
     mat, st = steps_m.get_tetXbfSegMat(pts)
 
-    if rank == 0:
+    if utils.rank0():
         np.testing.assert_allclose(
             mat.transpose().dot(np.ones(mat.shape[0])), np.ones(mat.shape[1])
         )

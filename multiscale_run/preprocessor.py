@@ -9,12 +9,6 @@ h.nrnmpi_init()
 
 import gmsh
 
-from mpi4py import MPI as MPI4PY
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
-
-
 import numpy as np
 
 from bluepysnap import Circuit
@@ -400,11 +394,11 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         bf_pts = bf_m.get_seg_points(scale=scale) if bf_m else []
         if ndam_m:
             ndam_pts = ndam_m.get_seg_points(scale=scale)
-            ndam_pts = comm.gather(ndam_pts, root=0)
+            ndam_pts = utils.comm().gather(ndam_pts, root=0)
         else:
             ndam_pts = []
 
-        if rank == 0:
+        if utils.rank0():
             ndam_pts = np.array([l for i in ndam_pts for j in i for l in j])
 
             pts = np.vstack([i for i in [pts, bf_pts, ndam_pts] if len(i)])
@@ -443,7 +437,7 @@ Physical Volume("{phys_vol}", 1) = {{1}};
             return
 
         pts = self._gen_pts(ndam_m=ndam_m, bf_m=bf_m, pts=pts)
-        if rank == 0:
+        if utils.rank0():
             self._gen_bbox_msh(pts)
             # self._gen_stl_and_geo(pts)
             # self._gen_msh_from_geo()

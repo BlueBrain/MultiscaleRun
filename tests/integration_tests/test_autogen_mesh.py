@@ -8,8 +8,6 @@ from neuron import h
 h.nrnmpi_init()
 
 
-from mpi4py import MPI as MPI4PY
-
 # steps_manager should go before preprocessor until https://github.com/CNS-OIST/HBP_STEPS/issues/1166 is solved
 from multiscale_run import (
     utils,
@@ -20,9 +18,6 @@ from multiscale_run import (
     preprocessor,
 )
 
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
-
 
 def base_path():
     return Path(__file__).resolve().parent
@@ -32,13 +27,13 @@ def generate_random_points_in_cube(a, b, n):
     """
     Generate n random points within a cube defined by two given points a and b.
 
-    Parameters:
-    a (array-like): The lower corner of the cube.
-    b (array-like): The upper corner of the cube.
-    n (int): The number of random points to generate.
+    Args:
+      a (array-like): The lower corner of the cube.
+      b (array-like): The upper corner of the cube.
+      n (int): The number of random points to generate.
 
     Returns:
-    np.ndarray: An array of n random points within the cube.
+      np.ndarray: An array of n random points within the cube.
 
     Example:
     generate_random_points_in_cube([1, 1, 1], [2, 3, 3], 10) returns an array of 10 random points within the specified cube.
@@ -54,9 +49,9 @@ def test_autogen_mesh(f, n):
     """
     Test the autogeneration of a mesh using the provided function f.
 
-    Parameters:
-    f (function): A function to generate points within a cube.
-    n (int): The number of points to generate using the function f.
+    Args:
+      f (callable): A function to generate points within a cube.
+      n (int): The number of points to generate using the function f.
 
     This function generates points using the provided function, creates a mesh, and performs various tests on the generated mesh.
 
@@ -67,10 +62,10 @@ def test_autogen_mesh(f, n):
     prep = preprocessor.MsrPreprocessor(conf)
 
     pts = None
-    if rank == 0:
+    if utils.rank0():
         pts = f([1, 1, 1], [2, 3, 3], n)
 
-    pts = comm.bcast(pts, root=0)
+    pts = utils.comm().bcast(pts, root=0)
 
     prep.autogen_mesh(pts=pts)
 

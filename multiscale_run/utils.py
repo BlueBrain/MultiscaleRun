@@ -14,10 +14,53 @@ import numpy as np
 import psutil
 from scipy import sparse
 
-from mpi4py import MPI as MPI4PY
 
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
+@functools.cache
+def mpi():
+    """
+    Returns:
+        The `mpi4py.MPI` module
+    """
+    from mpi4py import MPI
+    return MPI
+
+
+@functools.cache
+def comm():
+    """
+    Returns:
+        The MPI communicator (mpi4py.MPI.Comm)
+    """
+
+
+    return mpi().COMM_WORLD
+
+
+@functools.cache
+def rank():
+    """
+    Returns:
+        MPI rank of the current process (int)
+    """
+    return comm().Get_rank()
+
+
+@functools.cache
+def rank0():
+    """
+    Returns:
+        True if the current process has MPI rank 0, False otherwise
+    """
+    return rank() == 0
+
+
+@functools.cache
+def size():
+    """
+    Returns:
+        The size of the MPI communicator (int)
+    """
+    return comm().Get_size()
 
 
 class MsrException(Exception):
@@ -37,7 +80,7 @@ def timesteps(end: float, step: float):
 
 def print_once(*args, **kwargs):
     """Print only once among ranks"""
-    if rank == 0:
+    if rank0():
         print(*args, *kwargs)
 
 
@@ -167,7 +210,7 @@ def rank_print(*args, **kwargs):
 
         rank_print("Hello, World!")
     """
-    print(f"rank {comm.Get_rank()}:", *args, **kwargs, flush=True)
+    print(f"rank {rank()}:", *args, **kwargs, flush=True)
 
 
 def cache_decorator(
@@ -207,7 +250,9 @@ def cache_decorator(
     if isinstance(field_names, str):
         field_names = [field_names]
 
-    file_names = field_names if only_rank0 else [f"{i}_rank{rank}" for i in field_names]
+    file_names = (
+        field_names if only_rank0 else [f"{i}_rank{rank()}" for i in field_names]
+    )
 
     def decorator_add_field_method(method):
         @functools.wraps(method)
@@ -219,7 +264,7 @@ def cache_decorator(
 
             path = Path(path)
             if not only_rank0:
-                path = path / f"n{size}"
+                path = path / f"n{size()}"
 
             np.testing.assert_equal(len(field_names), len(file_names))
             np.testing.assert_array_less([0], [len(field_names)])
@@ -246,7 +291,7 @@ def cache_decorator(
 
             if is_load and all_files_are_present:
                 for field, full_path in zip(field_names, fn):
-                    if not (rank == 0 or "rank" in str(full_path)):
+                    if not (rank0() or "rank" in str(full_path)):
                         setattr(self, field, None)
                         continue
 
@@ -266,7 +311,7 @@ def cache_decorator(
                 path.mkdir(parents=True, exist_ok=True)
                 for field, file in zip(field_names, file_names):
                     full_path = path / file
-                    if rank == 0 or "rank" in file:
+                    if rank0() or "rank" in file:
                         logging.info(f"save {field} to {full_path}")
                         obj = getattr(self, field)
                         if isinstance(obj, sparse.csr_matrix):
@@ -496,13 +541,14 @@ def heavy_duty_MPI_Gather(v: np.ndarray, root=0):
     dt = v.dtype
 
     # get the correct datatype for Create_contiguous
-    T = MPI4PY._typedict[dt.char].Create_contiguous(v.size)
+
+    T = mpi()._typedict[dt.char].Create_contiguous(v.size)
     T.Commit()
     ans = None
-    if rank == root:
-        ans = np.zeros((size, *v.shape), dtype=dt)
+    if rank() == root:
+        ans = np.zeros((size(), *v.shape), dtype=dt)
 
-    comm.Gather(sendbuf=[v, 1, T], recvbuf=ans, root=root)
+    comm().Gather(sendbuf=[v, 1, T], recvbuf=ans, root=root)
 
     T.Free()
     return ans
@@ -523,10 +569,9 @@ def stats(v):
 
     v = np.array(v)
 
-    l = v.shape
     min0 = min(v) if len(v) else 0
     max0 = max(v) if len(v) else 0
-    return f"stats: type={t}, shape={l}, min={min0}, max={max0}"
+    return f"stats: type={t}, shape={v.shape}, min={min0}, max={max0}"
 
 
 def remove_path(path):
@@ -545,14 +590,14 @@ def remove_path(path):
         remove_path("/path/to/directory")
     """
 
-    if rank == 0:
+    if rank0():
         try:
             shutil.rmtree(path)
         except NotADirectoryError:
             os.remove(path)
         except FileNotFoundError:
             pass
-    comm.Barrier()
+    comm().Barrier()
 
 
 def rename_path(path, new_path):
@@ -567,13 +612,13 @@ def rename_path(path, new_path):
         new_path (str or Path): The new file or directory path to rename to.
     """
     remove_path(new_path)
-    if rank == 0:
+    if rank0():
         if path.exists():
             logging.info(f"renaming {path} to {new_path}")
             path.rename(new_path)
         else:
             logging.info(f"{path} does not exist. Nothing to rename")
-    comm.Barrier()
+    comm().Barrier()
 
 
 def get_subs_d(d: dict) -> dict:
@@ -702,10 +747,10 @@ def generate_cube_corners(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
         # returns an array of 8 corner points within the specified cube.
 
     """
-    l = [a, b]
+    ab = [a, b]
     ans = np.array(
         [
-            np.array([l[i % 2][0], l[(i // 2) % 2][1], l[(i // 4) % 2][2]])
+            np.array([ab[i % 2][0], ab[(i // 2) % 2][1], ab[(i // 4) % 2][2]])
             for i in range(n)
         ]
     )
@@ -777,7 +822,7 @@ def check_value(
         raise MsrException(msg() + " is None")
     try:
         float(v)
-    except:
+    except ValueError:
         raise MsrException(msg() + " is not floatable")
     if np.isnan(v):
         raise MsrException(msg() + " is NaN")

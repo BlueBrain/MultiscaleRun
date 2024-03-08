@@ -1,13 +1,12 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-echo "SCRIPT_DIR=$SCRIPT_DIR"
 
 source ${SCRIPT_DIR}/setup.sh
 
 set_test_environment
 
-pushd "${SCRIPT_DIR}/.."
+pushd "${SCRIPT_DIR}/.." >/dev/null
 
 num_errors=0
 count_errors() {
@@ -26,7 +25,7 @@ python -mpytest -v tests/pytests/test_utils.py
 python -mpytest -v tests/pytests/test_config.py
 python -mpytest -v tests/pytests/test_preprocessor.py
 python -mpytest -v tests/pytests/test_reporter.py
-srun --overlap -n 4 python -mpytest -v tests/pytests/test_reporter.py
+$MPIRUN -n 4 python -mpytest -v tests/pytests/test_reporter.py
 
-popd
+popd >/dev/null
 exit $num_errors

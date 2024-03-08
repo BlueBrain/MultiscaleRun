@@ -2,12 +2,8 @@ from pathlib import Path
 
 import h5py
 import numpy as np
-from mpi4py import MPI as MPI4PY
 
 from multiscale_run import reporter, utils, config
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 
 def config_path():
@@ -29,9 +25,9 @@ def test_simple_report():
     gids = {0: [1, 2], 1: [6], 2: [], 3: [5, 7, 11]}
     ps = np.cumsum([len(i) for i in gids.values()])
     ps = [0, *ps[:-1]]
-    offset = ps[rank]
+    offset = ps[utils.rank()]
     idt = 0
-    gids = gids[rank]
+    gids = gids[utils.rank()]
     base_gids = gids.copy()
     t_unit = "mss"
 
@@ -43,19 +39,19 @@ def test_simple_report():
         gids.pop(1)
 
     for k, v in d.items():
-        q = {tuple(i): [rank + 1] * len(gids) for i in v}
+        q = {tuple(i): [utils.rank() + 1] * len(gids) for i in v}
 
         rr.set_group(k, q, ["mol"] * len(q), gids)
 
     rr.flush_buffer(idt)
-    comm.Barrier()
+    utils.comm().Barrier()
 
     for group, cols in rr.buffers.items():
         for name, v in cols.items():
             path = rr.file_path(group, name)
             with h5py.File(path, "r") as file:
                 data = file[f"{rr.data_loc}/data"]
-                q = [rank + 1] * len(v)
+                q = [utils.rank() + 1] * len(v)
                 if len(q) > 1:
                     q[1] = 0
                 assert np.allclose(data[idt, offset : offset + len(v)], q)

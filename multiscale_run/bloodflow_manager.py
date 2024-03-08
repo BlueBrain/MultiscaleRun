@@ -6,8 +6,6 @@ import numpy as np
 from astrovascpy import bloodflow
 from astrovascpy.utils import create_entry_largest_nodes, Graph
 
-from mpi4py import MPI as MPI4PY
-
 import pandas as pd
 
 import steps.interface
@@ -22,9 +20,6 @@ from steps.utils import *
 from vascpy import PointVasculature
 
 from . import utils
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 
 class MsrBloodflowManager:
@@ -59,7 +54,7 @@ class MsrBloodflowManager:
         self.params = params
 
         self.graph = None
-        if rank == 0:
+        if utils.rank0():
             self.load_circuit(vasculature_path)
 
         self.get_entry_nodes()

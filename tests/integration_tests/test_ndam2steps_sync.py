@@ -9,7 +9,6 @@ from neuron import h
 
 h.nrnmpi_init()
 
-from mpi4py import MPI as MPI4PY
 from multiscale_run import (
     connection_manager,
     neurodamus_manager,
@@ -18,9 +17,6 @@ from multiscale_run import (
     config,
     preprocessor,
 )
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 conf0 = config.MsrConfig.rat_sscxS1HL_V6()
 

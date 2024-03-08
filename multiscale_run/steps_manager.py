@@ -4,7 +4,6 @@ import time
 
 import logging
 from tqdm import tqdm
-from mpi4py import MPI as MPI4PY
 import numpy as np
 from scipy import constants as spc
 from scipy import sparse
@@ -19,9 +18,6 @@ from steps.sim import *
 from steps.utils import *
 
 from . import utils
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 
 class MsrStepsManager:
@@ -138,17 +134,20 @@ class MsrStepsManager:
 
         mesh_path = Path(mesh_path)
         if mesh_path.suffix or "split" in mesh_path.name:
-            if rank == 0:
+            if utils.rank0():
                 logging.info(f"mesh path: {mesh_path}")
             return mesh_path
 
-        split_mesh_path = mesh_path / f"split_{size}"
-        if split_mesh_path.exists() and len(list(split_mesh_path.iterdir())) >= size:
+        split_mesh_path = mesh_path / f"split_{utils.size()}"
+        if (
+            split_mesh_path.exists()
+            and len(list(split_mesh_path.iterdir())) >= utils.size()
+        ):
             ans = split_mesh_path / mesh_path.name
         else:
             ans = (mesh_path / mesh_path.name).with_suffix(".msh")
 
-        if rank == 0:
+        if utils.rank0():
             logging.info(f"mesh path guessed: {ans}")
         return ans
 
@@ -238,7 +237,7 @@ class MsrStepsManager:
 
             if npts < n_inside:
                 utils.rank_print(f"npts < n_inside: {npts} < {n_inside}\n{out_pts}")
-                comm.Abort()
+                utils.comm().Abort()
 
     @utils.logs_decorator
     def get_nsegXtetMat(self, local_pts):
@@ -254,18 +253,22 @@ class MsrStepsManager:
         self.check_pts_inside_mesh_bbox(local_pts)
 
         with self.msh.asLocal():
-            for i in tqdm(range(size), file=sys.stdout) if rank == 0 else range(size):
-                if rank == 0:
+            for i in (
+                tqdm(range(utils.size()), file=sys.stdout)
+                if utils.rank0()
+                else range(utils.size())
+            ):
+                if utils.rank0():
                     # needed, otherwise tqdm output is not flushed.
                     print("", flush=True)
 
                 pts = None
 
-                if i == rank:
+                if i == utils.rank():
                     pts = local_pts
 
                 # Chritos and Katta: We tried to use Bcast but there was no significant speed-up
-                pts = comm.bcast(pts, root=i)
+                pts = utils.comm().bcast(pts, root=i)
 
                 # this is an array of partial sums (ps) to get the
                 #  iseg offset once we flatten everything
@@ -293,9 +296,9 @@ class MsrStepsManager:
                 )
 
                 # Christos and Katta: We tried to use Gather but there was no significant speed-up
-                data = comm.gather(data, root=i)
+                data = utils.comm().gather(data, root=i)
 
-                if i == rank:
+                if i == utils.rank():
                     if len(pts) > 0:
                         ans = sum(
                             [
@@ -358,11 +361,11 @@ class MsrStepsManager:
                 .containsPoint(pts[idx * 2, :])
             ]
 
-        data = comm.gather(data, root=0)
-        starting_tets = comm.gather(starting_tets, root=0)
+        data = utils.comm().gather(data, root=0)
+        starting_tets = utils.comm().gather(starting_tets, root=0)
 
         mat, st = None, None
-        if rank == 0:
+        if utils.rank0():
             mat = sum(
                 [
                     sparse.csr_matrix(

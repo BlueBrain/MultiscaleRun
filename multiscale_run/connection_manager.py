@@ -2,13 +2,9 @@ import numpy as np
 
 import neurodamus
 import steps
-from mpi4py import MPI as MPI4PY
 from neurodamus.connection_manager import SynapseRuleManager
 
 from . import utils
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 
 class MsrConnectionManager:
@@ -16,8 +12,8 @@ class MsrConnectionManager:
 
     This class maintains various connection matrices used in the multiscale simulation, improving efficiency by caching them when necessary.
 
-    Attributes:
-        config (MrConfig): The multiscale run configuration.
+    Args:
+        config (MsrConfig): The multiscale run configuration.
     """
 
     def __init__(self, config):
@@ -91,13 +87,13 @@ class MsrConnectionManager:
             None
         """
         pts = None
-        if rank == 0:
+        if utils.rank0():
             pts = bf_m.get_seg_points(steps_m.msh._scale)
-        pts = comm.bcast(pts, root=0)
+        pts = utils.comm().bcast(pts, root=0)
 
         mat, starting_tets = steps_m.get_tetXbfSegMat(pts)
         self.tetXbfVolsMat, self.tetXbfFlowsMat = None, None
-        if rank == 0:
+        if utils.rank0():
             # resize based on tet volume
             flowsMat = mat.sign()
 
@@ -166,7 +162,8 @@ class MsrConnectionManager:
             seg_curr = ndam_m.get_var(var=sp.neurodamus.curr.var, weight="area") * 1e-8
 
             tet_curr = self.nsegXtetMat.transpose().dot(seg_curr)
-            comm.Allreduce(tet_curr, tet_curr, op=MPI4PY.SUM)
+
+            utils.comm().Allreduce(tet_curr, tet_curr, op=utils.mpi().SUM)
 
             steps_m.update_concs(species=sp, curr=tet_curr, DT=DT)
 
@@ -260,7 +257,7 @@ class MsrConnectionManager:
         """
 
         Fin, vol = None, None
-        if rank == 0:
+        if utils.rank0():
             # 1e-12 to pass from um^3 to ml
             # 500 is 1/0.0002 (1/0.2%) since we discussed that the vasculature is only 0.2% of the total
             # and it is not clear to what the winter paper is referring too exactly for volume and flow
@@ -273,8 +270,8 @@ class MsrConnectionManager:
                 * 500
             )
 
-        Fin = comm.bcast(Fin, root=0)
-        vol = comm.bcast(vol, root=0)
+        Fin = utils.comm().bcast(Fin, root=0)
+        vol = utils.comm().bcast(vol, root=0)
 
         Fin = self.nXtetMat.dot(Fin)
         vol = self.nXtetMat.dot(vol)
@@ -301,9 +298,9 @@ class MsrConnectionManager:
         """
 
         vasc_ids, radii = ndam_m.get_vasc_radii()
-        vasc_ids = comm.gather(vasc_ids, root=0)
-        radii = comm.gather(radii, root=0)
-        if rank == 0:
+        vasc_ids = utils.comm().gather(vasc_ids, root=0)
+        radii = utils.comm().gather(radii, root=0)
+        if utils.rank0():
             vasc_ids = [j for i in vasc_ids for j in i]
             radii = [j for i in radii for j in i]
             bf_m.set_radii(vasc_ids=vasc_ids, radii=radii)

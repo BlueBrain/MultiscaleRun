@@ -3,15 +3,12 @@
 from pathlib import Path
 
 import numpy as np
-from scipy.sparse import diags
-from timeit import default_timer as timer
 
 # this needs to be before "import neurodamus" and before MPI4PY otherwise mpi hangs
 from neuron import h
 
 h.nrnmpi_init()
 
-from mpi4py import MPI as MPI4PY
 from multiscale_run import (
     connection_manager,
     neurodamus_manager,
@@ -20,9 +17,6 @@ from multiscale_run import (
     config,
     preprocessor,
 )
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 conf0 = config.MsrConfig.rat_sscxS1HL_V6()
 
@@ -165,8 +159,8 @@ def test_connection():
         ndam_m,
         conn_m,
         steps_m,
-        nshape=nshape if rank != 0 else None,
-        segshape=segshape if rank != 0 else None,
+        nshape=nshape if not utils.rank0() else None,
+        segshape=segshape not utils.rank0() else None,
     )
 
 

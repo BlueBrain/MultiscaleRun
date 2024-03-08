@@ -1,5 +1,4 @@
 import logging
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -12,10 +11,6 @@ from neuron import h
 h.nrnmpi_init()
 
 import multiscale_run.utils as utils
-from mpi4py import MPI as MPI4PY
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,7 +27,7 @@ class A:
     )
     def add_obj_a(self, a):
         self.a = None
-        if rank == 0:
+        if utils.rank0():
             self.a = a
 
     @utils.cache_decorator(
@@ -44,7 +39,7 @@ class A:
     )
     def add_obj_b(self, a):
         self.b = None
-        if rank == 0:
+        if utils.rank0():
             self.b = sparse.csr_matrix((3, 4))
             self.b[1, 2] = a
 
@@ -64,8 +59,8 @@ def instantiate_and_check(a, b, c, aexp, bexp, cexp):
     obj.add_obj_a(a)
     obj.add_obj_b(b)
     obj.add_obj_c(c)
-    np.testing.assert_equal(obj.a, aexp if rank == 0 else None)
-    if rank == 0:
+    np.testing.assert_equal(obj.a, aexp if utils.rank0() else None)
+    if utils.rank0():
         np.testing.assert_equal(obj.b[1, 2], bexp)
     else:
         np.testing.assert_equal(obj.b, None)
@@ -74,8 +69,8 @@ def instantiate_and_check(a, b, c, aexp, bexp, cexp):
 
 def test_cache_decor():
     utils.remove_path(cache)
-    instantiate_and_check(1, 2, 3 if rank == 0 else 4, 1, 2, 3 if rank == 0 else 4)
-    instantiate_and_check(10, 20, 30 if rank == 0 else 40, 1, 2, 3 if rank == 0 else 4)
+    instantiate_and_check(1, 2, 3 if utils.rank0() else 4, 1, 2, 3 if utils.rank0() else 4)
+    instantiate_and_check(10, 20, 30 if utils.rank0() else 40, 1, 2, 3 if utils.rank0() else 4)
     utils.remove_path(cache)
 
 
@@ -99,7 +94,7 @@ def test_timestamps():
 def test_heavy_duty_MPI_gather():
     def get_rank_matrix(dtype="i", n=3, m=5, p=68573):
         return np.array(
-            [[(j + i * n + rank * n * m) % p for j in range(n)] for i in range(m)],
+            [[(j + i * n + utils.rank() * n * m) % p for j in range(n)] for i in range(m)],
             dtype=dtype,
         )
 
@@ -107,22 +102,22 @@ def test_heavy_duty_MPI_gather():
         return np.array(
             [
                 [[(j + i * n + r * n * m) % p for j in range(n)] for i in range(m)]
-                for r in range(size)
+                for r in range(utils.size())
             ],
             dtype=dtype,
         )
 
     local_mat = get_rank_matrix()
     final_mat = utils.heavy_duty_MPI_Gather(local_mat, root=0)
-    final_mat2 = comm.gather(local_mat, root=0)
-    if rank == 0:
+    final_mat2 = utils.comm().gather(local_mat, root=0)
+    if utils.rank0():
         assert (final_mat == final_matrix()).all()
         assert (final_mat == final_mat2).all()
 
     local_mat = get_rank_matrix(dtype="float")
     final_mat = utils.heavy_duty_MPI_Gather(local_mat, root=0)
-    final_mat2 = comm.gather(local_mat, root=0)
-    if rank == 0:
+    final_mat2 = utils.comm().gather(local_mat, root=0)
+    if utils.rank0():
         assert (final_mat == final_matrix(dtype="float")).all()
         assert (final_mat == final_mat2).all()
 
@@ -130,26 +125,26 @@ def test_heavy_duty_MPI_gather():
 def test_clear_and_replace_files_decorator():
     p = Path("bau")
 
-    if rank == 0:
+    if utils.rank0():
         if not p.exists():
             p.mkdir()
 
     @utils.clear_and_replace_files_decorator(str(p))
     def f():
         logging.info("check clear_and_replace_files_decorator")
-        comm.Barrier()
+        utils.comm().Barrier()
         assert not p.exists()
-        comm.Barrier()
+        utils.comm().Barrier()
 
-    comm.Barrier()
+    utils.comm().Barrier()
     assert p.exists()
-    comm.Barrier()
+    utils.comm().Barrier()
 
     f()
 
-    comm.Barrier()
+    utils.comm().Barrier()
     assert p.exists()
-    comm.Barrier()
+    utils.comm().Barrier()
 
     utils.remove_path(p)
 

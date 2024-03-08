@@ -5,12 +5,8 @@ import numpy as np
 import neurodamus
 import pandas as pd
 from bluepysnap import Circuit
-from mpi4py import MPI as MPI4PY
 
 from . import utils
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 
 class MsrMetabManagerException(Exception):
@@ -149,7 +145,7 @@ class MsrMetabolismManager:
             error_solver = e
 
         if sol is None:
-            comm.Abort(f"sol is None: {error_solver}")
+            utils.comm().Abort(f"sol is None: {error_solver}")
 
         self.vm[c_gid] = sol.u[-1]
 
@@ -182,7 +178,7 @@ class MsrMetabolismManager:
                 logging.warning(self.failed_cells[c_gid])
                 continue
             except Exception as e:
-                comm.Abort(str(e))
+                utils.comm().Abort(str(e))
 
             self._advance_gid(c_gid=c_gid)
 
@@ -236,15 +232,15 @@ class MsrMetabolismManager:
             self.params[c_gid] = MsrMetabParameters(
                 metab_type=self.config.metabolism.type
             )
-            self.params[
-                c_gid
-            ].bf_Fin = self.config.metabolism.constants.base_bloodflow.Fin
-            self.params[
-                c_gid
-            ].bf_Fout = self.config.metabolism.constants.base_bloodflow.Fout
-            self.params[
-                c_gid
-            ].bf_vol = self.config.metabolism.constants.base_bloodflow.vol
+            self.params[c_gid].bf_Fin = (
+                self.config.metabolism.constants.base_bloodflow.Fin
+            )
+            self.params[c_gid].bf_Fout = (
+                self.config.metabolism.constants.base_bloodflow.Fout
+            )
+            self.params[c_gid].bf_vol = (
+                self.config.metabolism.constants.base_bloodflow.vol
+            )
             _, self.params[c_gid].mito_scale = self._get_GLY_a_and_mito_vol_frac(c_gid)
 
             self.vm[c_gid] = u0

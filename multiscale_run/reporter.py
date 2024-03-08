@@ -1,11 +1,7 @@
 import h5py
 import numpy as np
 
-from mpi4py import MPI as MPI4PY
 from multiscale_run import utils
-
-comm = MPI4PY.COMM_WORLD
-rank, size = comm.Get_rank(), comm.Get_size()
 
 
 class MsrReporterException(Exception):
@@ -48,12 +44,12 @@ class MsrReporter:
             gids (list): List of global identifiers for the nodes.
         """
         self.gids = gids
-        self.all_gids = comm.gather(self.gids, root=0)
+        self.all_gids = utils.comm().gather(self.gids, root=0)
         ps = []
-        if rank == 0:
+        if utils.rank0():
             ps = [0, *np.cumsum([len(i) for i in self.all_gids])[:-1]]
             self.all_gids = [j for i in self.all_gids for j in i]
-        self.offset = comm.scatter(ps, root=0)
+        self.offset = utils.comm().scatter(ps, root=0)
         self.gids = {i: idx for idx, i in enumerate(self.gids)}
 
     @utils.logs_decorator
@@ -116,7 +112,7 @@ class MsrReporter:
                 path = self.file_path(group, col)
                 self.init_file_if_necessary(path, group, col)
 
-                with h5py.File(path, "a", driver="mpio", comm=comm) as file:
+                with h5py.File(path, "a", driver="mpio", comm=utils.comm()) as file:
                     file[f"{self.data_loc}/data"][
                         idt, self.offset : self.offset + len(self.gids)
                     ] = v
@@ -158,7 +154,7 @@ class MsrReporter:
             group (str): The name of the group.
             name (str): The name of the data being stored.
         """
-        if rank == 0 and not path.exists():
+        if utils.rank0() and not path.exists():
             dt = self.config.dt("metabolism")
             sim_end = self.config.msr_sim_end
             t_unit = self.t_unit
@@ -177,4 +173,4 @@ class MsrReporter:
                 time_dataset = mapping_group.create_dataset("time", data=data)
                 time_dataset.attrs["units"] = t_unit
 
-        comm.Barrier()
+        utils.comm().Barrier()
