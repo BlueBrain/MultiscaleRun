@@ -1,23 +1,11 @@
 import logging
 from collections import defaultdict
 
-import numpy as np
-
 from astrovascpy import bloodflow
 from astrovascpy.utils import create_entry_largest_nodes, Graph
-
-import pandas as pd
-
-import steps.interface
-
-from steps.geom import *
-from steps.model import *
-from steps.rng import *
-from steps.saving import *
-from steps.sim import *
-from steps.utils import *
-
 from vascpy import PointVasculature
+import numpy as np
+import pandas as pd
 
 from . import utils
 

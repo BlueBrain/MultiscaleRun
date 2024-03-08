@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from neuron import h
 
 h.nrnmpi_init()

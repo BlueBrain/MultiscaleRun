@@ -6,7 +6,6 @@ The CLI provides the required commands to create a run simulations.
 """
 
 import argparse
-import contextlib
 import copy
 import functools
 import logging
@@ -36,6 +35,10 @@ from .data import (
     SBATCH_TEMPLATE,
     MSR_CONFIG_JSON,
     MSR_POSTPROC,
+)
+from .utils import (
+    MsrException,
+    pushd,
 )
 
 
@@ -114,21 +117,6 @@ def julia_pkg(command, package):
     julia_cmd(instruction)
 
 
-@contextlib.contextmanager
-def pushd(path):
-    """Change the current working directory within the scope of a Python `with` statement
-
-    Args:
-      path: the directory to jump into
-    """
-    cwd = os.getcwd()
-    try:
-        os.chdir(path)
-        yield path
-    finally:
-        os.chdir(cwd)
-
-
 @command
 @julia_env
 def julia(args=None, **kwargs):
@@ -146,7 +134,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
 
     """Setup a new simulation"""
     if not force and next(Path(".").iterdir(), None) is not None:
-        raise IOError(
+        raise MsrException(
             f"Directory '{directory}' is not empty. "
             "Use option '-f' to overwrite the content of the directory."
         )
@@ -313,7 +301,7 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
     """
 
     # ensure the command is executed from multiscale_run working copy
-    git_clone_error = Exception(
+    git_clone_error = MsrException(
         "this command must be executed from the root directory of multiscale-run git working-copy"
     )
     if not Path(".git").is_dir():
@@ -338,7 +326,7 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
             """
                 )
             )
-        raise ValueError("Cannot locate spack installation")
+        raise MsrException("Cannot locate spack installation")
 
     spec_out = spack("spec", "--very-long", "--install-status", spec)
     # read output of `spack spec ...` command to extract:
@@ -505,17 +493,19 @@ def edit_mod_files(**kwargs):
 
     """
     if Path("mod").exists():
-        raise Exception(
+        raise MsrException(
             "Directory 'mod' already exists. Remove it first to reinitialize it"
         )
 
     if (ndam_root := os.environ.get("NEURODAMUS_NEOCORTEX_ROOT")) is None:
-        raise Exception("Environment variable 'NEURODAMUS_NEOCORTEX_ROOT' is missing")
+        raise MsrException(
+            "Environment variable 'NEURODAMUS_NEOCORTEX_ROOT' is missing"
+        )
     if os.environ.get("NRNMECH_LIB_PATH") is None:
-        raise Exception("Environment variable 'NRNMECH_LIB_PATH' is missing")
+        raise MsrException("Environment variable 'NRNMECH_LIB_PATH' is missing")
     ndam_mod = Path(ndam_root) / "lib" / "mod"
     if not ndam_mod.exists():
-        raise Exception(f"Directory '{ndam_mod}' does not exist")
+        raise MsrException(f"Directory '{ndam_mod}' does not exist")
 
     print("copying neocortex mod files library locally")
     shutil.copytree(ndam_mod, "mod")
@@ -533,7 +523,7 @@ def edit_mod_files(**kwargs):
     subprocess.check_call(build_cmd, shell=True)
     nrn_mechanims = (Path(platform.machine()) / "libnrnmech.so").resolve()
     if not nrn_mechanims.exists():
-        raise Exception(
+        raise MsrException(
             f"Missing file expected to be built by 'build_neurodamus.sh': '{nrn_mechanims}'"
         )
 
@@ -678,6 +668,10 @@ def main(**kwargs):
     logging.basicConfig(level=log_level)
 
     if callback := args.pop("func", None):
-        callback(**args)
+        try:
+            callback(**args)
+        except MsrException as e:
+            LOGGER.error(str(e))
+            sys.exit(1)
     else:
         ap.error("a subcommand is required.")

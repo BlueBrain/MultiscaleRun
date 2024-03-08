@@ -1,17 +1,12 @@
 import logging
 from pathlib import Path
 import json
-import trimesh
-
-from neuron import h
-
-h.nrnmpi_init()
-
-import gmsh
-
-import numpy as np
 
 from bluepysnap import Circuit
+import gmsh
+import numpy as np
+import trimesh
+
 
 from . import utils
 

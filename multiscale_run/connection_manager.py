@@ -1,9 +1,5 @@
 import numpy as np
 
-import neurodamus
-import steps
-from neurodamus.connection_manager import SynapseRuleManager
-
 from . import utils
 
 

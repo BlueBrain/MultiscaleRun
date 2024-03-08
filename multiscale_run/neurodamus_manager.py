@@ -1,11 +1,8 @@
 import logging
 
+import neurodamus
 import numpy as np
 from scipy import sparse
-
-import neurodamus
-import steps
-from neurodamus.connection_manager import SynapseRuleManager
 
 from . import utils
 

@@ -1,10 +1,8 @@
 import logging
 
-import numpy as np
-
-import neurodamus
-import pandas as pd
 from bluepysnap import Circuit
+import numpy as np
+import pandas as pd
 
 from . import utils
 

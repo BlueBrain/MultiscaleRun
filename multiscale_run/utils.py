@@ -1,3 +1,4 @@
+import contextlib
 import functools
 import json
 import inspect
@@ -22,6 +23,7 @@ def mpi():
         The `mpi4py.MPI` module
     """
     from mpi4py import MPI
+
     return MPI
 
 
@@ -31,8 +33,6 @@ def comm():
     Returns:
         The MPI communicator (mpi4py.MPI.Comm)
     """
-
-
     return mpi().COMM_WORLD
 
 
@@ -837,3 +837,18 @@ def check_value(
         raise err(f"{msg()} <= {leb}")
     if v >= heb:
         raise err(f"{msg()} >= {heb}")
+
+
+@contextlib.contextmanager
+def pushd(path):
+    """Change the current working directory within the scope of a Python `with` statement
+
+    Args:
+      path: the directory to jump into
+    """
+    cwd = os.getcwd()
+    try:
+        os.chdir(path)
+        yield path
+    finally:
+        os.chdir(cwd)

@@ -64,7 +64,7 @@ class MsrReporter:
         """
         if len(cols) == 0:
             raise MsrReporterException(
-                f"Adding an empty group of columns is not permitted"
+                "Adding an empty group of columns is not permitted"
             )
         if group in self.buffers:
             return
@@ -168,7 +168,7 @@ class MsrReporter:
                 data_dataset.attrs["units"] = self.d_units[group][name]
                 mapping_group = base_group.create_group("mapping")
                 data = np.array([i - 1 for i in self.all_gids], dtype=np.uint64)
-                node_ids_dataset = mapping_group.create_dataset("node_ids", data=data)
+                mapping_group.create_dataset("node_ids", data=data)
                 data = np.array([0, sim_end, dt], dtype=np.float64)
                 time_dataset = mapping_group.create_dataset("time", data=data)
                 time_dataset.attrs["units"] = t_unit

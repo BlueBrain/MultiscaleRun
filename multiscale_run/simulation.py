@@ -8,7 +8,7 @@ them to perform the simulation
 import functools
 import logging
 
-# Important: do not import msr stuff here as MPI may not close correctly
+from . import utils
 
 
 def _run_once(f):
@@ -40,12 +40,6 @@ class MsrSimulation:
         from neuron import h
 
         h.nrnmpi_init()
-
-        # the object MPI exists already. It is the steps one
-        from mpi4py import MPI as MPI4PY  # noqa: F401
-
-        # this goes before neurodamus for correct logging
-        from multiscale_run import utils  # noqa: F401
 
         import neurodamus  # noqa: F401
 
@@ -149,7 +143,6 @@ class MsrSimulation:
         """Perform the actual simulation"""
         self.initialize()
         logging.info("Starting simulation")
-        from mpi4py import MPI as MPI4PY
 
         # Memory tracking
         import psutil
@@ -160,8 +153,6 @@ class MsrSimulation:
 
         log_stage("===============================================")
         log_stage("Running the selected solvers ...")
-
-        comm = MPI4PY.COMM_WORLD
 
         self.rss = []  # Memory tracking
 
@@ -278,7 +269,7 @@ class MsrSimulation:
                                 metab_m=self.metab_m, ndam_m=self.ndam_m
                             )
 
-                        comm.Barrier()
+                        utils.comm().Barrier()
 
                         i_metab += 1
 
@@ -288,7 +279,7 @@ class MsrSimulation:
 
         self.ndam_m.ndamus.sonata_spikes()
         TimerManager.timeit_show_stats()
-        comm.Barrier()
+        utils.comm().Barrier()
         self.ndam_m.ndamus._touch_file(self.ndam_m.ndamus._success_file)
 
 
