@@ -7,7 +7,14 @@ requires = [
 ]
 
 [tool.setuptools]
-packages = ["multiscale_run"]
+packages = [
+    "multiscale_run",
+    "multiscale_run.data",
+    "multiscale_run.data.config",
+    "multiscale_run.data.config.rat_sscxS1HL_V10_all_valid_cells",
+    "multiscale_run.data.config.rat_sscxS1HL_V6",
+    "multiscale_run.data.metabolismndam_reduced",
+]
 
 [tool.setuptools_scm]
 
@@ -16,7 +23,12 @@ name = "multiscale_run"
 authors = [
     {name = "Blue Brain Project, EPFL", email = "bbp.opensource@epfl.ch" }
 ]
-description = "Orchestrator for multiscale brain simulations"
+description = """
+    multiscale_run is a Python package to run brain cells simulation at different scales. \
+    It orchestrates the coupling between several brain simulators like neuron and \
+    steps but also solvers like AstroVascPy for the cerebral blood flow. \
+    The package also embeds a Julia solver to simulate the astrocytes activity. \
+    """
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "Apache-2.0"}

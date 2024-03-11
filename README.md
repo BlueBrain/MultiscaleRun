@@ -288,3 +288,13 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 ## 0.1 - 2023-11-30
 
 First release of the code shipped as a Python package
+
+## Authors
+
+Polina Shichkova, Alessandro Cattabiani, Christos Kotsalos, and Tristan Carel
+
+## Funding and Acknowledgements
+
+The development of this software was supported by funding to the Blue Brain Project, a research center of the École polytechnique fédérale de Lausanne (EPFL), from the Swiss government’s ETH Board of the Swiss Federal Institutes of Technology.
+
+Copyright (c) 2023-2024 Blue Brain Project/EPFL
