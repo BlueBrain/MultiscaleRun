@@ -91,7 +91,10 @@ def test_virtualenv():
     utils.remove_path(venv)
     utils.remove_path(venvdo)
 
-    subprocess.check_call(["multiscale-run", "virtualenv", "--venv", str(venv)])
+    spec = "py-multiscale-run@develop"
+    spec += os.environ.get("SPACK_PACKAGE_DEPENDENCIES", "")
+
+    subprocess.check_call(["multiscale-run", "virtualenv", "--venv", str(venv), "--spec", spec])
     assert (venv / "bin" / "multiscale-run").exists()
 
     with venvdo.open("w") as ostr:

@@ -40,6 +40,10 @@ variables:
 
 pytest:
   extends: .spack_test
+  script:
+  # Tell Git how to re-write BBP GitLab URLs to use a token instead of SSH
+  - !reference [.bbp_gitlab_access, script]
+  - !reference [.spack_test, script]
 
 integration:
   extends: .spack_test

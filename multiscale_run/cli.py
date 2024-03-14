@@ -639,6 +639,11 @@ def argument_parser():
         default=".venv",
         help="Name of the virtual environment. Default is %(default)s",
     )
+    parser_virtualenv.add_argument(
+        "--spec",
+        default="py-multiscale-run@develop",
+        help="Spack spec to determine the list of dependencies to install",
+    )
 
     parser_edit_mod_files = subparsers.add_parser(
         "edit-mod-files", help=edit_mod_files.__argparse_help__
