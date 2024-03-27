@@ -213,6 +213,18 @@ This operation clones the Neurodamus mod files library for local editing.
 multiscale-run edit-mod-files [/path/to/my-sim]
 ```
 
+### Troubleshooting
+
+The command `build_neurodamus.sh mod` may fail with the following error:
+```
+=> LINKING shared library ./libnrnmech.so
+/usr/bin/ld: /gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: unable to initialize decompress status for section .debug_info
+/usr/bin/ld: /gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: unable to initialize decompress status for section .debug_info
+/gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: file not recognized: File format not recognized
+icpx: error: linker command failed with exit code 1 (use -v to see invocation)
+make: *** [/gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/bin/nrnmech_makefile:133: mech_lib_shared] Error 1
+```
+This happens because Neuron was built with Intel oneAPI compiler but the compiler is not available in the environment. Loading the proper module on BB5 may fix the issue `module load unstable  intel-oneapi-compilers`
 
 # Other operations
 
