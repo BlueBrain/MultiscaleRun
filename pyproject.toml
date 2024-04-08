@@ -45,7 +45,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
 dependencies = [
-    "astrovascpy",
+    "astrovascpy>=0.1.5",
     "bluepysnap",
     "diffeqpy",
     "gmsh",
@@ -79,7 +79,7 @@ indent-width = 4
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
-ignore = ["F401", "F403", "F405", "E402", "E741", "E721"]
+ignore = ["F401", "F403", "F405", "E741", "E721"]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]

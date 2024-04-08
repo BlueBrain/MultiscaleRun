@@ -1,12 +1,10 @@
 from neuron import h
 
-h.nrnmpi_init()
-
 from multiscale_run import (
-    bloodflow_manager,
-    config,
-    neurodamus_manager,
-    preprocessor,
+    MsrBloodflowManager,
+    MsrConfig,
+    MsrNeurodamusManager,
+    MsrPreprocessor,
     utils,
 )
 
@@ -28,16 +26,16 @@ def test_gen_msh():
     This function is responsible for testing the mesh generation process with given configurations and managers.
 
     """
-    conf = config.MsrConfig.rat_sscxS1HL_V6()
+    conf = MsrConfig.rat_sscxS1HL_V6()
     tmp_mesh_path = conf.multiscale_run.mesh_path.parent.name + "_tmp"
     utils.rename_path(
         conf.multiscale_run.mesh_path.parent,
         conf.multiscale_run.mesh_path.parent.with_name(tmp_mesh_path),
     )
 
-    pp = preprocessor.MsrPreprocessor(config=conf)
-    ndam_m = neurodamus_manager.MsrNeurodamusManager(config=conf)
-    bf_m = bloodflow_manager.MsrBloodflowManager(
+    pp = MsrPreprocessor(config=conf)
+    ndam_m = MsrNeurodamusManager(config=conf)
+    bf_m = MsrBloodflowManager(
         vasculature_path=ndam_m.get_vasculature_path(),
         parameters=conf.multiscale_run.bloodflow,
     )
@@ -51,4 +49,5 @@ def test_gen_msh():
 
 
 if __name__ == "__main__":
+    h.nrnmpi_init()
     test_gen_msh()

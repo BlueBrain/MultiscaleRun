@@ -3,23 +3,16 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
-# this needs to be before "import neurodamus" and before MPI4PY
-from neuron import h
 from scipy import sparse
-
-h.nrnmpi_init()
 
 import multiscale_run.utils as utils
 
-logging.basicConfig(level=logging.INFO)
-
-cache = "cache_tests"
+CACHE_DIR = "cache_tests"
 
 
 class A:
     @utils.cache_decorator(
-        path=cache,
+        path=CACHE_DIR,
         is_save=True,
         is_load=True,
         field_names="a",
@@ -31,7 +24,7 @@ class A:
             self.a = a
 
     @utils.cache_decorator(
-        path=cache,
+        path=CACHE_DIR,
         is_save=True,
         is_load=True,
         field_names="b",
@@ -44,7 +37,7 @@ class A:
             self.b[1, 2] = a
 
     @utils.cache_decorator(
-        path=cache,
+        path=CACHE_DIR,
         is_save=True,
         is_load=True,
         field_names="c",
@@ -68,14 +61,14 @@ def instantiate_and_check(a, b, c, aexp, bexp, cexp):
 
 
 def test_cache_decor():
-    utils.remove_path(cache)
+    utils.remove_path(CACHE_DIR)
     instantiate_and_check(
         1, 2, 3 if utils.rank0() else 4, 1, 2, 3 if utils.rank0() else 4
     )
     instantiate_and_check(
         10, 20, 30 if utils.rank0() else 40, 1, 2, 3 if utils.rank0() else 4
     )
-    utils.remove_path(cache)
+    utils.remove_path(CACHE_DIR)
 
 
 class B:

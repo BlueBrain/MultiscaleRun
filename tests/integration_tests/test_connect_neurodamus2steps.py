@@ -1,24 +1,18 @@
 # Test sec mapping algorithm to compute intersections among neuron segments and steps tets
 # Test neuron removal tools
-from pathlib import Path
-
 import numpy as np
-
-# this needs to be before "import neurodamus" and before MPI4PY otherwise mpi hangs
 from neuron import h
 
-h.nrnmpi_init()
-
 from multiscale_run import (
-    config,
-    connection_manager,
-    neurodamus_manager,
-    preprocessor,
-    steps_manager,
+    MsrConfig,
+    MsrConnectionManager,
+    MsrNeurodamusManager,
+    MsrPreprocessor,
+    MsrStepsManager,
     utils,
 )
 
-conf0 = config.MsrConfig.rat_sscxS1HL_V6()
+conf0 = MsrConfig.rat_sscxS1HL_V6()
 
 
 def check_ratio_mat(m):
@@ -98,19 +92,19 @@ def test_connection():
     It also checks various conditions using the 'check_ratio_mat' and 'check_mats_shape' functions.
 
     """
-    conf = config.MsrConfig.rat_sscxS1HL_V6()
+    conf = MsrConfig.rat_sscxS1HL_V6()
 
-    prep = preprocessor.MsrPreprocessor(conf)
+    prep = MsrPreprocessor(conf)
     managers = {}
-    conn_m = connection_manager.MsrConnectionManager(config=conf, managers=managers)
+    conn_m = MsrConnectionManager(config=conf, managers=managers)
 
     prep.autogen_node_sets()
 
-    managers["neurodamus"] = neurodamus_manager.MsrNeurodamusManager(conf)
+    managers["neurodamus"] = MsrNeurodamusManager(conf)
     conn_m.connect_neurodamus2neurodamus(managers["neurodamus"])
 
     prep.autogen_mesh(ndam_m=managers["neurodamus"])
-    managers["steps"] = steps_manager.MsrStepsManager(conf)
+    managers["steps"] = MsrStepsManager(conf)
 
     conn_m.connect_neurodamus2steps(
         ndam_m=managers["neurodamus"], steps_m=managers["steps"]
@@ -190,4 +184,5 @@ def test_connection():
 
 
 if __name__ == "__main__":
+    h.nrnmpi_init()
     test_connection()

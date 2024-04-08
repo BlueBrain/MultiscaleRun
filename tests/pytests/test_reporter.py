@@ -3,7 +3,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-from multiscale_run import config, reporter, utils
+from multiscale_run import MsrConfig, MsrReporter, utils
 
 
 def config_path():
@@ -39,7 +39,7 @@ class FakeMetabolismManager:
 
 
 def test_simple_report():
-    conf = config.MsrConfig(config_path())
+    conf = MsrConfig(config_path())
     folder_path = conf.config_path.parent / conf.output.output_dir
 
     utils.remove_path(folder_path)
@@ -54,7 +54,7 @@ def test_simple_report():
 
     t_unit = "mss"
 
-    rr = reporter.MsrReporter(config=conf, gids=gids, t_unit=t_unit)
+    rr = MsrReporter(config=conf, gids=gids, t_unit=t_unit)
 
     rr.record(idt=idt, manager_name="metabolism", managers=managers, when="after_sync")
     utils.comm().Barrier()

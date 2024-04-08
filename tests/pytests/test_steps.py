@@ -2,12 +2,7 @@ from pathlib import Path
 
 import numpy as np
 
-# this needs to be before "import neurodamus" and before MPI4PY otherwise mpi hangs
-from neuron import h
-
-h.nrnmpi_init()
-
-from multiscale_run import config, preprocessor, steps_manager, utils
+from multiscale_run import MsrConfig, MsrPreprocessor, MsrStepsManager, utils
 
 
 def get_mesh_path():
@@ -32,16 +27,16 @@ def gen_segments_in_bbox(msh):
 
 
 def test_steps_connections_mats():
-    conf = config.MsrConfig.rat_sscxS1HL_V6()
+    conf = MsrConfig.rat_sscxS1HL_V6()
     conf.multiscale_run.mesh_path = str(get_mesh_path())
     utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
-    config.cache_load = False
-    config.cache_save = False
+    conf.cache_load = False
+    conf.cache_save = False
 
-    prep = preprocessor.MsrPreprocessor(conf)
+    prep = MsrPreprocessor(conf)
 
     prep.autogen_mesh(pts=np.array([[100, 100, 200], [300, 500, 400]]))
-    steps_m = steps_manager.MsrStepsManager(conf)
+    steps_m = MsrStepsManager(conf)
     steps_m.init_sim()
 
     pts = gen_segments_in_bbox(steps_m.msh)
@@ -73,19 +68,19 @@ def test_steps_connections_mats():
 def test_steps_with_minimesh():
     """To be used manually with multiple ranks to see if omega_h complains"""
 
-    conf = config.MsrConfig.rat_sscxS1HL_V6()
+    conf = MsrConfig.rat_sscxS1HL_V6()
     conf.multiscale_run.mesh_path = str(get_mesh_path())
     conf.multiscale_run.preprocessor.mesh.refinement_steps = 0
     utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
-    config.cache_load = False
-    config.cache_save = False
+    conf.cache_load = False
+    conf.cache_save = False
 
-    prep = preprocessor.MsrPreprocessor(conf)
+    prep = MsrPreprocessor(conf)
     prep.autogen_mesh(pts=np.array([[100, 100, 200], [300, 500, 400]]))
-    steps_manager.MsrStepsManager(conf)
+    MsrStepsManager(conf)
     utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
 
 
 if __name__ == "__main__":
-    # test_steps_with_minimesh()
+    test_steps_with_minimesh()
     test_steps_connections_mats()

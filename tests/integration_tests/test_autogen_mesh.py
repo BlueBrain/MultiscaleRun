@@ -1,20 +1,12 @@
 from pathlib import Path
 
 import numpy as np
-
-# this needs to be before "import neurodamus" and before MPI4PY otherwise mpi hangs
 from neuron import h
 
-h.nrnmpi_init()
-
-
-# steps_manager should go before preprocessor until https://github.com/CNS-OIST/HBP_STEPS/issues/1166 is solved
 from multiscale_run import (
-    bloodflow_manager,
-    config,
-    neurodamus_manager,
-    preprocessor,
-    steps_manager,
+    MsrConfig,
+    MsrPreprocessor,
+    MsrStepsManager,
     utils,
 )
 
@@ -56,11 +48,11 @@ def test_autogen_mesh(f, n):
     This function generates points using the provided function, creates a mesh, and performs various tests on the generated mesh.
 
     """
-    conf = config.MsrConfig(base_path())
+    conf = MsrConfig(base_path())
     mesh_path = conf.multiscale_run.mesh_path.parent
     utils.remove_path(mesh_path)
 
-    prep = preprocessor.MsrPreprocessor(conf)
+    prep = MsrPreprocessor(conf)
 
     pts = None
     if utils.rank0():
@@ -70,13 +62,14 @@ def test_autogen_mesh(f, n):
 
     prep.autogen_mesh(pts=pts)
 
-    steps_m = steps_manager.MsrStepsManager(conf)
+    steps_m = MsrStepsManager(conf)
 
     steps_m.check_pts_inside_mesh_bbox(pts_list=[pts * conf.multiscale_run.mesh_scale])
     utils.remove_path(mesh_path)
 
 
 if __name__ == "__main__":
+    h.nrnmpi_init()
     test_autogen_mesh(utils.generate_cube_corners, 8 + 0)
     test_autogen_mesh(utils.generate_cube_corners, 8 + 1)
     test_autogen_mesh(utils.generate_cube_corners, 8 + 2)

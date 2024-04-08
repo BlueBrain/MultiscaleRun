@@ -7,8 +7,8 @@ set_test_environment
 
 pushd "${SCRIPT_DIR}/.." >/dev/null
 
-$MPIRUN -n 2 python tests/integration_tests/test_connect_neurodamus2steps.py
-$MPIRUN -n 2 python tests/integration_tests/test_autogen_mesh.py
-$MPIRUN -n 2 python tests/integration_tests/test_preprocessor.py
+time $MPIRUN -n 2 python tests/integration_tests/test_connect_neurodamus2steps.py
+time $MPIRUN -n 2 python tests/integration_tests/test_autogen_mesh.py
+time $MPIRUN -n 2 python tests/integration_tests/test_preprocessor.py
 
 popd > /dev/null
