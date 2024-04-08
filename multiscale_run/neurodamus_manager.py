@@ -249,9 +249,12 @@ class MsrNeurodamusManager:
             for inc, nc in enumerate(self.ncs):
                 for isec, _ in enumerate(self.gen_secs(nc=nc)):
                     itot += 1
-                    yield self.nc_weights["volume"][1][inc][isec] / self.nc_weights[
-                        "volume"
-                    ][0][inc], inc, itot - 1
+                    yield (
+                        self.nc_weights["volume"][1][inc][isec]
+                        / self.nc_weights["volume"][0][inc],
+                        inc,
+                        itot - 1,
+                    )
 
         # data is always a nX3 array:
         # col[0] is the ratio (dimensionless).

@@ -105,7 +105,7 @@ def test_connection():
     conn_m = connection_manager.MsrConnectionManager(config=conf, managers=managers)
 
     prep.autogen_node_sets()
-    
+
     managers["neurodamus"] = neurodamus_manager.MsrNeurodamusManager(conf)
     conn_m.connect_neurodamus2neurodamus(managers["neurodamus"])
 
@@ -134,9 +134,7 @@ def test_connection():
 
     utils.rank_print("gid: ", [int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
     failed_cells_dict = {933: "remove from rank 0", 1004: "remove from rank 1"}
-    failed_cells = [
-        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids
-    ]
+    failed_cells = [failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids]
     conn_m.remove_gids(failed_cells=failed_cells, managers=managers)
 
     utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
@@ -167,9 +165,7 @@ def test_connection():
     utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
 
     failed_cells_dict = {17500: "reason 0"}
-    failed_cells = [
-        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids
-    ]
+    failed_cells = [failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids]
     conn_m.remove_gids(failed_cells=failed_cells, managers=managers)
     check_mats_shape(
         managers["neurodamus"],
@@ -182,9 +178,7 @@ def test_connection():
     utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
 
     failed_cells_dict = {175: "reason 0"}
-    failed_cells = [
-        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids
-    ]
+    failed_cells = [failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids]
 
     check_mats_shape(
         managers["neurodamus"],

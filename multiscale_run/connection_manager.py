@@ -431,8 +431,9 @@ class MsrConnectionManager:
         # keep this as last
         ndam_m.ncs = utils.remove_elems(v=ndam_m.ncs, to_be_removed=to_be_removed)
         for k, v in ndam_m.nc_weights.items():
-            ndam_m.nc_weights[k] = utils.remove_elems(
-                v=v[0], to_be_removed=to_be_removed
-            ), utils.remove_elems(v=v[1], to_be_removed=to_be_removed)
+            ndam_m.nc_weights[k] = (
+                utils.remove_elems(v=v[0], to_be_removed=to_be_removed),
+                utils.remove_elems(v=v[1], to_be_removed=to_be_removed),
+            )
 
         ndam_m.check_neuron_removal_status()

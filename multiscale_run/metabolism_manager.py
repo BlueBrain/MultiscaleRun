@@ -306,6 +306,7 @@ class MsrMetabolismManager:
         ]
 
         for idx, ck_conf in enumerate(checks):
+
             def msg_func(igid):
                 return f"parameters[{igid}, {idx}], {ck_conf['name']}"
 
@@ -328,6 +329,7 @@ class MsrMetabolismManager:
         checks = [d.get(str(idx), base_ck_conf) for idx in range(self.vm.shape[1])]
 
         for idx, ck_conf in enumerate(checks):
+
             def msg_func(igid):
                 return f"vm[{igid}, {idx}], {ck_conf['name']}"
 

@@ -16,3 +16,5 @@ You can find below the internal documentation of the ``multiscale_run`` Python p
    Python API Reference <modules>
 
    simulation_config
+
+   contributing
