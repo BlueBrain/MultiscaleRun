@@ -6,6 +6,7 @@ include:
     file:
     - /ci/lib/tox-bb5.yml
     - /ci/jobs/docs.yml
+    - ci/jobs/lint.yml
     - /ci/jobs/publish-docs.yml
 
 stages:
@@ -122,3 +123,6 @@ publish-docs:
   rules:
   - if: $CI_COMMIT_TAG
   image: quay.io/pypa/manylinux2014_x86_64
+
+lint:
+  stage: .pre

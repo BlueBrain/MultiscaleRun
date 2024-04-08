@@ -1,19 +1,17 @@
+import json
 import logging
 from pathlib import Path
-import json
 
-from bluepysnap import Circuit
 import gmsh
 import numpy as np
 import trimesh
-
+from bluepysnap import Circuit
 
 from . import utils
 
 
 class MsrPreprocessor:
-    """
-    Preprocess manager for mesh generation in the Multi-Step Simulation Platform (MSP).
+    """Preprocess manager for mesh generation in the Multi-Step Simulation Platform (MSP).
 
     The MsrPreprocessor class is responsible for various preprocessing tasks related
     to mesh generation and node set configuration for simulations in the Multi-Step
@@ -33,8 +31,7 @@ class MsrPreprocessor:
         self.config = config
 
     def _check_filename_existence(self, path):
-        """
-        Check the existence of a file and determine whether to auto-generate it.
+        """Check the existence of a file and determine whether to auto-generate it.
 
         This method checks whether a file at the specified path exists and returns the path for
         auto-generation if the file is missing. It also logs whether the file exists or not.
@@ -58,8 +55,7 @@ class MsrPreprocessor:
 
     @utils.logs_decorator
     def autogen_node_sets(self):
-        """
-        Generate node sets and save them as a JSON file.
+        """Generate node sets and save them as a JSON file.
 
         This method generates node sets based on selected neurons and astrocytes and saves the configuration as a JSON file.
         Node sets are defined using a template, and the selected neuron and astrocyte IDs are included in the configuration.
@@ -95,8 +91,7 @@ class MsrPreprocessor:
 
     @utils.logs_decorator
     def extract_information_from_circuit(self):
-        """
-        Extract information from the circuit configuration.
+        """Extract information from the circuit configuration.
 
         This method is a helper function for generating node sets and is used to extract relevant information from the
         circuit configuration (ngv_config.json). It retrieves data about neurons and astrocytes based on the provided
@@ -166,8 +161,7 @@ class MsrPreprocessor:
 
     @utils.logs_decorator
     def _gen_stl_and_geo(self, points: np.array):
-        """
-        Generate an STL file and its corresponding GEO file from a set of 3D coordinates.
+        """Generate an STL file and its corresponding GEO file from a set of 3D coordinates.
 
         This method creates an STL file containing a 3D surface mesh and a GEO file that references the STL file for mesh
         generation.
@@ -306,8 +300,7 @@ Physical Volume("{phys_vol}", 1) = {{1}};
 
     @utils.logs_decorator
     def _gen_msh_from_geo(self):
-        """
-        Generate and refine a .msh file for mesh generation.
+        """Generate and refine a .msh file for mesh generation.
 
         This method generates and refines a mesh using the Gmsh meshing tool. It allows specifying the refinement steps and
         the generative algorithm used for meshing. The following generative algorithms are available:
@@ -328,7 +321,6 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         Example:
             >>> gen_msh()
         """
-
         script_file = str(self.config.multiscale_run.mesh_path.with_suffix(".geo"))
         output_file = str(self.config.multiscale_run.mesh_path.with_suffix(".msh"))
         refinement_steps = self.config.multiscale_run.preprocessor.mesh.refinement_steps
@@ -369,8 +361,7 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         return explode_factor * pts + (1.0 - explode_factor) * np.mean(pts, axis=0)
 
     def _gen_pts(self, ndam_m=None, bf_m=None, pts=None):
-        """
-        Generate points for mesh generation.
+        """Generate points for mesh generation.
 
         This method generates points for mesh generation by combining points from multiple sources, such as neurodamus
         and bloodflow data, and optionally additional custom points provided as input. The points can be scaled and centered
@@ -434,7 +425,6 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         Example:
             >>> gen_mesh()
         """
-
         pts = pts if pts is not None else []
         mesh_path = Path(self.config.multiscale_run.mesh_path)
         mesh_path.parent.mkdir(parents=True, exist_ok=True)

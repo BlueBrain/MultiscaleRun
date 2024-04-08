@@ -3,10 +3,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from scipy import sparse
 
 # this needs to be before "import neurodamus" and before MPI4PY
 from neuron import h
+from scipy import sparse
 
 h.nrnmpi_init()
 

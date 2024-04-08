@@ -12,8 +12,7 @@ class MsrReporter:
     """A class for reporting multiscale simulation data."""
 
     def __init__(self, config, gids: list[int], t_unit="ms"):
-        """
-        Initializes the MsrReporter instance.
+        """Initializes the MsrReporter instance.
 
         Args:
             config (MsrConfig): Configuration argument.
@@ -28,8 +27,7 @@ class MsrReporter:
 
     @utils.logs_decorator
     def init_offsets(self, gids: list[int]):
-        """
-        Initializes offsets for the gids.
+        """Initializes offsets for the gids.
 
         Args:
             gids: List of gids.
@@ -44,10 +42,9 @@ class MsrReporter:
 
     @property
     def data_loc(self):
-        """
-        Returns the data location string.
+        """Returns the data location string.
 
-        Returns:
+        Returns
             str: A string representing the data location within the HDF5 file.
         """
         return f"/report/{self.config.multiscale_run.preprocessor.node_sets.neuron_population_name}"
@@ -84,9 +81,7 @@ class MsrReporter:
                         data_dataset.attrs["units"] = rep.unit
                         mapping_group = base_group.create_group("mapping")
                         data = np.array([i - 1 for i in self.all_gids], dtype=np.uint64)
-                        node_ids_dataset = mapping_group.create_dataset(
-                            "node_ids", data=data
-                        )
+                        mapping_group.create_dataset("node_ids", data=data)
                         data = np.array([0, sim_end, dt], dtype=np.float64)
                         time_dataset = mapping_group.create_dataset("time", data=data)
                         time_dataset.attrs["units"] = self.t_unit
@@ -94,8 +89,7 @@ class MsrReporter:
         utils.comm().Barrier()
 
     def record(self, idt: int, manager_name: str, managers: dict, when: str):
-        """
-        Records simulation data.
+        """Records simulation data.
 
         Args:
             idt: time step index of the current manager.

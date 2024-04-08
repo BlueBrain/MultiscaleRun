@@ -10,12 +10,12 @@ h.nrnmpi_init()
 
 # steps_manager should go before preprocessor until https://github.com/CNS-OIST/HBP_STEPS/issues/1166 is solved
 from multiscale_run import (
-    utils,
-    steps_manager,
-    config,
     bloodflow_manager,
+    config,
     neurodamus_manager,
     preprocessor,
+    steps_manager,
+    utils,
 )
 
 

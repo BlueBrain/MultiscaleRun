@@ -18,6 +18,11 @@ packages = [
 
 [tool.setuptools_scm]
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning"
+]
+
 [project]
 name = "multiscale_run"
 authors = [
@@ -66,3 +71,32 @@ multiscale-run = "multiscale_run.cli:main"
 Homepage = "https://bbpgitlab.epfl.ch/molsys/multiscale_run"
 Source = "ssh://git@bbpgitlab.epfl.ch:molsys/multiscale_run.git"
 Tracker = "https://bbpteam.epfl.ch/project/issues/projects/BBPP40"
+
+[tool.ruff]
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = ["F401", "F403", "F405", "E402", "E741", "E721"]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"

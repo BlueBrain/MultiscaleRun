@@ -1,10 +1,11 @@
+import argparse
 import json
 import os
-from pathlib import Path
 import platform
-import subprocess
 import stat
+import subprocess
 import textwrap
+from pathlib import Path
 
 import pytest
 
@@ -58,6 +59,7 @@ def test_init_twice(tmp_path):
 def test_valid_commands(tmp_path):
     path = str(tmp_path)
     ap = argument_parser()
+    ap.exit_on_error = False
     try:
         ap.parse_args(["init"])
         ap.parse_args(["check"])
@@ -76,7 +78,7 @@ def test_valid_commands(tmp_path):
         ap.parse_args(["check", path])
         ap.parse_args(["compute", path])
         ap.parse_args(["julia", 'print("Foo")', 'Pkg.install("Foo")'])
-    except:
+    except argparse.ArgumentError:
         pytest.fail("Parsing of valid commands failed")
 
 

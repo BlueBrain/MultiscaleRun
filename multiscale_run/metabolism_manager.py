@@ -1,11 +1,11 @@
 import enum
 import logging
 
-from bluepysnap import Circuit
 import numpy as np
 import pandas as pd
+from bluepysnap import Circuit
 
-from . import utils, config
+from . import config, utils
 
 
 class MsrMetabManagerException(Exception):
@@ -14,7 +14,8 @@ class MsrMetabManagerException(Exception):
 
 class MsrExcludeNeuronException(Exception):
     """This error should be recoverable. We just want to kick the neuron out
-    of the simulation because it is misbehaving"""
+    of the simulation because it is misbehaving
+    """
 
 
 class MsrAbortSimulationException(Exception):
@@ -105,7 +106,6 @@ class MsrMetabolismManager:
         Args:
             main: An instance of the main class.
         """
-
         # includes
         cmd = (
             "\n".join(
@@ -152,7 +152,6 @@ class MsrMetabolismManager:
         Raises:
             MsrMetabManagerException: If sol is None.
         """
-
         from diffeqpy import de
 
         metab_dt = self.config.metabolism_dt
@@ -213,7 +212,6 @@ class MsrMetabolismManager:
             the calculated glycogen value, and mito_volume_fraction is
             the calculated mitochondrial volume fraction.
         """
-
         # idx: layers are 1-based while python vectors are 0-based
         # c_gid: ndam is 1-based while libsonata and bluepysnap are 0-based
         idx = self.neuro_df.get(c_gid - 1).layer - 1
@@ -263,7 +261,7 @@ class MsrMetabolismManager:
         vec: np.ndarray,
         check_value_kwargs: dict,
         err,
-        msgl,
+        msg_func,
         failed_cells: list[str],
     ):
         """Check input values for every valid gid.
@@ -272,7 +270,7 @@ class MsrMetabolismManager:
             vec: Input array.
             check_value_kwargs: Keyword arguments for value checking.
             err: Error argument.
-            msgl: Message argument. It is a lambda that requires the gid.
+            msg_func: Message argument. It is a callable that requires the gid.
             failed_cells: List of failed cells.
 
         Notes:
@@ -285,7 +283,7 @@ class MsrMetabolismManager:
 
             try:
                 utils.check_value(
-                    v=vec[igid], **check_value_kwargs, err=err, msg=msgl(igid)
+                    v=vec[igid], **check_value_kwargs, err=err, msg=msg_func(igid)
                 )
             except MsrExcludeNeuronException as e:
                 failed_cells[igid] = str(e)
@@ -298,7 +296,6 @@ class MsrMetabolismManager:
         If no checking is specified in the config file just check that the values are still proper floats.
 
         Args:
-
             failed_cells: List of errors for the failed cells. Cells that are alive have `None` as value here.
         """
         base_ck_conf = {"kwargs": {}, "response": "abort_simulation", "name": ""}
@@ -309,12 +306,14 @@ class MsrMetabolismManager:
         ]
 
         for idx, ck_conf in enumerate(checks):
-            msgl = lambda igid: f"parameters[{igid}, {idx}], {ck_conf['name']}"
+            def msg_func(igid):
+                return f"parameters[{igid}, {idx}], {ck_conf['name']}"
+
             self._check_input_for_currently_valid_gids(
                 vec=self.parameters[:, idx],
                 check_value_kwargs=ck_conf["kwargs"],
                 err=self.get_error(ck_conf["response"]),
-                msgl=msgl,
+                msg_func=msg_func,
                 failed_cells=failed_cells,
             )
             if str(idx) in self.config.multiscale_run.metabolism.checks.parameters:
@@ -329,12 +328,14 @@ class MsrMetabolismManager:
         checks = [d.get(str(idx), base_ck_conf) for idx in range(self.vm.shape[1])]
 
         for idx, ck_conf in enumerate(checks):
-            msgl = lambda igid: f"vm[{igid}, {idx}], {ck_conf['name']}"
+            def msg_func(igid):
+                return f"vm[{igid}, {idx}], {ck_conf['name']}"
+
             self._check_input_for_currently_valid_gids(
                 vec=self.vm[:, idx],
                 check_value_kwargs=ck_conf["kwargs"],
                 err=self.get_error(ck_conf["response"]),
-                msgl=msgl,
+                msg_func=msg_func,
                 failed_cells=failed_cells,
             )
             if str(idx) in self.config.multiscale_run.metabolism.checks.vm:

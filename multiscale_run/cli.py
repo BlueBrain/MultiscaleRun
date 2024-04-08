@@ -1,5 +1,4 @@
-"""
-This module provides the command line interface of the multiscale-run
+"""This module provides the command line interface of the multiscale-run
 console-scripts entrypoint of the Python package (see setup.py)
 
 The CLI provides the required commands to create a run simulations.
@@ -10,7 +9,6 @@ import copy
 import functools
 import logging
 import os
-from pathlib import Path
 import platform
 import shutil
 import stat
@@ -19,24 +17,25 @@ import sys
 import tempfile
 import textwrap
 import traceback
+from pathlib import Path
 
-from nbconvert.nbconvertapp import main as NbConvertApp
 import diffeqpy
+from nbconvert.nbconvertapp import main as NbConvertApp
 
-# Important: do not import msr stuff here (apart from what is already there)
-# as MPI may not close correctly
-
-from .simulation import MsrSimulation
 from . import __version__
 from .data import (
     BB5_JULIA_ENV,
     CIRCUITS_DIRS,
     DEFAULT_CIRCUIT,
-    circuit_path,
-    SBATCH_TEMPLATE,
     MSR_CONFIG_JSON,
     MSR_POSTPROC,
+    SBATCH_TEMPLATE,
+    circuit_path,
 )
+
+# Important: do not import msr stuff here (apart from what is already there)
+# as MPI may not close correctly
+from .simulation import MsrSimulation
 from .utils import (
     MsrException,
     pushd,
@@ -74,7 +73,6 @@ def julia_env(func):
 
 def command(func):
     """Decorator for every command functions"""
-
     # extract first line of function docstring, and use it
     # for --help description
     func_doc = func.__doc__ or ""
@@ -267,7 +265,7 @@ def check(**kwargs):
 def post_processing(notebook: str, **kwargs) -> Path:
     """Execute a Jupyter notebook over the simulation results to generate an HTML document
 
-    Returns:
+    Returns
       Path to the created HTML report
     """
     from .config import MsrConfig
@@ -304,7 +302,6 @@ def virtualenv(venv=".venv", spec="py-multiscale-run@develop", **kwargs):
     2. create a Python virtualenv in this context
     3. patch the virtualenv script `bin/activate` with shell script retrived (1)
     """
-
     # ensure the command is executed from multiscale_run working copy
     git_clone_error = MsrException(
         "this command must be executed from the root directory of multiscale-run git working-copy"
@@ -435,7 +432,7 @@ def _check_local_neuron_mechanisms():
     """Perform sanity check in case the mod files library has been cloned in the
     simulation directory for local editing.
 
-    Returns:
+    Returns
        False if something smelly has been identified, True otherwise
     """
     sane = True
@@ -665,7 +662,6 @@ def main(**kwargs):
     Args:
         kwargs: optional arguments passed to the argument parser.
     """
-
     from .utils import comm, size
 
     ap = argument_parser()

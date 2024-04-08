@@ -1,12 +1,10 @@
-"""
-This module provides an API on top of the data files shipped
+"""This module provides an API on top of the data files shipped
 with this Python package available in this directory.
 """
 
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
-
 
 DATA_DIR = Path(__file__).parent.resolve()
 

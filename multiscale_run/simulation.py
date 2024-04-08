@@ -1,5 +1,4 @@
-"""
-This module provides an API to instantiate, initialize,
+"""This module provides an API to instantiate, initialize,
 and run simulations. It manipulates the "manager" classes
 and orchestrate the different models and pass data between
 them to perform the simulation
@@ -49,8 +48,8 @@ class MsrSimulation:
             connection_manager,
             metabolism_manager,
             neurodamus_manager,
-            steps_manager,
             preprocessor,
+            steps_manager,
         )
 
     @_run_once
@@ -58,9 +57,7 @@ class MsrSimulation:
         self.warmup()
         logging.info("configure simulators")
 
-        from multiscale_run import config
-        from multiscale_run import preprocessor
-        from multiscale_run import connection_manager
+        from multiscale_run import config, connection_manager, preprocessor
 
         self.conf = config.MsrConfig(self._base_path)
         self.prep = preprocessor.MsrPreprocessor(self.conf)
@@ -74,14 +71,17 @@ class MsrSimulation:
         self.configure()
         logging.info("Initialize simulation")
         if self.conf.is_metabolism_active():
-            from julia import Main as JMain
             from diffeqpy import de
+            from julia import Main as JMain
         from neurodamus.utils.timeit import timeit
-        from multiscale_run import bloodflow_manager
-        from multiscale_run import metabolism_manager
-        from multiscale_run import neurodamus_manager
-        from multiscale_run import reporter
-        from multiscale_run import steps_manager
+
+        from multiscale_run import (
+            bloodflow_manager,
+            metabolism_manager,
+            neurodamus_manager,
+            reporter,
+            steps_manager,
+        )
 
         with timeit(name="initialization"):
             self.prep.autogen_node_sets()
@@ -172,6 +172,7 @@ class MsrSimulation:
         from neurodamus.core import ProgressBarRank0 as ProgressBar
         from neurodamus.utils.logging import log_stage
         from neurodamus.utils.timeit import TimerManager, timeit
+
         from multiscale_run import utils as msr_utils
 
         log_stage("===============================================")

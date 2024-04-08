@@ -1,14 +1,14 @@
 import contextlib
 import functools
-import json
 import inspect
+import json
 import logging
 import os
 import pickle
 import re
 import shutil
-import traceback
 import time
+import traceback
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -19,9 +19,8 @@ from scipy import sparse
 
 @functools.cache
 def mpi():
-    """
-    Returns:
-        The `mpi4py.MPI` module
+    """Returns
+    The `mpi4py.MPI` module
     """
     from mpi4py import MPI
 
@@ -30,36 +29,32 @@ def mpi():
 
 @functools.cache
 def comm():
-    """
-    Returns:
-        The MPI communicator (mpi4py.MPI.Comm)
+    """Returns
+    The MPI communicator (mpi4py.MPI.Comm)
     """
     return mpi().COMM_WORLD
 
 
 @functools.cache
 def rank():
-    """
-    Returns:
-        MPI rank of the current process (int)
+    """Returns
+    MPI rank of the current process (int)
     """
     return comm().Get_rank()
 
 
 @functools.cache
 def rank0():
-    """
-    Returns:
-        True if the current process has MPI rank 0, False otherwise
+    """Returns
+    True if the current process has MPI rank 0, False otherwise
     """
     return rank() == 0
 
 
 @functools.cache
 def size():
-    """
-    Returns:
-        The size of the MPI communicator (int)
+    """Returns
+    The size of the MPI communicator (int)
     """
     return comm().Get_size()
 
@@ -104,7 +99,6 @@ def describe_obj(v, affix: str = ""):
 
         inspect(my_data, "  ")
     """
-
     skip = "  "
 
     def _base(v, affix):
@@ -195,7 +189,6 @@ def delete_cols(mat, indices):
 
         new_matrix = delete_cols(matrix_or_sparse, [2, 4, 6])
     """
-
     if not isinstance(indices, list):
         indices = list(indices)
 
@@ -261,7 +254,6 @@ def cache_decorator(
         def my_method(self, *args, **kwargs):
             # Your method implementation here
     """
-
     if isinstance(field_names, str):
         field_names = [field_names]
 
@@ -341,8 +333,7 @@ def cache_decorator(
 
 
 def clear_and_replace_files_decorator(paths):
-    """
-    A decorator that clears and replaces specified files before and after
+    """A decorator that clears and replaces specified files before and after
     calling the decorated function.
 
     Args:
@@ -358,8 +349,7 @@ def clear_and_replace_files_decorator(paths):
     paths = [Path(i) for i in paths]
 
     def remove_and_replace_path(path, to_tmp):
-        """
-        Remove and replace a file or path.
+        """Remove and replace a file or path.
 
         Args:
             path (str or Path): The path to the file or directory.
@@ -373,8 +363,7 @@ def clear_and_replace_files_decorator(paths):
         rename_path(from_path, to_path)
 
     def decor(method):
-        """
-        The decorator function that wraps the original method.
+        """The decorator function that wraps the original method.
 
         Args:
             method (callable): The function to be decorated.
@@ -499,7 +488,6 @@ def merge_dicts(parent: dict, child: dict):
         Returns:
             value type: merged version of the values possibly found in child and/or parent.
         """
-
         if k not in parent:
             return child[k]
         if k not in child:
@@ -530,8 +518,7 @@ def get_dict_from_json(path) -> dict:
 
 
 def load_jsons(path, replacing_dict: dict = None, parent_path_key: str = None):
-    """
-    Recursively loads JSON files starting from the given path and merges them.
+    """Recursively loads JSON files starting from the given path and merges them.
 
     Args:
         path (str or Path): The path to the JSON file or directory containing JSON files.
@@ -541,7 +528,6 @@ def load_jsons(path, replacing_dict: dict = None, parent_path_key: str = None):
     Returns:
         dict: A dictionary containing the merged content of all loaded JSON files.
     """
-
     if replacing_dict is None:
         replacing_dict = {}
     path = Path(path)
@@ -627,7 +613,6 @@ def remove_path(path):
 
         remove_path("/path/to/directory")
     """
-
     if rank0():
         try:
             shutil.rmtree(path)
@@ -639,8 +624,7 @@ def remove_path(path):
 
 
 def rename_path(path, new_path):
-    """
-    Rename a file or directory to a new path.
+    """Rename a file or directory to a new path.
 
     This function renames a file or directory pointed to by the 'path' argument to
     the 'new_path' argument. It also logs the renaming process.
@@ -660,8 +644,7 @@ def rename_path(path, new_path):
 
 
 def get_subs_d(d: dict) -> dict:
-    """
-    Recursively extracts and filters string key-value pairs from a nested dictionary.
+    """Recursively extracts and filters string key-value pairs from a nested dictionary.
 
     This function traverses the input dictionary recursively, retaining only the key-value pairs
     where both the key and the value are strings. It returns a new dictionary with these filtered pairs.
@@ -680,8 +663,7 @@ def get_subs_d(d: dict) -> dict:
 
 
 def get_resolved_value(d: dict, key: str, in_place: bool = False):
-    """
-    Get the value of a key, replacing ${token} placeholders with corresponding values in the same dictionary.
+    """Get the value of a key, replacing ${token} placeholders with corresponding values in the same dictionary.
 
     This function retrieves the value associated with the specified key in the input dictionary (d),
     and recursively resolves ${token} placeholders in the value using other key-value pairs in the same dictionary.
@@ -706,8 +688,7 @@ def get_resolved_value(d: dict, key: str, in_place: bool = False):
 
 
 def resolve_replaces(d: dict, base_subs_d: dict = None) -> None:
-    """
-    Resolve ${token} placeholders in string values of a nested dictionary, using specified substitution values.
+    """Resolve ${token} placeholders in string values of a nested dictionary, using specified substitution values.
 
     This function processes a nested dictionary (d) and applies token substitution to string values.
     It first extracts and filters string key-value pairs from the dictionary, then resolves ${token}
@@ -748,8 +729,7 @@ def resolve_replaces(d: dict, base_subs_d: dict = None) -> None:
 
 
 def bbox(pts: np.ndarray):
-    """
-    Calculate the bounding box of a set of 3D points.
+    """Calculate the bounding box of a set of 3D points.
 
     Args:
       pts: An array of 3D points with shape (n, 3).
@@ -768,8 +748,7 @@ def bbox(pts: np.ndarray):
 
 
 def generate_cube_corners(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
-    """
-    Generate an array of n cube corner points between two given points a and b.
+    """Generate an array of n cube corner points between two given points a and b.
 
     Args:
         a: The lower corner of the cube.
@@ -825,8 +804,7 @@ def json_sanitize(obj):
 
 
 def get_var_name(lvl: int = 1, pos: int = 0) -> str:
-    """
-    Get the name of a variable from the caller's scope.
+    """Get the name of a variable from the caller's scope.
 
     Args:
         lvl: The number of levels up in the call stack to look for the variable name (default: 1).
@@ -852,8 +830,7 @@ def check_value(
     err: Exception = MsrException,
     msg: str = None,
 ):
-    """
-    Check if a value is within specified bounds and raising an exception if it's not.
+    """Check if a value is within specified bounds and raising an exception if it's not.
 
     Args:
         v: The value to be checked.
@@ -868,14 +845,13 @@ def check_value(
         MsrException: If the value is None, not floatable, NaN, or outside the specified bounds. Custom exception otherwise.
 
     """
-
     msg = msg if msg is not None else f"{get_var_name(1, 0)}"
 
     if v is None:
         raise MsrException(msg + f" ({v}) is None")
     try:
         float(v)
-    except:
+    except ValueError:
         raise MsrException(msg + f" ({v}) is not floatable")
     if np.isnan(v):
         raise MsrException(msg + f" ({v}) is NaN")

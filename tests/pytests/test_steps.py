@@ -1,5 +1,6 @@
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 # this needs to be before "import neurodamus" and before MPI4PY otherwise mpi hangs
 from neuron import h
@@ -81,7 +82,7 @@ def test_steps_with_minimesh():
 
     prep = preprocessor.MsrPreprocessor(conf)
     prep.autogen_mesh(pts=np.array([[100, 100, 200], [300, 500, 400]]))
-    steps_m = steps_manager.MsrStepsManager(conf)
+    steps_manager.MsrStepsManager(conf)
     utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
 
 

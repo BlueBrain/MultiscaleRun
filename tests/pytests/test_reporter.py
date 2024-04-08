@@ -3,7 +3,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-from multiscale_run import reporter, utils, config
+from multiscale_run import config, reporter, utils
 
 
 def config_path():

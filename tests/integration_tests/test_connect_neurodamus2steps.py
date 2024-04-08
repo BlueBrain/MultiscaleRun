@@ -10,12 +10,12 @@ from neuron import h
 h.nrnmpi_init()
 
 from multiscale_run import (
+    config,
     connection_manager,
     neurodamus_manager,
+    preprocessor,
     steps_manager,
     utils,
-    config,
-    preprocessor,
 )
 
 conf0 = config.MsrConfig.rat_sscxS1HL_V6()

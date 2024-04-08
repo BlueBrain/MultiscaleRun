@@ -3,11 +3,11 @@ from neuron import h
 h.nrnmpi_init()
 
 from multiscale_run import (
-    config,
-    utils,
     bloodflow_manager,
+    config,
     neurodamus_manager,
     preprocessor,
+    utils,
 )
 
 

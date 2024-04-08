@@ -3,7 +3,7 @@ from neuron import h
 
 h.nrnmpi_init()
 
-from multiscale_run import neurodamus_manager, config
+from multiscale_run import config, neurodamus_manager
 
 
 def test_init():

@@ -1,5 +1,4 @@
 import numpy as np
-
 from neuron import h
 
 h.nrnmpi_init()

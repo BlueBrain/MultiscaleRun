@@ -1,4 +1,5 @@
 import logging
+
 import numpy as np
 
 from . import utils
@@ -35,10 +36,9 @@ class MsrConnectionManager:
 
         This method calculates and stores several matrices that provide mappings between various components of neuronal and segment data.
 
-        Returns:
+        Returns
             None
         """
-
         ndam_m = self.managers["neurodamus"]
         pts = ndam_m.get_seg_points(self.config.multiscale_run.mesh_scale)
 
@@ -56,10 +56,9 @@ class MsrConnectionManager:
 
         This method calculates the neuron volume fractions within tetrahedral elements and stores the results in conection matrices.
 
-        Returns:
+        Returns
             None
         """
-
         ndam_m = self.managers["neurodamus"]
         steps_m = self.managers["steps"]
 
@@ -79,10 +78,9 @@ class MsrConnectionManager:
 
         This method calculates and stores volumes and flows fractions within tetrahedral elements and synchronization matrices.
 
-        Returns:
+        Returns
             None
         """
-
         bf_m = self.managers["bloodflow"]
         steps_m = self.managers["steps"]
 
@@ -125,7 +123,6 @@ class MsrConnectionManager:
         Raises:
             NotImplementedError: If the action is not implemented.
         """
-
         ndam_m = self.managers["neurodamus"]
         steps_m = self.managers["steps"]
 
@@ -225,7 +222,6 @@ class MsrConnectionManager:
         Raises:
             NotImplementedError: If the action is not implemented.
         """
-
         ndam_m = self.managers["neurodamus"]
         bf_m = self.managers["bloodflow"]
 
@@ -266,7 +262,6 @@ class MsrConnectionManager:
         Raises:
             NotImplementedError: If the action is not implemented.
         """
-
         bf_m = self.managers["bloodflow"]
         metab_m = self.managers["metabolism"]
 
@@ -325,7 +320,6 @@ class MsrConnectionManager:
         Raises:
             NotImplementedError: If the action is not implemented.
         """
-
         steps_m = self.managers["steps"]
         metab_m = self.managers["metabolism"]
 
@@ -376,7 +370,6 @@ class MsrConnectionManager:
         Returns:
             None
         """
-
         if not self.config.is_manager_active(dest_manager_name):
             return
 
@@ -404,7 +397,6 @@ class MsrConnectionManager:
         Returns:
             None
         """
-
         ndam_m = self.managers["neurodamus"]
         metab_m = self.managers.get("metabolism", None)
 

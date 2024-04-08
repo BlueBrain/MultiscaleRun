@@ -39,7 +39,6 @@ class MsrConfig(dict):
             * Otherwise, if this is a `pathlib.Path` instance to a file, it is
               considered to be the JSON file to load.
         """
-
         if isinstance(path, str):
             path = Path(path)
 
@@ -62,8 +61,7 @@ class MsrConfig(dict):
         return obj
 
     def __getattr__(self, key: str):
-        """
-        Provide attribute access to configuration values.
+        """Provide attribute access to configuration values.
 
         This method allows you to access configuration values as attributes of the 'MsrConfig' object.
         If a configuration key exists, you can retrieve its value using attribute-style access.
@@ -86,7 +84,6 @@ class MsrConfig(dict):
         Example:
             >>> value = config.some_key.some_other_key
         """
-
         if key in self:
             if isinstance(self[key], dict):
                 self[key] = MsrConfig._from_dict(self[key])
@@ -106,8 +103,7 @@ class MsrConfig(dict):
         )
 
     def __setattr__(self, key, value):
-        """
-        Set configuration values using attributes.
+        """Set configuration values using attributes.
 
         This method allows you to set configuration values using attributes of the 'MsrConfig' object.
         When you assign a value to an attribute, it is stored as a configuration key-value pair.
@@ -119,19 +115,17 @@ class MsrConfig(dict):
         Example:
             >>> config.some_key = value
         """
-
         if isinstance(value, Path):
             self[key] = str(value)
             return
         self[key] = value
 
     def items(self):
-        """
-        Generate key-value pairs from the configuration.
+        """Generate key-value pairs from the configuration.
 
         This method iterates over the configuration and generates key-value pairs, which can be used in various contexts where iteration is required.
 
-        Yields:
+        Yields
             Tuple: A tuple containing a key-value pair, where the first element is the key (attribute) and the second element is the corresponding value.
 
         Example::
@@ -143,13 +137,12 @@ class MsrConfig(dict):
             yield key, getattr(self, key)
 
     def values(self):
-        """
-        Generate values from the configuration.
+        """Generate values from the configuration.
 
         This method iterates over the configuration and generates the values associated with each key.
         It can be used when you only need to access the values in the configuration.
 
-        Yields:
+        Yields
             Any: The value associated with a specific configuration key.
 
         Example::
@@ -157,7 +150,6 @@ class MsrConfig(dict):
             >>> for value in config.values():
             ...     print(value)
         """
-
         for key in self:
             yield getattr(self, key)
 
@@ -173,8 +165,7 @@ class MsrConfig(dict):
             json.dump(d, file, indent=indent)
 
     def _load(self):
-        """
-        Convenience function to load the configuration files recursively.
+        """Convenience function to load the configuration files recursively.
 
         This method is a convenience function that triggers the recursive
         loading of configuration files to compose the final configuration.
@@ -183,7 +174,7 @@ class MsrConfig(dict):
 
         """
         d = utils.load_jsons(self.config_path)
-        if not "multiscale_run" in d:
+        if "multiscale_run" not in d:
             raise MsrConfigException(
                 f"Missing top-level 'multiscale_run' attribute in config file: '{self.config_path}'"
             )
@@ -223,7 +214,7 @@ class MsrConfig(dict):
 
     @property
     def neurodamus_dt(self):
-        """neurodamus dt"""
+        """Neurodamus dt"""
         if "run" in self and "dt" in self.run:
             return self.run.dt
         raise MsrConfigException(
@@ -232,14 +223,14 @@ class MsrConfig(dict):
 
     @property
     def multiscale_run_dt(self):
-        """multiscale run dt. Computed based on the other dts."""
+        """Multiscale run dt. Computed based on the other dts."""
         if "multiscale_run" in self and "ndts" in self.multiscale_run:
             return self.multiscale_run.ndts * self.neurodamus_dt
         raise None
 
     @property
     def steps_dt(self):
-        """steps dt. It is a multiple of neurodamus dts."""
+        """Steps dt. It is a multiple of neurodamus dts."""
         if self.is_steps_active():
             # raise the usual errors if the manager is active but we cannot access ndts
             return self.multiscale_run.steps.ndts * self.neurodamus_dt
@@ -247,7 +238,7 @@ class MsrConfig(dict):
 
     @property
     def bloodflow_dt(self):
-        """bloodflow dt. It is a multiple of neurodamus dts."""
+        """Bloodflow dt. It is a multiple of neurodamus dts."""
         if self.is_bloodflow_active():
             # raise the usual errors if the manager is active but we cannot access ndts
             return self.multiscale_run.bloodflow.ndts * self.neurodamus_dt
@@ -255,21 +246,19 @@ class MsrConfig(dict):
 
     @property
     def metabolism_dt(self):
-        """metabolism dt. It is a multiple of neurodamus dts."""
+        """Metabolism dt. It is a multiple of neurodamus dts."""
         if self.is_metabolism_active():
             # raise the usual errors if the manager is active but we cannot access ndts
             return self.multiscale_run.metabolism.ndts * self.neurodamus_dt
         return None
 
     def compute_multiscale_run_ndts(self):
-        """
-        Compute multiscale run n dts based on the active steps, metabolism, and bloodflow ndts.
+        """Compute multiscale run n dts based on the active steps, metabolism, and bloodflow ndts.
 
         This method calculates the number of neurodamus dts required to synchronize simulations
         based on active simulation steps (if enabled), metabolism, and bloodflow.
 
         """
-
         msr_conf = self.multiscale_run
         if self.is_metabolism_active() and self.is_steps_active():
             if msr_conf.steps.ndts > msr_conf.metabolism.ndts:
@@ -297,8 +286,7 @@ class MsrConfig(dict):
         self["multiscale_run"]["ndts"] = int(np.gcd.reduce(l if len(l) else 10000))
 
     def __str__(self):
-        """
-        Convert the configuration to a formatted string.
+        """Convert the configuration to a formatted string.
 
         This method generates a formatted string representation of the configuration. It's useful for printing the configuration for inspection and debugging.
 
@@ -309,7 +297,6 @@ class MsrConfig(dict):
             >>> config_str = str(config)
             >>> print(config_str)
         """
-
         s = f"""
     -----------------------------------------------------
     --- MSR CONFIG ---
@@ -320,8 +307,7 @@ class MsrConfig(dict):
         return s
 
     def dt_info(self) -> str:
-        """
-        Info about the various dts of the simulation. If the simulator is inactive its dt is none.
+        """Info about the various dts of the simulation. If the simulator is inactive its dt is none.
 
         Returns:
             str: A string containing the a str with DTS information.
@@ -330,7 +316,6 @@ class MsrConfig(dict):
             >>> dt_info_str = config.dt_info()
             >>> print(dt_info_str)
         """
-
         s = f"""
     -----------------------------------------------------
     --- DTS ---
@@ -348,8 +333,7 @@ class MsrConfig(dict):
 
     @classmethod
     def rat_sscxS1HL_V6(cls):
-        """
-        Returns:
-            MsrConfig: Default configuration using the rat v6 circuit
+        """Returns
+        MsrConfig: Default configuration using the rat v6 circuit
         """
         return cls(DEFAULT_CIRCUIT)

@@ -1,30 +1,27 @@
-from pathlib import Path
+import logging
 import sys
 import time
+from pathlib import Path
 
-import logging
-from tqdm import tqdm
 import numpy as np
+import steps.interface
 from scipy import constants as spc
 from scipy import sparse
-
-import steps.interface
-
 from steps.geom import *
 from steps.model import *
 from steps.rng import *
 from steps.saving import *
 from steps.sim import *
 from steps.utils import *
+from tqdm import tqdm
 
 from . import utils
 
 
 class MsrStepsManager:
-    """
-    Manages STEPS simulations and mesh operations.
+    """Manages STEPS simulations and mesh operations.
 
-    Attributes:
+    Attributes
         config: Configuration data for the simulation.
         mdl: The STEPS model.
         msh: The mesh for the simulation.
@@ -33,8 +30,7 @@ class MsrStepsManager:
     """
 
     def __init__(self, config):
-        """
-        Initialize an instance of MsrStepsManager.
+        """Initialize an instance of MsrStepsManager.
 
         Args:
             config: Configuration data for the simulation.
@@ -44,8 +40,7 @@ class MsrStepsManager:
 
     @utils.logs_decorator
     def init_sim(self):
-        """
-        Initialize the STEPS simulation.
+        """Initialize the STEPS simulation.
 
         This method initializes the STEPS model and solver, sets the initial concentrations, and prepares for simulations.
         """
@@ -56,8 +51,7 @@ class MsrStepsManager:
 
     @utils.logs_decorator
     def init_concentrations(self):
-        """
-        Initialize species concentrations.
+        """Initialize species concentrations.
 
         This method initializes the concentrations of species based on the configuration.
         """
@@ -73,8 +67,7 @@ class MsrStepsManager:
 
     @utils.logs_decorator
     def _init_model(self):
-        """
-        Initialize the STEPS model.
+        """Initialize the STEPS model.
 
         This method initializes the STEPS model by defining species and diffusion constants.
         """
@@ -91,8 +84,7 @@ class MsrStepsManager:
 
     @utils.logs_decorator
     def init_mesh(self):
-        """
-        Initialize the mesh for the simulation.
+        """Initialize the mesh for the simulation.
 
         Args:
             mesh_path: The path to the mesh file or directory.
@@ -119,8 +111,7 @@ class MsrStepsManager:
 
     @staticmethod
     def _auto_select_mesh(mesh_path):
-        """
-        Automatically select the mesh file for parallel simulations.
+        """Automatically select the mesh file for parallel simulations.
 
         If a split mesh is present in the format 'split_*' in the specified directory, it will be used. Otherwise, the function
         allows STEPS 4 to perform auto-splitting.
@@ -135,7 +126,6 @@ class MsrStepsManager:
             The function assumes parallel execution with a 'rank' variable indicating the process rank. Logging is performed if
             rank is 0.
         """
-
         mesh_path = Path(mesh_path)
         if mesh_path.suffix or "split" in mesh_path.name:
             if utils.rank0():
@@ -157,8 +147,7 @@ class MsrStepsManager:
 
     @utils.logs_decorator
     def _init_solver(self):
-        """
-        Initialize the STEPS solver.
+        """Initialize the STEPS solver.
 
         This method initializes the STEPS solver by creating a simulation object and setting up the random number generator.
         """
@@ -174,10 +163,9 @@ class MsrStepsManager:
         self.sim.newRun()
 
     def bbox(self):
-        """
-        Get the bounding box of the mesh.
+        """Get the bounding box of the mesh.
 
-        Returns:
+        Returns
             tuple: A tuple containing the minimum and maximum coordinates of the mesh bounding box.
         """
         return np.array(self.msh.bbox.min.tolist()), np.array(
@@ -186,10 +174,9 @@ class MsrStepsManager:
 
     @utils.logs_decorator
     def get_tetXtetMat(self):
-        """
-        Get a matrix for measuring species dispersion in tetrahedra.
+        """Get a matrix for measuring species dispersion in tetrahedra.
 
-        Returns:
+        Returns
             sparse.csr_matrix: A sparse CSR matrix for measuring species dispersion in tetrahedra.
         """
         return sparse.diags(
@@ -197,17 +184,15 @@ class MsrStepsManager:
         )
 
     def get_tetXtetInvMmat(self):
-        """
-        Get the inverse of the tetrahedra matrix for debugging.
+        """Get the inverse of the tetrahedra matrix for debugging.
 
-        Returns:
+        Returns
             sparse.csr_matrix: A sparse CSR matrix representing the inverse of the tetrahedra matrix.
         """
         return sparse.diags(self.tet_vols * (1 / np.mean(self.tet_vols)), format="csr")
 
     def check_pts_inside_mesh_bbox(self, pts_list):
-        """
-        Check if the given points are inside the mesh bounding box.
+        """Check if the given points are inside the mesh bounding box.
 
         Args:
             pts_list (list of numpy.ndarray): A list of NumPy arrays, where each array has a shape of (n, 3) representing the points to check.
@@ -245,8 +230,7 @@ class MsrStepsManager:
 
     @utils.logs_decorator
     def get_nsegXtetMat(self, local_pts):
-        """
-        Get a matrix of section ratios in tetrahedra.
+        """Get a matrix of section ratios in tetrahedra.
 
         Args:
             local_pts: Represent neuron segments.
@@ -321,8 +305,7 @@ class MsrStepsManager:
 
     @utils.logs_decorator
     def get_tetXbfSegMat(self, pts):
-        """
-        Get a matrix of bloodflow segments in tetrahedra.
+        """Get a matrix of bloodflow segments in tetrahedra.
 
         Args:
             pts: Represent bloodflow segments.
@@ -330,7 +313,6 @@ class MsrStepsManager:
         Returns:
             sparse.csr_matrix: A sparse CSR matrix representing bloodflow segments in tetrahedra.
         """
-
         self.check_pts_inside_mesh_bbox([pts])
 
         with self.msh.asLocal():
@@ -386,8 +368,7 @@ class MsrStepsManager:
         return mat, st
 
     def get_tet_counts(self, species_name, idxs=None):
-        """
-        Get tetrahedra species counts.
+        """Get tetrahedra species counts.
 
         Args:
             species: A species object.
@@ -396,14 +377,12 @@ class MsrStepsManager:
         Returns:
             numpy.ndarray: An array of species counts.
         """
-
         return self.get_tet_quantity(
             species_name=species_name, f="getBatchTetSpecCountsNP", idxs=idxs
         )
 
     def get_tet_concs(self, species_name, idxs=None):
-        """
-        Get tetrahedra species concentrations.
+        """Get tetrahedra species concentrations.
 
         Args:
             species_name (str): The name of the species.
@@ -412,14 +391,12 @@ class MsrStepsManager:
         Returns:
             numpy.ndarray: An array of species concentrations.
         """
-
         return self.get_tet_quantity(
             species_name=species_name, f="getBatchTetSpecConcsNP", idxs=idxs
         )
 
     def get_tet_quantity(self, species_name, f, idxs=None):
-        """
-        Get a specific quantity for tetrahedra.
+        """Get a specific quantity for tetrahedra.
 
         Args:
             species_name (str): The name of the species.
@@ -429,7 +406,6 @@ class MsrStepsManager:
         Returns:
             numpy.ndarray: An array of the specified quantity.
         """
-
         if idxs is None:
             idxs = np.array(range(self.ntets), dtype=np.int64)
 
@@ -441,8 +417,7 @@ class MsrStepsManager:
     def add_curr_to_conc(
         self, species_name: str, vals: list[float], idxs: list[int] = None
     ):
-        """
-        Add membrane currents (from neurodamus for example) to STEPS concentrations.
+        """Add membrane currents (from neurodamus for example) to STEPS concentrations.
 
         This function updates concentrations of a specified species in the model using the provided membrane currents.
         It calculates the required change in concentration based on the input currents and time step and then adds this
@@ -462,7 +437,6 @@ class MsrStepsManager:
         Returns:
             None
         """
-
         spec = self.config.multiscale_run.steps.Volsys.species[species_name]
 
         conc = self.get_tet_concs(species_name=species_name)
