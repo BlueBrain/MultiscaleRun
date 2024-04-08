@@ -4,10 +4,13 @@ import time
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 
 from . import utils
 from .data import DATA_DIR, DEFAULT_CIRCUIT
+
+
+class MsrConfigException(Exception):
+    """General error for the config object"""
 
 
 class MsrConfig(dict):
@@ -47,9 +50,10 @@ class MsrConfig(dict):
             raise TypeError("Expected type are str, pathlib.Path")
 
         if path.resolve().is_dir():
-            path /= "msr_config.json"
+            path /= "simulation_config.json"
 
-        self._load(path)
+        self.config_path = path
+        self._load()
 
     @classmethod
     def _from_dict(cls, data):
@@ -57,15 +61,21 @@ class MsrConfig(dict):
         super(MsrConfig, obj).__init__(data)
         return obj
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str):
         """
         Provide attribute access to configuration values.
 
         This method allows you to access configuration values as attributes of the 'MsrConfig' object.
         If a configuration key exists, you can retrieve its value using attribute-style access.
 
+        It automatically converts:
+
+            - dict to MsrConfig.
+            - lists to lists of MsrConfigs when possible.
+            - strings that represents a path (key: *_path) to `pathlib.Path`.
+
         Args:
-            key (str): The name of the configuration key to access.
+            key: The name of the configuration key to access.
 
         Returns:
             Any: The value associated with the specified configuration key.
@@ -74,7 +84,7 @@ class MsrConfig(dict):
             AttributeError: If the specified key does not exist in the configuration.
 
         Example:
-            >>> value = config.some_key
+            >>> value = config.some_key.some_other_key
         """
 
         if key in self:
@@ -82,6 +92,13 @@ class MsrConfig(dict):
                 self[key] = MsrConfig._from_dict(self[key])
             if key.endswith("_path") and isinstance(self[key], str):
                 self[key] = Path(self[key])
+            if isinstance(self[key], list) and any(
+                isinstance(item, dict) for item in self[key]
+            ):
+                self[key] = [
+                    MsrConfig._from_dict(i) if isinstance(i, dict) else i
+                    for i in self[key]
+                ]
 
             return self[key]
         raise AttributeError(
@@ -144,36 +161,18 @@ class MsrConfig(dict):
         for key in self:
             yield getattr(self, key)
 
-    def merge_without_priority(self, d):
-        """
-        Add a dictionary to the configuration without overriding existing entries.
-
-        This method allows you to merge an external dictionary into the configuration.
-        It adds new key-value pairs from the provided dictionary to the configuration,
-        but it does not override existing keys.
-
-        Args:
-            d (dict): A dictionary to be added to the configuration.
-
-        Example::
-
-            >>> config.merge_without_priority({"new_key": "new_value"})
-        """
-
-        self.update({k: v for k, v in d.items() if k not in self})
-
     @staticmethod
     def dump(config_path, to_path, replace_dict, indent=4):
         """Convenience function to dump the config in a file, collapsing the jsons in case it is necessary
 
         No substitutions are performed except for the parent path. Parent path is removed.
         """
-        d = utils.load_jsons(config_path, parent_path_key="parent_config_path")
+        d = utils.load_jsons(config_path)
         d = utils.merge_dicts(child=replace_dict, parent=d)
         with open(to_path, "w") as file:
             json.dump(d, file, indent=indent)
 
-    def _load(self, config_path):
+    def _load(self):
         """
         Convenience function to load the configuration files recursively.
 
@@ -183,95 +182,119 @@ class MsrConfig(dict):
         resolves relative paths.
 
         """
-        d = utils.load_jsons(config_path, parent_path_key="parent_config_path")
-        base_path = Path(d["base_path"])
-        if not base_path.is_absolute():
-            d["base_path"] = str(config_path.parent / base_path)
-        d["pkg_data_path"] = str(DATA_DIR)
-        d["timestr"] = time.strftime("%Y%m%d%H")
+        d = utils.load_jsons(self.config_path)
+        if not "multiscale_run" in d:
+            raise MsrConfigException(
+                f"Missing top-level 'multiscale_run' attribute in config file: '{self.config_path}'"
+            )
+
+        d.setdefault("multiscale_run", {})["pkg_data_path"] = str(DATA_DIR)
         utils.resolve_replaces(d)
         self.update(d)
 
-        # finalize computing a few additional entries
-        if "msr_debug" in self and self.msr_debug:
-            self.debug_overrides()
-
         # get msr_dts and fix dts
-        self.compute_msr_ndts()
-        # do it again, after the overrides
-        self.compute_msr_ndts()
+        self.compute_multiscale_run_ndts()
 
-    def debug_overrides(self):
-        """
-        Set debug-specific configuration overrides.
+    def is_steps_active(self):
+        """Convenience function to check if a steps is active"""
+        if "multiscale_run" not in self or "with_steps" not in self.multiscale_run:
+            return False
+        return self.multiscale_run.with_steps
 
-        This method sets debug-specific configuration overrides by modifying specific configuration entries.
-        It is intended for debugging and development purposes.
+    def is_bloodflow_active(self):
+        """Convenience function to check if a bloodflow is active"""
+        if "multiscale_run" not in self or "with_bloodflow" not in self.multiscale_run:
+            return False
+        return self.multiscale_run.with_bloodflow
 
-        Example::
+    def is_metabolism_active(self):
+        """Convenience function to check if a metabolism is active"""
+        if "multiscale_run" not in self or "with_metabolism" not in self.multiscale_run:
+            return False
+        return self.multiscale_run.with_metabolism
 
-            >>> config.debug_overrides()
-        """
+    def is_manager_active(self, manager_name: str):
+        """Convenience function to check if a manager is active"""
+        if "multiscale_run" not in self:
+            return False
+        if manager_name == "neurodamus":
+            return True
+        return self.multiscale_run.get(f"with_{manager_name}", False)
 
-        self.metabolism_ndts = 10
-        self.bloodflow_ndts = 10
+    @property
+    def neurodamus_dt(self):
+        """neurodamus dt"""
+        if "run" in self and "dt" in self.run:
+            return self.run.dt
+        raise MsrConfigException(
+            f"Missing 'run.dt' attribute in config file: '{self.config_path}'"
+        )
 
-    def dt(self, token="neurodamus"):
-        """
-        Get the time step (dt) for a given token.
+    @property
+    def multiscale_run_dt(self):
+        """multiscale run dt. Computed based on the other dts."""
+        if "multiscale_run" in self and "ndts" in self.multiscale_run:
+            return self.multiscale_run.ndts * self.neurodamus_dt
+        raise None
 
-        Args:
-          token (str, optional): Token specifying the type of time step.
-          Defaults to "neurodamus".
+    @property
+    def steps_dt(self):
+        """steps dt. It is a multiple of neurodamus dts."""
+        if self.is_steps_active():
+            # raise the usual errors if the manager is active but we cannot access ndts
+            return self.multiscale_run.steps.ndts * self.neurodamus_dt
+        return None
 
-        Returns:
-          float: The time step for the specified token.
-        """
-        if token == "neurodamus":
-            return self.DT
+    @property
+    def bloodflow_dt(self):
+        """bloodflow dt. It is a multiple of neurodamus dts."""
+        if self.is_bloodflow_active():
+            # raise the usual errors if the manager is active but we cannot access ndts
+            return self.multiscale_run.bloodflow.ndts * self.neurodamus_dt
+        return None
 
-        ndts = getattr(self, f"{token}_ndts")
-        return ndts * self.DT
+    @property
+    def metabolism_dt(self):
+        """metabolism dt. It is a multiple of neurodamus dts."""
+        if self.is_metabolism_active():
+            # raise the usual errors if the manager is active but we cannot access ndts
+            return self.multiscale_run.metabolism.ndts * self.neurodamus_dt
+        return None
 
-    def compute_msr_ndts(self):
+    def compute_multiscale_run_ndts(self):
         """
         Compute multiscale run n dts based on the active steps, metabolism, and bloodflow ndts.
 
-        This method calculates the number of neurodamus dts required to synchronize simulations based
-        on active simulation steps (if enabled), metabolism, and bloodflow.
+        This method calculates the number of neurodamus dts required to synchronize simulations
+        based on active simulation steps (if enabled), metabolism, and bloodflow.
 
-        Note:
-            - The 'msr_ndts' attribute is updated with the calculated value.
-
-        Example::
-
-            >>> config.compute_msr_ndts()
         """
 
-        if "metabolism_ndts" in self:
-            if "steps_ndts" in self and self.steps_ndts > self.metabolism_ndts:
+        msr_conf = self.multiscale_run
+        if self.is_metabolism_active() and self.is_steps_active():
+            if msr_conf.steps.ndts > msr_conf.metabolism.ndts:
                 logging.info(
-                    f"steps_ndts reduced to match metabolism: {self.steps_ndts} -> {self.metabolism_ndts}"
+                    f"steps.ndts reduced to match metabolism: {msr_conf.steps.ndts} -> {msr_conf.metabolism.ndts}"
                 )
-                self.steps_ndts = self.metabolism_ndts
-            if "bloodflow_ndts" in self and self.bloodflow_ndts > self.metabolism_ndts:
+                msr_conf.steps.ndts = msr_conf.metabolism.ndts
+
+        if self.is_metabolism_active() and self.is_bloodflow_active():
+            if msr_conf.bloodflow.ndts > msr_conf.metabolism.ndts:
                 logging.info(
-                    f"bloodflow_ndts reduced to match metabolism: {self.bloodflow_ndts} -> {self.metabolism_ndts}"
+                    f"bloodflow.ndts reduced to match metabolism: {msr_conf.bloodflow.ndts} -> {msr_conf.metabolism.ndts}"
                 )
-                self.bloodflow_ndts = self.metabolism_ndts
+                msr_conf.bloodflow.ndts = msr_conf.metabolism.ndts
 
-        l = []
-        if "with_steps" in self and self.with_steps:
-            l.append(self.steps_ndts)
-        if "with_metabolism" in self and self.with_metabolism:
-            l.append(self.metabolism_ndts)
-        if "with_bloodflow" in self and self.with_bloodflow:
-            l.append(self.bloodflow_ndts)
+        l = [
+            msr_conf[i]["ndts"]
+            for i in ["steps", "metabolism", "bloodflow"]
+            if self.is_manager_active(i)
+        ]
 
-        if "msr_ndts" in self:
-            l.append(self.msr_ndts)
+        if "ndts" in msr_conf:
+            l.append(msr_conf.ndts)
 
-        self.msr_ndts = int(np.gcd.reduce(l if len(l) else 10000))
+        self["multiscale_run"]["ndts"] = int(np.gcd.reduce(l if len(l) else 10000))
 
     def __str__(self):
         """
@@ -286,62 +309,37 @@ class MsrConfig(dict):
             >>> config_str = str(config)
             >>> print(config_str)
         """
-        d = {
-            k: self[k] if not isinstance(self[k], Path) else str(self[k]) for k in self
-        }
 
         s = f"""
     -----------------------------------------------------
     --- MSR CONFIG ---
-{json.dumps(d, indent=4)}
+{json.dumps(utils.json_sanitize(self), indent=4)}
     --- MSR CONFIG ---
     -----------------------------------------------------
     """
         return s
 
-    def dt_info(self):
+    def dt_info(self) -> str:
         """
-        Return a DataFrame of DTS (Delta Time Step) information.
-
-        This method generates a DataFrame with information about delta time steps (DTS) for different
-        simulation components, such as neurodamus, metabolism, bloodflow, and more.
+        Info about the various dts of the simulation. If the simulator is inactive its dt is none.
 
         Returns:
-            str: A string containing the DataFrame with DTS information.
+            str: A string containing the a str with DTS information.
 
         Example:
             >>> dt_info_str = config.dt_info()
             >>> print(dt_info_str)
         """
 
-        def get_line(v):
-            ndts = getattr(self, f"{v}_ndts")
-            return {"DT (ms)": self.dt(v), "ndts": ndts}
-
-        data = {}
-
-        data["ndam"] = {
-            "DT (ms)": self.DT,
-        }
-
-        data["msr"] = get_line("msr")
-
-        if self.with_steps:
-            data["steps"] = get_line("steps")
-
-        if self.with_steps:
-            data["metabolism"] = get_line("metabolism")
-
-        if self.with_steps:
-            data["bloodflow"] = get_line("bloodflow")
-
-        df = pd.DataFrame(data).T
-
         s = f"""
     -----------------------------------------------------
     --- DTS ---
-{df}\n
-SIM_END: {self.msr_sim_end} ms
+    neurodamus dt: {self.neurodamus_dt} ms
+    steps dt: {self.steps_dt} ms
+    bloodflow dt: {self.bloodflow_dt} ms
+    metabolism dt: {self.metabolism_dt} ms
+    multiscale run dt: {self.multiscale_run_dt} ms
+    SIM_END: {self.run.tstop} ms
     --- DTS ---
     -----------------------------------------------------
     """

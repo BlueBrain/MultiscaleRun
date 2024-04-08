@@ -57,7 +57,8 @@ def test_autogen_mesh(f, n):
 
     """
     conf = config.MsrConfig(base_path())
-    utils.remove_path(conf.mesh_path.parent)
+    mesh_path = conf.multiscale_run.mesh_path.parent
+    utils.remove_path(mesh_path)
 
     prep = preprocessor.MsrPreprocessor(conf)
 
@@ -71,35 +72,8 @@ def test_autogen_mesh(f, n):
 
     steps_m = steps_manager.MsrStepsManager(conf)
 
-    steps_m.check_pts_inside_mesh_bbox(pts_list=[pts * conf.mesh_scale])
-    utils.remove_path(conf.mesh_path.parent)
-
-
-def test_gen_msh():
-    """
-    Test mesh generation with specific configurations and managers.
-
-    This function tests mesh generation using specific configurations and managers. It includes steps to create, manage, and clean up the mesh.
-
-    """
-    conf = config.MsrConfig.rat_sscxS1HL_V6()
-    tmp_mesh_path = conf.mesh_path.parent.name + "_tmp"
-    utils.rename_path(
-        conf.mesh_path.parent, conf.mesh_path.parent.with_name(tmp_mesh_path)
-    )
-
-    pp = preprocessor.MsrPreprocessor(conf)
-    ndam_m = neurodamus_manager.MsrNeurodamusManager(conf)
-    bf_m = bloodflow_manager.MsrBloodflowManager(
-        vasculature_path=ndam_m.get_vasculature_path(),
-        params=conf.bloodflow,
-    )
-    pp.autogen_mesh(ndam_m=ndam_m, bf_m=bf_m)
-
-    utils.remove_path(conf.mesh_path.parent)
-    utils.rename_path(
-        conf.mesh_path.parent.with_name(tmp_mesh_path), conf.mesh_path.parent
-    )
+    steps_m.check_pts_inside_mesh_bbox(pts_list=[pts * conf.multiscale_run.mesh_scale])
+    utils.remove_path(mesh_path)
 
 
 if __name__ == "__main__":
@@ -111,4 +85,3 @@ if __name__ == "__main__":
     test_autogen_mesh(utils.generate_cube_corners, 8 + 8)
     test_autogen_mesh(utils.generate_cube_corners, 8 + 9)
     test_autogen_mesh(generate_random_points_in_cube, 200)
-    test_gen_msh()

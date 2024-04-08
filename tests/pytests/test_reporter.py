@@ -7,67 +7,78 @@ from multiscale_run import reporter, utils, config
 
 
 def config_path():
-    return Path(__file__).resolve().parent / "test_folder/test_folder1/test_folder2"
+    return Path(__file__).resolve().parent / "test_folder" / "simulation_config.json"
+
+
+class FakeNeurodamusManager:
+    def __init__(self) -> None:
+        gids = {0: [1, 2], 1: [6], 2: [], 3: [5, 7, 11]}
+        ps = np.cumsum([len(i) for i in gids.values()])
+        ps = [0, *ps[:-1]]
+        self.offset = ps[utils.rank()]
+        self._gids = gids[utils.rank()]
+        self.base_gids = gids.copy()
+
+    @property
+    def gids(self):
+        return self._gids
+
+
+class FakeMetabolismManager:
+    def __init__(self, gids) -> None:
+        vals = {
+            0: [i + 1 for i in range(len(gids))],
+            1: [i + 3 for i in range(len(gids))],
+            2: [i + 5 for i in range(len(gids))],
+            3: [i + 7 for i in range(len(gids))],
+        }
+        self.vals = np.array([[-1 for _ in gids], vals[utils.rank()]]).transpose()
+
+    def get_vals(self, idx):
+        return self.vals[:, idx]
 
 
 def test_simple_report():
     conf = config.MsrConfig(config_path())
-    conf.merge_without_priority({"DT": 0.025})
+    folder_path = conf.config_path.parent / conf.output.output_dir
 
-    pop_name = conf.preprocessor.node_sets.neuron_population_name
-    sim_end = conf.msr_sim_end
-    dt = conf.DT * conf.metabolism_ndts
-    idt = 0
+    utils.remove_path(folder_path)
 
-    utils.remove_path(conf.results_path)
+    pop_name = conf.multiscale_run.preprocessor.node_sets.neuron_population_name
+    idt = 1
+    managers = {}
+    managers["neurodamus"] = FakeNeurodamusManager()
+    gids = managers["neurodamus"].gids
+    offset = managers["neurodamus"].offset
+    managers["metabolism"] = FakeMetabolismManager(gids=gids)
 
-    # gids are 1-based in input
-    gids = {0: [1, 2], 1: [6], 2: [], 3: [5, 7, 11]}
-    ps = np.cumsum([len(i) for i in gids.values()])
-    ps = [0, *ps[:-1]]
-    offset = ps[utils.rank()]
-    idt = 0
-    gids = gids[utils.rank()]
-    base_gids = gids.copy()
     t_unit = "mss"
 
     rr = reporter.MsrReporter(config=conf, gids=gids, t_unit=t_unit)
 
-    d = {"bau": ["A", "B"], "miao": [["C", "1"], ["B", "2"]]}
-
-    if len(gids) > 1:
-        gids.pop(1)
-
-    for k, v in d.items():
-        q = {tuple(i): [utils.rank() + 1] * len(gids) for i in v}
-
-        rr.set_group(k, q, ["mol"] * len(q), gids)
-
-    rr.flush_buffer(idt)
+    rr.record(idt=idt, manager_name="metabolism", managers=managers, when="after_sync")
     utils.comm().Barrier()
 
-    for group, cols in rr.buffers.items():
-        for name, v in cols.items():
-            path = rr.file_path(group, name)
-            with h5py.File(path, "r") as file:
-                data = file[f"{rr.data_loc}/data"]
-                q = [utils.rank() + 1] * len(v)
-                if len(q) > 1:
-                    q[1] = 0
-                assert np.allclose(data[idt, offset : offset + len(v)], q)
-                assert data.attrs["units"] == rr.d_units[group][name]
-                data = file[f"/report/{pop_name}/mapping/node_ids"]
-                assert np.allclose(
-                    data[offset : offset + len(v)], [i - 1 for i in base_gids]
-                )
-                data = file[f"/report/{pop_name}/mapping/time"]
-                assert np.allclose(data, [0, sim_end, dt])
-                assert np.allclose(data, [0, sim_end, dt])
-                assert data.attrs["units"] == t_unit
+    for rep in conf.multiscale_run.reports.metabolism.values():
+        path = rr._file_path(rep.file_name)
+        with h5py.File(path, "r") as file:
+            data = file[f"{rr.data_loc}/data"]
+            assert np.allclose(
+                data[idt, offset : offset + len(gids)],
+                managers["metabolism"].get_vals(1),
+            )
+            assert np.allclose(
+                data[idt - 1, offset : offset + len(gids)], [0] * len(gids)
+            )
+            assert data.attrs["units"] == rep.unit
+            data = file[f"/report/{pop_name}/mapping/node_ids"]
+            assert np.allclose(data[offset : offset + len(gids)], [i - 1 for i in gids])
+            data = file[f"/report/{pop_name}/mapping/time"]
+            assert np.allclose(data, [0, conf.run.tstop, conf.metabolism_dt])
+            assert data.attrs["units"] == t_unit
 
-    utils.remove_path(conf.results_path)
+    utils.remove_path(folder_path)
 
 
 if __name__ == "__main__":
     test_simple_report()
-    test_env_imports()

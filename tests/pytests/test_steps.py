@@ -32,8 +32,8 @@ def gen_segments_in_bbox(msh):
 
 def test_steps_connections_mats():
     conf = config.MsrConfig.rat_sscxS1HL_V6()
-    conf.mesh_path = str(get_mesh_path())
-    utils.remove_path(Path(conf.mesh_path).parent)
+    conf.multiscale_run.mesh_path = str(get_mesh_path())
+    utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
     config.cache_load = False
     config.cache_save = False
 
@@ -56,31 +56,35 @@ def test_steps_connections_mats():
         assert st is None, st
 
     for it in range(10):
-        t = 0.025 * conf.steps_ndts * it
+        t = 0.025 * conf.multiscale_run.steps.ndts * it
         steps_m.sim.run(t / 1000)
 
-        assert np.all(steps_m.get_tet_concs(species_name="Na") > 0)
-        assert np.all(steps_m.get_tet_counts(species_name="Na") > 0)
+        assert np.all(
+            steps_m.get_tet_concs(species_name="KK") > 0
+        ), "KK concentration is <=0 in at least one tet"
+        assert np.all(
+            steps_m.get_tet_counts(species_name="KK") > 0
+        ), "KK count is <=0 in at least one tet"
 
-    utils.remove_path(Path(conf.mesh_path).parent)
+    utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
 
 
 def test_steps_with_minimesh():
     """To be used manually with multiple ranks to see if omega_h complains"""
 
     conf = config.MsrConfig.rat_sscxS1HL_V6()
-    conf.mesh_path = str(get_mesh_path())
-    conf.preprocessor.mesh.refinement_steps = 0
-    utils.remove_path(Path(conf.mesh_path).parent)
+    conf.multiscale_run.mesh_path = str(get_mesh_path())
+    conf.multiscale_run.preprocessor.mesh.refinement_steps = 0
+    utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
     config.cache_load = False
     config.cache_save = False
 
     prep = preprocessor.MsrPreprocessor(conf)
     prep.autogen_mesh(pts=np.array([[100, 100, 200], [300, 500, 400]]))
     steps_m = steps_manager.MsrStepsManager(conf)
-    utils.remove_path(Path(conf.mesh_path).parent)
+    utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
 
 
 if __name__ == "__main__":
-    test_steps_with_minimesh()
-    # test_steps_connections_mats()
+    # test_steps_with_minimesh()
+    test_steps_connections_mats()

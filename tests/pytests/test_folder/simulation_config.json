@@ -1,0 +1,44 @@
+{
+    "multiscale_run": {
+        "with_metabolism": true,
+        "foo_path": "RESULTS",
+        "a": 1,
+        "c": 1,
+        "q": 1,
+        "d": {
+            "q": 0,
+            "miao_path": "${bau_path}/${foo_path}/hola",
+            "bau_path": "${foo_path}/bbb"
+        },
+        "includes": [
+            "${foo_path}/a",
+            "${foo_path}/b"
+        ],
+        "preprocessor": {
+            "node_sets": {
+                "neuron_population_name": "All"
+            }
+        },
+        "metabolism": {
+            "ndts": 10
+        },
+        "reports": {
+            "metabolism": {
+                "metab_ina": {
+                    "src_get_func": "get_vals",
+                    "src_get_kwargs": {"idx": 1},  
+                    "unit": "foo3",
+                    "file_name": "test_reporter.h5",
+                    "when": "after_sync"
+                }
+            }
+        }
+    },
+    "run": {
+        "tstop": 1,
+        "dt": 0.025
+    },
+    "output": {
+        "output_dir": "./RESULTS"
+    }
+}

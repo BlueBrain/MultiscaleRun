@@ -7,6 +7,7 @@ import os
 import pickle
 import re
 import shutil
+import traceback
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -70,12 +71,17 @@ class MsrException(Exception):
 def timesteps(end: float, step: float):
     """Timestep generator
 
+    Includes the end point
+
     Example::
 
        >>> timesteps(1, 0.2)
        [0.2, 0.4, ..., 1.0]
     """
-    return ((i + 1) * step for i in range(int(end / step)))
+    l = np.arange(*[step, end + step, step])
+    if len(l) and l[-1] > end:
+        l = l[:-1]
+    return l
 
 
 def print_once(*args, **kwargs):
@@ -140,60 +146,69 @@ def describe_obj(v, affix: str = ""):
     s.get(type(v), _base)(v, affix)
 
 
-def delete_rows_csr(mat: sparse.csr_matrix, indices: list[int]) -> sparse.csr_matrix:
-    """Remove the rows denoted by ``indices`` from the CSR sparse matrix ``mat``.
+def delete_rows(mat, indices):
+    """Remove the rows denoted by ``indices`` from the matrix ``mat``.
 
     Args:
-        mat: The CSR sparse matrix.
+        mat: The matrix (NumPy array or CSR sparse matrix).
         indices: The indices of rows to be deleted.
 
     Returns:
-        The modified CSR matrix with specified rows removed.
+        The modified matrix with specified rows removed.
 
     Raises:
-        ValueError: If the input matrix is not in CSR format.
+        ValueError: If the input matrix is not a NumPy array or CSR sparse matrix.
 
     Example::
 
-        new_csr_matrix = delete_rows_csr(sparse_csr_matrix, [2, 4, 6])
+        new_matrix = delete_rows(matrix_or_sparse, [2, 4, 6])
     """
+    if not isinstance(indices, list):
+        indices = list(indices)
 
-    if not isinstance(mat, sparse.csr_matrix):
-        raise ValueError(
-            f"works only for CSR format -- use .tocsr() first. Current type: {type(mat)}"
-        )
-    indices = list(indices)
-    mask = np.ones(mat.shape[0], dtype=bool)
-    mask[indices] = False
-    return mat[mask]
+    if isinstance(mat, np.ndarray):
+        return np.delete(mat, indices, axis=0)
+    if isinstance(mat, sparse.csr_matrix):
+        mask = np.ones(mat.shape[0], dtype=bool)
+        mask[indices] = False
+        return mat[mask]
+
+    raise ValueError(
+        f"Input matrix must be a NumPy array or CSR sparse matrix. Current type: {type(mat)}"
+    )
 
 
-def delete_cols_csr(mat: sparse.csr_matrix, indices: list[int]) -> sparse.csr_matrix:
-    """Remove the columns denoted by ``indices`` from the CSR sparse matrix ``mat``.
+def delete_cols(mat, indices):
+    """Remove the columns denoted by ``indices`` from the matrix ``mat``.
 
     Args:
-        mat: The CSR sparse matrix.
+        mat: The matrix (NumPy array or CSR sparse matrix).
         indices: The indices of columns to be deleted.
 
     Returns:
-        The modified CSR matrix with specified columns removed.
+        The modified matrix with specified columns removed.
 
     Raises:
-        ValueError: If the input matrix is not in CSR format.
+        ValueError: If the input matrix is not a NumPy array or CSR sparse matrix.
 
     Example::
 
-        new_csr_matrix = delete_cols_csr(sparse_csr_matrix, [2, 4, 6])
+        new_matrix = delete_cols(matrix_or_sparse, [2, 4, 6])
     """
 
-    if not isinstance(mat, sparse.csr_matrix):
-        raise ValueError(
-            f"works only for CSR format -- use .tocsr() first. Current type: {type(mat)}"
-        )
+    if not isinstance(indices, list):
+        indices = list(indices)
 
-    all_cols = np.arange(mat.shape[1])
-    cols_to_keep = np.where(np.logical_not(np.in1d(all_cols, indices)))[0]
-    return mat[:, cols_to_keep]
+    if isinstance(mat, np.ndarray):
+        return np.delete(mat, indices, axis=1)
+    if isinstance(mat, sparse.csr_matrix):
+        all_cols = np.arange(mat.shape[1])
+        cols_to_keep = np.where(np.logical_not(np.in1d(all_cols, indices)))[0]
+        return mat[:, cols_to_keep]
+
+    raise ValueError(
+        f"Input matrix must be a NumPy array or CSR sparse matrix. Current type: {type(mat)}"
+    )
 
 
 def rank_print(*args, **kwargs):
@@ -258,9 +273,9 @@ def cache_decorator(
         @functools.wraps(method)
         def wrapper(self, *args, path=path, is_save=is_save, is_load=is_load, **kwargs):
             if hasattr(self, "config"):
-                path = self.config.cache_path
-                is_save = self.config.cache_save
-                is_load = self.config.cache_load
+                path = self.config.multiscale_run.cache_path
+                is_save = self.config.multiscale_run.cache_save
+                is_load = self.config.multiscale_run.cache_load
 
             path = Path(path)
             if not only_rank0:
@@ -381,6 +396,29 @@ def clear_and_replace_files_decorator(paths):
         return wrapper
 
     return decor
+
+
+def append_suffix(path: Path, suffix: str):
+    """Append to path a suffix respecting file extensions"""
+    path = Path(path)
+    stem = path.stem
+    extension = path.suffix
+    new_stem = stem + "_" + suffix
+    # Reconstruct the Path with modified file name
+    return path.with_name(new_stem).with_suffix(extension)
+
+
+def remove_elems(v: list, to_be_removed: set) -> list:
+    """Convenience function: removes elements from a list based on their indices.
+
+    Args:
+        v: The list from which elements will be removed.
+        to_be_removed: an iterable containing the indices of elements to be removed.
+
+    Returns:
+        A list with elements removed based on the provided indices.
+    """
+    return [i for idx, i in enumerate(v) if idx not in to_be_removed]
 
 
 def logs_decorator(wrapped):
@@ -772,6 +810,20 @@ def strtobool(val):
         raise ValueError("invalid truth value %r" % (val,))
 
 
+def json_sanitize(obj):
+    """Convenience function to convert recursively posix paths in a dict to make it json-able"""
+    if isinstance(obj, Path):
+        return str(obj)
+
+    if isinstance(obj, list):
+        return [json_sanitize(i) for i in obj]
+
+    if isinstance(obj, dict):
+        return {k: json_sanitize(v) for k, v in obj.items()}
+
+    return obj
+
+
 def get_var_name(lvl: int = 1, pos: int = 0) -> str:
     """
     Get the name of a variable from the caller's scope.
@@ -798,9 +850,10 @@ def check_value(
     leb: float = -float("inf"),
     heb: float = float("inf"),
     err: Exception = MsrException,
+    msg: str = None,
 ):
     """
-    Check if a value is within specified bounds and raise an exception if it's not.
+    Check if a value is within specified bounds and raising an exception if it's not.
 
     Args:
         v: The value to be checked.
@@ -809,34 +862,34 @@ def check_value(
         leb: The lower or equal bound (default: negative infinity).
         heb: The higher or equal bound (default: positive infinity).
         err: The exception class to be raised (default: MsrException).
+        msg: Error affix. For when deduction fails.
 
-    Raises:
-        MsrException: If the value is None, not floatable, NaN, or outside the specified bounds.
+    Raise:
+        MsrException: If the value is None, not floatable, NaN, or outside the specified bounds. Custom exception otherwise.
 
     """
 
-    def msg():
-        return f"{get_var_name(2, 0)}: {v}"
+    msg = msg if msg is not None else f"{get_var_name(1, 0)}"
 
     if v is None:
-        raise MsrException(msg() + " is None")
+        raise MsrException(msg + f" ({v}) is None")
     try:
         float(v)
-    except ValueError:
-        raise MsrException(msg() + " is not floatable")
+    except:
+        raise MsrException(msg + f" ({v}) is not floatable")
     if np.isnan(v):
-        raise MsrException(msg() + " is NaN")
+        raise MsrException(msg + f" ({v}) is NaN")
     if np.isinf(v):
-        raise MsrException(msg() + " is Inf")
+        raise MsrException(msg + f" ({v}) is Inf")
 
     if v < lb:
-        raise err(f"{msg()} < {lb}")
+        raise err(f"{msg} ({v}) < {lb}")
     if v > hb:
-        raise err(f"{msg()} > {hb}")
+        raise err(f"{msg} ({v}) > {hb}")
     if v <= leb:
-        raise err(f"{msg()} <= {leb}")
+        raise err(f"{msg} ({v}) <= {leb}")
     if v >= heb:
-        raise err(f"{msg()} >= {heb}")
+        raise err(f"{msg} ({v}) >= {heb}")
 
 
 @contextlib.contextmanager
@@ -852,3 +905,30 @@ def pushd(path):
         yield path
     finally:
         os.chdir(cwd)
+
+
+def log_stats(
+    vec: list[float],
+    lb: float = -float("inf"),
+    hb: float = float("inf"),
+    leb: float = -float("inf"),
+    heb: float = float("inf"),
+    msg: str = "",
+):
+    min0, avg, max0, n = float("inf"), 0, -float("inf"), len(vec)
+    if n:
+        min0, avg, max0 = np.min(vec), np.mean(vec), np.max(vec)
+    min0 = comm().gather(min0, root=0)
+    avg = comm().gather(avg, root=0)
+    max0 = comm().gather(max0, root=0)
+    n = comm().gather(n, root=0)
+    if rank0():
+        min0 = np.min(min0)
+        max0 = np.max(max0)
+        avg = np.average(avg, weights=n)
+        low_b = f"[{lb}" if lb > leb else f"({leb}"
+        high_b = f"{hb}]" if hb < heb else f"{heb})"
+
+        logging.info(
+            f"{msg} (low_b/min/avg/max/high_b): {low_b}/{ppf(min0)}/{ppf(avg)}/{ppf(max0)}/{high_b}"
+        )

@@ -60,7 +60,7 @@ def check_mats_shape(ndam_m, conn_m, steps_m, nshape=None, segshape=None):
     """
     d = {
         int(nc.CCell.gid): len(
-            [seg for sec in ndam_m._gen_secs(nc) for seg in ndam_m._gen_segs(sec)]
+            [seg for sec in ndam_m.gen_secs(nc) for seg in ndam_m.gen_segs(sec)]
         )
         for nc in ndam_m.ncs
     }
@@ -86,7 +86,9 @@ def check_mats_shape(ndam_m, conn_m, steps_m, nshape=None, segshape=None):
     np.testing.assert_equal(conn_m.nXnsegMatBool.shape, (nn, nseg))
 
 
-@utils.clear_and_replace_files_decorator([conf0.mesh_path.parent, conf0.cache_path])
+@utils.clear_and_replace_files_decorator(
+    [conf0.multiscale_run.mesh_path.parent, conf0.multiscale_run.cache_path]
+)
 @utils.logs_decorator
 def test_connection():
     """
@@ -99,17 +101,20 @@ def test_connection():
     conf = config.MsrConfig.rat_sscxS1HL_V6()
 
     prep = preprocessor.MsrPreprocessor(conf)
-
-    conn_m = connection_manager.MsrConnectionManager(conf)
+    managers = {}
+    conn_m = connection_manager.MsrConnectionManager(config=conf, managers=managers)
 
     prep.autogen_node_sets()
-    ndam_m = neurodamus_manager.MsrNeurodamusManager(conf)
-    conn_m.connect_ndam2ndam(ndam_m)
+    
+    managers["neurodamus"] = neurodamus_manager.MsrNeurodamusManager(conf)
+    conn_m.connect_neurodamus2neurodamus(managers["neurodamus"])
 
-    prep.autogen_mesh(ndam_m=ndam_m)
-    steps_m = steps_manager.MsrStepsManager(conf)
+    prep.autogen_mesh(ndam_m=managers["neurodamus"])
+    managers["steps"] = steps_manager.MsrStepsManager(conf)
 
-    conn_m.connect_ndam2steps(ndam_m=ndam_m, steps_m=steps_m)
+    conn_m.connect_neurodamus2steps(
+        ndam_m=managers["neurodamus"], steps_m=managers["steps"]
+    )
 
     check_ratio_mat(conn_m.nXtetMat)
     check_ratio_mat(conn_m.nsegXtetMat)
@@ -118,49 +123,75 @@ def test_connection():
     segshape = conn_m.nsegXtetMat.shape
     d = {
         int(nc.CCell.gid): len(
-            [seg for sec in ndam_m._gen_secs(nc) for seg in ndam_m._gen_segs(sec)]
+            [
+                seg
+                for sec in managers["neurodamus"].gen_secs(nc)
+                for seg in managers["neurodamus"].gen_segs(sec)
+            ]
         )
-        for nc in ndam_m.ncs
+        for nc in managers["neurodamus"].ncs
     }
 
-    utils.rank_print("gid: ", [int(nc.CCell.gid) for nc in ndam_m.ncs])
-    ndam_m.remove_gids(
-        failed_cells={933: "remove from rank 0", 1004: "remove from rank 1"},
-        conn_m=conn_m,
-    )
-    ndam_m.update(conn_m)
+    utils.rank_print("gid: ", [int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
+    failed_cells_dict = {933: "remove from rank 0", 1004: "remove from rank 1"}
+    failed_cells = [
+        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids
+    ]
+    conn_m.remove_gids(failed_cells=failed_cells, managers=managers)
 
-    utils.rank_print([int(nc.CCell.gid) for nc in ndam_m.ncs])
+    utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
 
     l = [v for k, v in d.items() if k in [933, 1004]]
     nshape = (nshape[0] - len(l), nshape[1])
     segshape = (segshape[0] - sum(l), segshape[1])
-    check_mats_shape(ndam_m, conn_m, steps_m, nshape=nshape, segshape=segshape)
+    check_mats_shape(
+        managers["neurodamus"],
+        conn_m,
+        managers["steps"],
+        nshape=nshape,
+        segshape=segshape,
+    )
     nshape = conn_m.nXtetMat.shape
     segshape = conn_m.nsegXtetMat.shape
 
-    utils.rank_print([int(nc.CCell.gid) for nc in ndam_m.ncs])
-
-    ndam_m.update(conn_m)
-    check_mats_shape(ndam_m, conn_m, steps_m, nshape=nshape, segshape=segshape)
-
-    utils.rank_print([int(nc.CCell.gid) for nc in ndam_m.ncs])
-
-    ndam_m.remove_gids(failed_cells={17500: "reason 0"}, conn_m=conn_m)
-    ndam_m.update(conn_m)
-    check_mats_shape(ndam_m, conn_m, steps_m, nshape=nshape, segshape=segshape)
-
-    utils.rank_print([int(nc.CCell.gid) for nc in ndam_m.ncs])
-
-    ndam_m.remove_gids(failed_cells={175: "reason 0"}, conn_m=conn_m)
-    ndam_m.update(conn_m)
+    utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
 
     check_mats_shape(
-        ndam_m,
+        managers["neurodamus"],
         conn_m,
-        steps_m,
+        managers["steps"],
+        nshape=nshape,
+        segshape=segshape,
+    )
+
+    utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
+
+    failed_cells_dict = {17500: "reason 0"}
+    failed_cells = [
+        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids
+    ]
+    conn_m.remove_gids(failed_cells=failed_cells, managers=managers)
+    check_mats_shape(
+        managers["neurodamus"],
+        conn_m,
+        managers["steps"],
+        nshape=nshape,
+        segshape=segshape,
+    )
+
+    utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
+
+    failed_cells_dict = {175: "reason 0"}
+    failed_cells = [
+        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids
+    ]
+
+    check_mats_shape(
+        managers["neurodamus"],
+        conn_m,
+        managers["steps"],
         nshape=nshape if not utils.rank0() else None,
-        segshape=segshape not utils.rank0() else None,
+        segshape=segshape if not utils.rank0() else None,
     )
 
 

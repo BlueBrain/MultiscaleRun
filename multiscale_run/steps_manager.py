@@ -61,14 +61,15 @@ class MsrStepsManager:
 
         This method initializes the concentrations of species based on the configuration.
         """
-        # there are 0.001 M/mM
+        # the 1e-3 is needed to pass from M to mM
 
-        for s in self.config.steps.Volsys.species:
-            spec = getattr(self.config.species, s)
+        for spec_name, spec in self.config.multiscale_run.steps.Volsys.species.items():
             steps_spec = getattr(
-                getattr(self.sim, self.config.steps.compname), spec.steps.name
+                getattr(self.sim, self.config.multiscale_run.steps.compname), spec_name
             )
-            steps_spec.Conc = 1e-3 * spec.steps.conc_0 * self.config.steps.conc_factor
+            steps_spec.Conc = (
+                1e-3 * spec.conc_0 * self.config.multiscale_run.steps.conc_factor
+            )
 
     @utils.logs_decorator
     def _init_model(self):
@@ -79,14 +80,14 @@ class MsrStepsManager:
         """
         self.mdl = Model()
         with self.mdl:
-            volsys = VolumeSystem(name=self.config.steps.Volsys.name)
-            for s in self.config.steps.Volsys.species:
-                spec = getattr(self.config.species, s)
-                v = Species(name=spec.steps.name)
+            volsys = VolumeSystem(name=self.config.multiscale_run.steps.Volsys.name)
+            for (
+                species_name,
+                spec,
+            ) in self.config.multiscale_run.steps.Volsys.species.items():
+                v = Species(name=species_name)
                 with volsys:
-                    Diffusion(
-                        elem=v, Dcst=spec.steps.diffcst, name=f"diff_{spec.steps.name}"
-                    )
+                    Diffusion(elem=v, Dcst=spec.diffcst, name=f"diff_{species_name}")
 
     @utils.logs_decorator
     def init_mesh(self):
@@ -101,13 +102,16 @@ class MsrStepsManager:
         # STEPS default length scale is m
         # NEURON default length scale is um
 
-        mesh_path = self._auto_select_mesh(self.config.mesh_path)
+        mesh_path = MsrStepsManager._auto_select_mesh(
+            self.config.multiscale_run.mesh_path
+        )
 
-        self.msh = DistMesh(str(mesh_path), scale=self.config.mesh_scale)
+        self.msh = DistMesh(str(mesh_path), scale=self.config.multiscale_run.mesh_scale)
 
         with self.msh:
             Compartment(
-                name=self.config.steps.compname, vsys=self.config.steps.Volsys.name
+                name=self.config.multiscale_run.steps.compname,
+                vsys=self.config.multiscale_run.steps.Volsys.name,
             )
 
         self.ntets = len(self.msh.tets)
@@ -434,53 +438,53 @@ class MsrStepsManager:
 
         return ans
 
-    def update_concs(self, species, curr, DT, idxs=None):
+    def add_curr_to_conc(
+        self, species_name: str, vals: list[float], idxs: list[int] = None
+    ):
         """
-        Update concentrations in a STEPS model based on membrane currents.
+        Add membrane currents (from neurodamus for example) to STEPS concentrations.
 
         This function updates concentrations of a specified species in the model using the provided membrane currents.
         It calculates the required change in concentration based on the input currents and time step and then adds this
         change to the existing concentrations. The function also ensures that concentrations remain non-negative and
         updates the concentrations for a specific set of tetrahedra.
 
-        Parameters:
-            species_name (str): The name of the species to be updated.
-            species: Additional parameter (not described in the function, consider adding a description).
-            curr (float): The membrane currents.
-            DT (float): The time step.
-            idxs (numpy.ndarray, optional): An array of indices representing the tetrahedra to be updated. If not provided, all tetrahedra are updated.
+        Args:
+            species_name: The name of the species to be updated.
+            vals: The membrane currents (in mA).
+            idxs: An array of indices representing the tetrahedra to be updated. If not provided, all tetrahedra are updated.
 
         Units:
             - Concentrations are in M/L.
             - curr is in mA.
-            - DT is in ms.
             - tet_vols are in m^3.
 
         Returns:
             None
         """
 
-        conc = self.get_tet_concs(species_name=species.steps.name)
+        spec = self.config.multiscale_run.steps.Volsys.species[species_name]
+
+        conc = self.get_tet_concs(species_name=species_name)
         # correct tetCons according to the currents
         # 0.001A/mA 6.24e18 particles/coulomb 1000L/m3
         # In steps use M/L and apply the SIM_REAL ratio
         # A = C/s = n * c*e/s. To get mol/L we
         # the 1e+-3 factor are for: mA -> A, ms -> s, m^3 -> L
         corr_conc = np.divide(
-            curr
+            vals
             * 1e-3
-            * self.config.steps.conc_factor
-            * (DT * 1e-3)
+            * self.config.multiscale_run.steps.conc_factor
+            * (self.config.steps_dt * 1e-3)
             / (
-                spc.N_A
-                * species.steps.ncharges
-                * spc.physical_constants["elementary charge"][0]
+                spc.N_A * spec.ncharges * spc.physical_constants["elementary charge"][0]
             ),
             self.tet_vols * 1e3,
         )
 
         conc += corr_conc
 
+        # negative concentrations are not allowed!
         negative_indices = np.where(conc < 0)
         if negative_indices[0].size > 0:
             negative_values = conc[negative_indices]
@@ -497,4 +501,4 @@ class MsrStepsManager:
             idxs = np.array(range(self.ntets), dtype=np.int64)
 
         # only owned tets are set
-        self.sim.stepsSolver.setBatchTetSpecConcsNP(idxs, species.steps.name, conc)
+        self.sim.stepsSolver.setBatchTetSpecConcsNP(idxs, species_name, conc)

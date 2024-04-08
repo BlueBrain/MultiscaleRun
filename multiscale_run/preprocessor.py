@@ -72,7 +72,9 @@ class MsrPreprocessor:
         Example:
             >>> gen_node_sets()
         """
-        output_filename = self._check_filename_existence(self.config.node_sets_path)
+        output_filename = self._check_filename_existence(
+            Path(self.config.node_sets_file)
+        )
         if output_filename is None:
             return
 
@@ -116,9 +118,11 @@ class MsrPreprocessor:
         if hasattr(self, "neuro_df"):
             return
 
-        pop_name = self.config.preprocessor.node_sets.neuron_population_name
+        pop_name = (
+            self.config.multiscale_run.preprocessor.node_sets.neuron_population_name
+        )
 
-        c = Circuit(self.config.circuit_path)
+        c = Circuit(str(self.config.config_path.parent / self.config.network))
 
         # Create a list of astrocyte ids, that contains all the astrocytes with endfoot
         gliovascular = c.edges["gliovascular"]
@@ -138,7 +142,7 @@ class MsrPreprocessor:
             f"There are {selected_astrocytes.size} astrocytes with valid endfeet"
         )
 
-        if self.config.preprocessor.node_sets.filter_neuron:
+        if self.config.multiscale_run.preprocessor.node_sets.filter_neuron:
             neuroglial = c.edges["neuroglial"]
             edges_ids = np.arange(neuroglial.size, dtype=np.uint16)
             df = neuroglial.get(edges_ids, ["@source_node", "@target_node"])
@@ -188,7 +192,9 @@ class MsrPreprocessor:
         point_cloud = trimesh.PointCloud(points)
         surface_mesh = point_cloud.convex_hull
 
-        for _ in range(self.config.preprocessor.mesh.surface_subdivisions):
+        for _ in range(
+            self.config.multiscale_run.preprocessor.mesh.surface_subdivisions
+        ):
             surface_mesh = surface_mesh.subdivide()
 
         surface_mesh.update_faces(surface_mesh.unique_faces())
@@ -197,17 +203,17 @@ class MsrPreprocessor:
         trimesh.repair.fix_inversion(surface_mesh)
         trimesh.repair.fix_winding(surface_mesh)
 
-        stl_path = Path(self.config.mesh_path).with_suffix(".stl")
+        stl_path = Path(self.config.multiscale_run.mesh_path).with_suffix(".stl")
         surface_mesh.export(stl_path)
 
-        geo_path = Path(self.config.mesh_path).with_suffix(".geo")
+        geo_path = Path(self.config.multiscale_run.mesh_path).with_suffix(".geo")
 
         ss = f"""
 Merge '{stl_path.name}';
 Mesh.CharacteristicLengthFactor = 0.1;
 Surface Loop(1) = {{1}};
 Volume(1) = {{1}};
-Physical Volume('{self.config.steps.compname}', 1) = {{1}};
+Physical Volume('{self.config.multiscale_run.steps.compname}', 1) = {{1}};
 """
 
         with open(geo_path, "w") as f:
@@ -215,9 +221,11 @@ Physical Volume('{self.config.steps.compname}', 1) = {{1}};
 
     @utils.logs_decorator
     def _gen_bbox_msh(self, pts):
-        length = self.config.preprocessor.mesh.base_length  # Adjust as needed
-        phys_vol = self.config.steps.compname
-        refinement_steps = self.config.preprocessor.mesh.refinement_steps
+        length = (
+            self.config.multiscale_run.preprocessor.mesh.base_length
+        )  # Adjust as needed
+        phys_vol = self.config.multiscale_run.steps.compname
+        refinement_steps = self.config.multiscale_run.preprocessor.mesh.refinement_steps
 
         bb = utils.bbox(pts)
 
@@ -272,7 +280,7 @@ Volume(1) = {{1}};
 Physical Volume("{phys_vol}", 1) = {{1}};
         """
 
-        mesh_path = self.config.mesh_path
+        mesh_path = self.config.multiscale_run.mesh_path
         with open(str(mesh_path.with_suffix(".geo")), "w") as geo_file:
             geo_file.write(geo_string)
 
@@ -321,10 +329,10 @@ Physical Volume("{phys_vol}", 1) = {{1}};
             >>> gen_msh()
         """
 
-        script_file = str(self.config.mesh_path.with_suffix(".geo"))
-        output_file = str(self.config.mesh_path.with_suffix(".msh"))
-        refinement_steps = self.config.preprocessor.mesh.refinement_steps
-        algo = self.config.preprocessor.mesh.generative_algorithm
+        script_file = str(self.config.multiscale_run.mesh_path.with_suffix(".geo"))
+        output_file = str(self.config.multiscale_run.mesh_path.with_suffix(".msh"))
+        refinement_steps = self.config.multiscale_run.preprocessor.mesh.refinement_steps
+        algo = self.config.multiscale_run.preprocessor.mesh.generative_algorithm
 
         # Initialize Gmsh
         gmsh.initialize()
@@ -401,7 +409,9 @@ Physical Volume("{phys_vol}", 1) = {{1}};
             logging.info(f"npts: {pts.shape[0]}")
 
             # scaling: points should encompass a zone slightly larger
-            pts = self._explode_pts(pts, self.config.preprocessor.mesh.explode_factor)
+            pts = MsrPreprocessor._explode_pts(
+                pts, self.config.multiscale_run.preprocessor.mesh.explode_factor
+            )
         return pts
 
     @utils.logs_decorator
@@ -424,8 +434,9 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         Example:
             >>> gen_mesh()
         """
+
         pts = pts if pts is not None else []
-        mesh_path = Path(self.config.mesh_path)
+        mesh_path = Path(self.config.multiscale_run.mesh_path)
         mesh_path.parent.mkdir(parents=True, exist_ok=True)
         if mesh_path.exists():
             logging.info(f"Use existing steps mesh: {mesh_path}")

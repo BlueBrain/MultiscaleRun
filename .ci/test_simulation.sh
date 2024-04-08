@@ -12,7 +12,7 @@ postproc=${postproc:true}
 steps=${steps:-false}
 metabolism=${metabolism:-false}
 bloodflow=${bloodflow:-false}
-sim_end=${sim_end:-1000}
+tstop=${tstop:-1000}
 
 if [ -z ${sim_name:x} ]; then
   fatal_error "expected environment variable 'SIM_NAME'."
@@ -22,11 +22,11 @@ rm -rf "$sim_name"
 multiscale-run init --no-check -f "$sim_name"
 
 pushd "$sim_name"
-/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/bin/jq ".with_steps = $steps | .with_bloodflow = $bloodflow | .with_metabolism = $metabolism | .msr_sim_end = $sim_end " msr_config.json > msr_config.json.bak
-mv msr_config.json.bak msr_config.json
-cat msr_config.json
+/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/bin/jq ".multiscale_run.with_steps = $steps | .multiscale_run.with_bloodflow = $bloodflow | .multiscale_run.with_metabolism = $metabolism | .run.tstop = $tstop " simulation_config.json > simulation_config.json.bak
+mv simulation_config.json.bak simulation_config.json
+cat simulation_config.json
 popd >/dev/null
-unset steps bloodflow metabolism sim_end
+unset steps bloodflow metabolism tstop
 
 module load unstable intel-oneapi-mkl gmsh
 srun --overlap -n $bb5_ntasks multiscale-run compute "$sim_name"

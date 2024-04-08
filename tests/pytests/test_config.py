@@ -7,13 +7,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def base_path():
-    return (
-        Path(__file__).resolve().parent
-        / "test_folder"
-        / "test_folder1"
-        / "test_folder2"
-        / "msr_config.json"
-    )
+    return Path(__file__).resolve().parent / "test_folder" / "simulation_config.json"
 
 
 def test_load():
@@ -21,11 +15,11 @@ def test_load():
     sp = base_path()
 
     def _test_config(conf):
-        assert conf.a == 2, conf.a
+        conf = conf.multiscale_run
+        assert conf.a == 1, conf.a
         assert conf.c == 1, conf.c
         assert conf.d != {"q": 0}, conf.d
-        assert conf.e == 1, conf.e
-        assert str(conf.d.miao_path) == "aaa/bbb/aaa/hola"
+        assert str(conf.d.miao_path) == "RESULTS/bbb/RESULTS/hola"
         assert conf.includes == ["RESULTS/a", "RESULTS/b"]
 
     # config can be a pathlib.Path to a JSON file
@@ -36,7 +30,7 @@ def test_load():
     # config can also be a str to a file or directory
     _test_config(config.MsrConfig(str(sp)))
     # finally, config can be a Python dict
-    config.MsrConfig._from_dict(conf1.d)
+    config.MsrConfig._from_dict(conf1.multiscale_run.d)
 
 
 if __name__ == "__main__":

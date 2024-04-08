@@ -81,21 +81,24 @@ dualrun_test 1/16:
   variables:
     bb5_ntasks: 1
     bb5_duration: "02:00:00"
-    sim_end: 105
+    tstop: 105
 
 dualrun_test 2/16:
   extends: .dualrun_test
   variables:
     bb5_ntasks: 2
-    sim_end: 105
+    tstop: 105
 
 dualrun_test 16/16:
   extends: .dualrun_test
   variables:
     bb5_ntasks: 16
+    tstop: 1000
 
 nrun_[steps, metab, bf]:
   extends: .nrun_test
+  variables:
+    tstop: 500
   parallel:
     matrix:
     - steps: ["false", "true"]

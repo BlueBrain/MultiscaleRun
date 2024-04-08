@@ -57,19 +57,23 @@ class MsrSimulation:
     def configure(self):
         self.warmup()
         logging.info("configure simulators")
+
         from multiscale_run import config
         from multiscale_run import preprocessor
         from multiscale_run import connection_manager
 
         self.conf = config.MsrConfig(self._base_path)
         self.prep = preprocessor.MsrPreprocessor(self.conf)
-        self.conn_m = connection_manager.MsrConnectionManager(self.conf)
+        self.managers = {}
+        self.conn_m = connection_manager.MsrConnectionManager(
+            config=self.conf, managers=self.managers
+        )
 
     @_run_once
     def initialize(self):
         self.configure()
         logging.info("Initialize simulation")
-        if self.conf.with_metabolism:
+        if self.conf.is_metabolism_active():
             from julia import Main as JMain
             from diffeqpy import de
         from neurodamus.utils.timeit import timeit
@@ -81,62 +85,81 @@ class MsrSimulation:
 
         with timeit(name="initialization"):
             self.prep.autogen_node_sets()
-            self.ndam_m = neurodamus_manager.MsrNeurodamusManager(self.conf)
-            self.rep = reporter.MsrReporter(config=self.conf, gids=self.ndam_m.gids())
-            self.conn_m.connect_ndam2ndam(ndam_m=self.ndam_m)
+            self.neurodamus_manager = neurodamus_manager.MsrNeurodamusManager(self.conf)
+            self.managers["neurodamus"] = self.neurodamus_manager
+            failed_cells = [None] * len(self.neurodamus_manager.ncs)
 
-            self.conf.merge_without_priority({"DT": self.ndam_m.dt()})
-
-            logging.info(str(self.conf))
+            # this is here because neurodamus is in charge of setting the log level
+            logging.info(str(self.conf.multiscale_run))
             logging.info(self.conf.dt_info())
 
             logging.info("Initializing simulations...")
+            self.rep = reporter.MsrReporter(
+                config=self.conf, gids=self.neurodamus_manager.gids
+            )
 
-            if self.conf.with_bloodflow:
-                self.bf_m = bloodflow_manager.MsrBloodflowManager(
-                    vasculature_path=self.ndam_m.get_vasculature_path(),
-                    params=self.conf.bloodflow,
+            self.conn_m.connect_neurodamus2neurodamus()
+
+            self.managers["bloodflow"] = None
+            if self.conf.is_bloodflow_active():
+                self.managers["bloodflow"] = bloodflow_manager.MsrBloodflowManager(
+                    vasculature_path=self.neurodamus_manager.get_vasculature_path(),
+                    parameters=self.conf.multiscale_run.bloodflow,
                 )
-
             # the communication between bf and ndam is mediated by the steps mesh. We need the
             # connect calls in this case
-            if self.conf.with_steps or (
-                self.conf.with_bloodflow and self.conf.with_metabolism
+
+            self.managers["steps"] = None
+            if self.conf.is_steps_active() or (
+                self.conf.is_bloodflow_active() and self.conf.is_metabolism_active()
             ):
                 self.prep.autogen_mesh(
-                    ndam_m=self.ndam_m,
-                    bf_m=self.bf_m if self.conf.with_bloodflow else None,
+                    ndam_m=self.neurodamus_manager,
+                    bf_m=self.managers["bloodflow"],
                 )
-                self.steps_m = steps_manager.MsrStepsManager(config=self.conf)
-                self.steps_m.init_sim()
-                self.conn_m.connect_ndam2steps(ndam_m=self.ndam_m, steps_m=self.steps_m)
-                if self.conf.with_bloodflow:
-                    self.conn_m.connect_bf2steps(bf_m=self.bf_m, steps_m=self.steps_m)
+                self.managers["steps"] = steps_manager.MsrStepsManager(config=self.conf)
+                self.managers["steps"].init_sim()
+                self.conn_m.connect_neurodamus2steps()
+                if self.conf.is_bloodflow_active():
+                    self.conn_m.connect_bloodflow2steps()
 
-            if self.conf.with_metabolism:
-                self.metab_m = metabolism_manager.MsrMetabolismManager(
+            self.managers["metabolism"] = None
+            if self.conf.is_metabolism_active():
+                self.managers["metabolism"] = metabolism_manager.MsrMetabolismManager(
                     config=self.conf,
                     main=JMain,
-                    neuron_pop_name=self.ndam_m.neuron_manager.population_name,
-                    gids=self.ndam_m.gids(),
+                    neuron_pop_name=self.managers[
+                        "neurodamus"
+                    ].neuron_manager.population_name,
+                    gids=self.neurodamus_manager.gids,
                 )
 
-                # sync for the initial conditions
-                self.conn_m.ndam2metab_sync(
-                    gids=self.ndam_m.gids(), ndam_m=self.ndam_m, metab_m=self.metab_m
-                )
-                if self.conf.with_bloodflow:
-                    self.conn_m.ndam2bloodflow_sync(ndam_m=self.ndam_m, bf_m=self.bf_m)
-                    self.bf_m.update_static_flow()
-                    self.conn_m.bloodflow2metab_sync(
-                        gids=self.ndam_m.gids(), bf_m=self.bf_m, metab_m=self.metab_m
-                    )
-                if self.conf.with_steps:
-                    self.conn_m.steps2metab_sync(
-                        gids=self.ndam_m.gids(),
-                        steps_m=self.steps_m,
-                        metab_m=self.metab_m,
-                    )
+            # sync bloodflow to give initial values to metabolism
+            self.conn_m.process_syncs(dest_manager_name="bloodflow")
+            if self.conf.is_bloodflow_active():
+                self.managers["bloodflow"].update_static_flow()
+
+            # apply all the connections for initialization
+            self.rep.record(
+                idt=0,
+                manager_name="metabolism",
+                managers=self.managers,
+                when="before_sync",
+            )
+
+            self.conn_m.process_syncs(dest_manager_name="metabolism")
+
+            # remove cells that already fail
+            if self.conf.is_metabolism_active():
+                self.managers["metabolism"].check_inputs(failed_cells=failed_cells)
+            self.conn_m.remove_gids(failed_cells=failed_cells)
+
+            self.rep.record(
+                idt=0,
+                manager_name="metabolism",
+                managers=self.managers,
+                when="after_sync",
+            )
 
     @_run_once
     def compute(self):
@@ -158,129 +181,77 @@ class MsrSimulation:
 
         # i_* is the number of time steps of that particular simulator
         i_ndam, i_metab = 0, 0
-        for t in ProgressBar(
-            int(self.conf.msr_sim_end / (self.conf.DT * self.conf.msr_ndts))
-        )(
-            msr_utils.timesteps(
-                self.conf.msr_sim_end, self.conf.DT * self.conf.msr_ndts
-            )
-        ):
-            i_ndam += self.conf.msr_ndts
+        time_step_n = int(self.conf.run.tstop / (self.conf.multiscale_run_dt))
+        time_steps = msr_utils.timesteps(
+            self.conf.run.tstop, self.conf.multiscale_run_dt
+        )
+        for t in ProgressBar(time_step_n)(time_steps):
+            i_ndam += self.conf.multiscale_run.ndts
             with timeit(name="main_loop"):
-                with timeit(name="neurodamus_solver"):
-                    self.ndam_m.ndamus.solve(t)
-
-                if self.conf.with_steps and i_ndam % self.conf.steps_ndts == 0:
-                    with timeit(name="steps_loop"):
-                        log_stage("steps loop")
-                        with timeit(name="steps_solver"):
-                            self.steps_m.sim.run(t / 1000)  # ms to sec
-
-                        with timeit(name="neurodamus_2_steps"):
-                            self.conn_m.ndam2steps_sync(
-                                ndam_m=self.ndam_m,
-                                steps_m=self.steps_m,
-                                specs=self.conf.steps.Volsys.species,
-                                DT=self.conf.steps_ndts * self.conf.DT,
-                            )
-
-                if self.conf.with_bloodflow and i_ndam % self.conf.bloodflow_ndts == 0:
-                    with timeit(name="bf_loop"):
-                        log_stage("bf loop")
-                        self.conn_m.ndam2bloodflow_sync(
-                            ndam_m=self.ndam_m, bf_m=self.bf_m
-                        )
-                        self.bf_m.update_static_flow()
+                failed_cells = [None] * len(self.neurodamus_manager.ncs)
+                with timeit(name="neurodamus_advance"):
+                    self.neurodamus_manager.ndamus.solve(t)
 
                 if (
-                    self.conf.with_metabolism
-                    and i_ndam % self.conf.metabolism_ndts == 0
+                    self.conf.is_steps_active()
+                    and i_ndam % self.conf.multiscale_run.steps.ndts == 0
                 ):
-                    with timeit(name="metabolism_loop"):
-                        log_stage("metab loop")
-                        # gids may change during the sim. We need to get the updated version
-                        lgids = self.ndam_m.gids()
-                        with timeit(name="neurodamus_2_metabolism"):
-                            self.conn_m.ndam2metab_sync(
-                                gids=self.ndam_m.gids(),
-                                ndam_m=self.ndam_m,
-                                metab_m=self.metab_m,
-                            )
+                    with timeit(name="steps_advance"):
+                        self.managers["steps"].sim.run(t / 1000)  # ms to sec
 
-                            units = [
-                                (
-                                    getattr(
-                                        getattr(self.conf.species, k[0]).neurodamus,
-                                        k[1],
-                                    ).unit
-                                    if isinstance(k, tuple)
-                                    else ""
-                                )
-                                for k in self.metab_m.ndam_vars.keys()
-                            ]
-                            self.rep.set_group(
-                                "ndam", self.metab_m.ndam_vars, units, lgids
-                            )
+                    self.conn_m.process_syncs(dest_manager_name="steps")
 
-                        if self.conf.with_steps:
-                            with timeit(name="steps_2_metabolism"):
-                                self.conn_m.steps2metab_sync(
-                                    gids=self.ndam_m.gids(),
-                                    steps_m=self.steps_m,
-                                    metab_m=self.metab_m,
-                                )
-                                self.rep.set_group(
-                                    "steps",
-                                    self.metab_m.steps_vars,
-                                    ["M"] * len(self.metab_m.steps_vars),
-                                    lgids,
-                                )
+                if (
+                    self.conf.is_bloodflow_active()
+                    and i_ndam % self.conf.multiscale_run.bloodflow.ndts == 0
+                ):
+                    # bloodflow has an implicit scheme because it works with quasi-static assumption
+                    self.conn_m.process_syncs(dest_manager_name="bloodflow")
+                    with timeit(name="bloodflow_advance"):
+                        self.managers["bloodflow"].update_static_flow()
 
-                        if self.conf.with_bloodflow:
-                            with timeit(name="bloodflow_2_metabolism"):
-                                self.conn_m.bloodflow2metab_sync(
-                                    gids=self.ndam_m.gids(),
-                                    bf_m=self.bf_m,
-                                    metab_m=self.metab_m,
-                                )
+                if (
+                    self.conf.is_metabolism_active()
+                    and i_ndam % self.conf.multiscale_run.metabolism.ndts == 0
+                ):
+                    with timeit(name="metabolism_advance"):
+                        self.managers["metabolism"].check_inputs(
+                            failed_cells=failed_cells
+                        )
+                        self.managers["metabolism"].advance(
+                            i_metab=i_metab, failed_cells=failed_cells
+                        )
+                    i_metab += 1
+                    utils.comm().Barrier()
 
-                                self.rep.set_group(
-                                    "bf",
-                                    self.metab_m.bloodflow_vars,
-                                    [
-                                        "um^3" if "vol" in i else "um^3/s"
-                                        for i in self.metab_m.bloodflow_vars
-                                    ],
-                                    lgids,
-                                )
-                        self.rep.flush_buffer(i_metab)
+                    self.conn_m.remove_gids(failed_cells=failed_cells)
 
-                        with timeit(name="solve_metabolism"):
-                            failed_cells = self.metab_m.advance(
-                                gids=self.ndam_m.gids(),
-                                i_metab=i_metab,
-                                metab_dt=self.conf.metabolism_ndts * self.conf.DT,
-                            )
+                    self.rep.record(
+                        idt=i_metab,
+                        manager_name="metabolism",
+                        managers=self.managers,
+                        when="before_sync",
+                    )
 
-                        self.ndam_m.remove_gids(failed_cells, self.conn_m)
+                    self.conn_m.process_syncs(dest_manager_name="metabolism")
 
-                        with timeit(name="metabolism_2_neurodamus"):
-                            self.conn_m.metab2ndam_sync(
-                                metab_m=self.metab_m, ndam_m=self.ndam_m
-                            )
-
-                        utils.comm().Barrier()
-
-                        i_metab += 1
+                    self.rep.record(
+                        idt=i_metab,
+                        manager_name="metabolism",
+                        managers=self.managers,
+                        when="after_sync",
+                    )
 
                 self.rss.append(
                     psutil.Process().memory_info().rss / (1024**2)
                 )  # memory consumption in MB
 
-        self.ndam_m.ndamus.sonata_spikes()
+        self.neurodamus_manager.ndamus.sonata_spikes()
         TimerManager.timeit_show_stats()
         utils.comm().Barrier()
-        self.ndam_m.ndamus._touch_file(self.ndam_m.ndamus._success_file)
+        self.neurodamus_manager.ndamus._touch_file(
+            self.neurodamus_manager.ndamus._success_file
+        )
 
 
 def main():

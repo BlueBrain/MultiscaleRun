@@ -18,8 +18,8 @@ class MsrNeurodamusManager:
         """
         logging.info("instantiate ndam")
         self.ndamus = neurodamus.Neurodamus(
-            str(config.sonata_path),
-            logging_level=config.logging_level,
+            str(config.config_path),
+            logging_level=config.multiscale_run.logging_level,
             enable_coord_mapping=True,
             cleanup_atexit=False,
             lb_mode="RoundRobin",
@@ -29,52 +29,21 @@ class MsrNeurodamusManager:
         logging.info("ndam is ready")
 
         self.set_managers()
+        # list[neurodamus.metype.Cell_V6]
         self.ncs = np.array([nc for nc in self.neuron_manager.cells])
         # useful for reporting
         self.num_neurons_per_rank = utils.comm().gather(len(self.ncs), root=0)
         self.init_ncs_len = len(self.ncs)
         self.acs = np.array([nc for nc in self.astrocyte_manager.cells])
-        self.nc_vols = self._cumulate_nc_sec_quantity("volume")
-        self.nc_areas = self._cumulate_nc_sec_quantity("area")
+        self.nc_weights = {
+            k: self._cumulate_nc_sec_quantity(k) for k in ["volume", "area"]
+        }
         self.removed_gids = {}
 
+    @property
     def gids(self):
         """Convenience function to get the gids from ncs"""
         return [int(nc.CCell.gid) for nc in self.ncs]
-
-    def remove_gids(self, failed_cells, conn_m):
-        """Add GIDs (Global IDs) to the removed_gids list and update connections.
-
-        This method adds the GIDs of failed cells to the removed_gids list and updates the connections in the given connection manager.
-
-        Args:
-            failed_cells: A dictionary containing information about failed cells.
-            conn_m: The connection manager to update connections.
-
-        Returns:
-            None
-        """
-
-        self.removed_gids |= failed_cells
-
-        self.update(conn_m=conn_m)
-
-    def dt(self):
-        """Get the time step (Dt) used in neurodamus simulations.
-
-        Returns:
-            float: The time step value.
-        """
-        return float(self.ndamus._run_conf["Dt"])
-
-    def duration(self):
-        """Get the duration used in neurodamus simulations.
-
-        Returns:
-            float: The duration value.
-        """
-
-        return float(self.ndamus._run_conf["Duration"])
 
     def set_managers(self):
         """Find useful node managers for neurons, astrocytes, and glio-vascular management.
@@ -101,8 +70,7 @@ class MsrNeurodamusManager:
             "vasculature", "astrocytes", neurodamus.ngv.GlioVascularManager
         )
 
-    @staticmethod
-    def _gen_secs(nc, filter=None):
+    def gen_secs(self, nc: neurodamus.metype.Cell_V6, filter=None):
         """Generator of filtered sections for a neuron.
 
         This method generates filtered sections for a neuron based on the provided filter.
@@ -114,7 +82,7 @@ class MsrNeurodamusManager:
         Yields:
             Filtered sections for the neuron.
         """
-        filter = filter if filter is not None else []
+        filter = filter or []
         for sec in nc.CellRef.all:
             if not all(hasattr(sec, i) for i in filter):
                 continue
@@ -122,8 +90,7 @@ class MsrNeurodamusManager:
                 continue
             yield sec
 
-    @staticmethod
-    def _gen_segs(sec):
+    def gen_segs(self, sec):
         """Generator of segments for a neuron section.
 
         This method generates segments for a neuron section.
@@ -137,8 +104,9 @@ class MsrNeurodamusManager:
         for seg in sec:
             yield seg
 
-    def _cumulate_nc_sec_quantity(self, f):
-        """Calculate cumulative quantity for neuron sections.
+    def _cumulate_nc_sec_quantity(self, f: str) -> tuple:
+        """
+        Calculate cumulative quantity for neuron sections.
 
         This method calculates a cumulative quantity for neuron sections, such as volume or area.
 
@@ -146,21 +114,18 @@ class MsrNeurodamusManager:
             f: The quantity to calculate (e.g., "volume" or "area").
 
         Returns:
-            np.ndarray: An array of tuples containing the sum and the individual values for each neuron section.
+            tuple: A tuple containing two numpy arrays:
+                np.ndarray: An array of sums for each neuron compartment.
+                np.ndarray: An array of arrays containing individual values for each neuron compartment.
         """
         v = [
             [
-                sum(
-                    [
-                        getattr(seg, f)()
-                        for seg in MsrNeurodamusManager._gen_segs(sec=sec)
-                    ]
-                )
-                for sec in MsrNeurodamusManager._gen_secs(nc=nc)
+                sum([getattr(seg, f)() for seg in self.gen_segs(sec=sec)])
+                for sec in self.gen_secs(nc=nc)
             ]
             for nc in self.ncs
         ]
-        return np.array([(sum(i), i) for i in v], dtype=object)
+        return np.array([sum(i) for i in v], dtype=object), np.array(v, dtype=object)
 
     def get_seg_points(self, scale):
         """Get the segment points for all neurons.
@@ -222,7 +187,7 @@ class MsrNeurodamusManager:
         self.seg_points = [
             get_seg_extremes(sec, nc.local_to_global_coord_mapping)
             for nc in self.ncs
-            for sec in MsrNeurodamusManager._gen_secs(nc=nc)
+            for sec in self.gen_secs(nc=nc)
         ]
         return [i * scale for i in self.seg_points]
 
@@ -287,11 +252,11 @@ class MsrNeurodamusManager:
         def gen_data():
             itot = 0
             for inc, nc in enumerate(self.ncs):
-                for isec, _ in enumerate(MsrNeurodamusManager._gen_secs(nc=nc)):
+                for isec, _ in enumerate(self.gen_secs(nc=nc)):
                     itot += 1
-                    yield self.nc_vols[inc][1][isec] / self.nc_vols[inc][
-                        0
-                    ], inc, itot - 1
+                    yield self.nc_weights["volume"][1][inc][isec] / self.nc_weights[
+                        "volume"
+                    ][0][inc], inc, itot - 1
 
         # data is always a nX3 array:
         # col[0] is the ratio (dimensionless).
@@ -309,48 +274,16 @@ class MsrNeurodamusManager:
 
         return ans
 
-    def update(self, conn_m):
-        """Update removing GIDs and connection matrices.
-
-        This method updates the removal of GIDs and the corresponding connection matrices.
-        It is essential to pass the connection manager to update the connection matrices.
-
-        Args:
-            conn_m: The connection manager to update connection matrices.
-
-        Returns:
-            None
-        """
-
-        def gen_to_be_removed_segs():
-            i = 0
-            for nc in self.ncs:
-                for sec in MsrNeurodamusManager._gen_secs(nc=nc):
-                    for seg in MsrNeurodamusManager._gen_segs(sec=sec):
-                        i += 1
-                        if int(nc.CCell.gid) in self.removed_gids.keys():
-                            yield i - 1
-
-        to_be_removed = [isegs for isegs in gen_to_be_removed_segs()]
-        if conn_m is not None:
-            conn_m.delete_rows("nsegXtetMat", to_be_removed)
-            conn_m.delete_cols("nXnsegMatBool", to_be_removed)
-
-        to_be_removed = [
-            inc
-            for inc, nc in enumerate(self.ncs)
-            if int(nc.CCell.gid) in self.removed_gids.keys()
-        ]
-
-        if conn_m is not None:
-            conn_m.delete_rows("nXtetMat", to_be_removed)
-            conn_m.delete_rows("nXnsegMatBool", to_be_removed)
-
-        # keep this as last
-        for i in ["ncs", "nc_vols", "nc_areas"]:
-            self._update_attr(i, to_be_removed)
-
-        self.check_neuron_removal_status()
+    def gen_to_be_removed_segs(self):
+        """Generate the segments ids that need to be removed."""
+        i = 0
+        for nc in self.ncs:
+            for sec in self.gen_secs(nc=nc):
+                for seg in self.gen_segs(sec=sec):
+                    i += 1
+                    if int(nc.CCell.gid) in self.removed_gids.keys():
+                        # ndam 2 sonata off-by-one correction
+                        yield i - 1
 
     def check_neuron_removal_status(self):
         """
@@ -389,35 +322,11 @@ class MsrNeurodamusManager:
                     logging.info(f"Rank {r}, GID {gid}: {reason}")
 
             if sum(working_gids) == 0:
-                print(
-                    "All the neurons were removed! There is probably something fishy going on here",
-                    flush=True,
+                raise utils.MsrException(
+                    "All the neurons were removed! There is probably something fishy going on here"
                 )
-                utils.comm().Abort(1)
 
-    def _update_attr(self, v, to_be_removed):
-        """Update a class attribute based on the list of indices to be removed.
-
-        This method updates a class attribute by removing elements at specific indices.
-
-        Args:
-            v: The class attribute to update (assumed to be a list).
-            to_be_removed: A list of indices to remove from the attribute.
-
-        Returns:
-            None
-        """
-        if not hasattr(self, v):
-            return
-
-        attr = getattr(self, v)
-        setattr(
-            self,
-            v,
-            np.array([i for idx, i in enumerate(attr) if idx not in to_be_removed]),
-        )
-
-    def get_var(self, var, weight, filter=None):
+    def get_var(self, var: str, weight: str = None, filter=None):
         """Get variable values per segment weighted by a specific factor (e.g., area or volume).
 
         This method retrieves variable values per segment, weighted by a specific factor (e.g., area or volume).
@@ -431,9 +340,14 @@ class MsrNeurodamusManager:
             np.ndarray: An array containing the variable values per segment weighted by the specified factor.
         """
 
+        if weight is not None and weight not in self.nc_weights:
+            raise KeyError(
+                f"Unknown weight: {weight}. Possible keys: {', '.join(self.nc_weights)}"
+            )
+
         def f(seg):
             w = 1
-            if isinstance(weight, str):
+            if weight is not None:
                 w = getattr(seg, weight)()
 
             return getattr(seg, var) * w
@@ -442,30 +356,31 @@ class MsrNeurodamusManager:
             [
                 f(seg)
                 for nc in self.ncs
-                for sec in MsrNeurodamusManager._gen_secs(nc=nc, filter=filter)
-                for seg in MsrNeurodamusManager._gen_segs(sec=sec)
+                for sec in self.gen_secs(nc=nc, filter=filter)
+                for seg in self.gen_segs(sec=sec)
             ]
         )
 
         return ans
 
-    def set_var(self, var, val, filter=None):
+    def set_var(self, var: str, vals: list[float], filter=None):
         """Set a variable to a specific value for all segments.
 
         This method sets a variable to a specific value for all segments based on the provided filter.
 
         Args:
             var: The variable to set.
-            val: The value to set the variable to.
+            val: The value to set the variable to. 1 value per neuron. It should be
+                the average.
             filter: An optional list of attributes to filter segments by.
 
         Returns:
             None
         """
         for inc, nc in enumerate(self.ncs):
-            for sec in MsrNeurodamusManager._gen_secs(nc=nc, filter=filter):
-                for seg in MsrNeurodamusManager._gen_segs(sec=sec):
-                    setattr(seg, var, val[inc])
+            for sec in self.gen_secs(nc=nc, filter=filter):
+                for seg in self.gen_segs(sec=sec):
+                    setattr(seg, var, vals[inc])
 
     def get_vasculature_path(self):
         """Get the path to the vasculature generated by VascCouplingB.

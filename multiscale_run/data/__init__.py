@@ -17,7 +17,7 @@ CIRCUITS_DIRS = [
 ]
 DEFAULT_CIRCUIT = CONFIG_DIR / "rat_sscxS1HL_V6"
 
-MSR_CONFIG_JSON = CONFIG_DIR / "msr_config.json"
+MSR_CONFIG_JSON = "simulation_config.json"
 MSR_POSTPROC = DATA_DIR / "postproc.ipynb"
 METABOLISM_MODEL = DATA_DIR / "metabolismndam_reduced"
 

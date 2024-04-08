@@ -11,6 +11,9 @@ pushd "${SCRIPT_DIR}/.." >/dev/null
 num_errors=0
 count_errors() {
     ((num_errors++))
+    local command="$BASH_COMMAND"
+    echo "Error occurred while executing: $command (Trap: ERR)"
+    echo "num_errors: $num_errors"
 }
 trap count_errors ERR
 
@@ -18,11 +21,11 @@ trap count_errors ERR
 # related issue in: https://bbpteam.epfl.ch/project/issues/browse/BBPP40-412
 python -mpytest -v tests/pytests/test_bloodflow.py
 python -mpytest -v tests/pytests/test_cli.py
+python -mpytest -v tests/pytests/test_config.py
 python -mpytest -v tests/pytests/test_metabolism.py
 python -mpytest -v tests/pytests/test_neurodamus.py
 python -mpytest -v tests/pytests/test_steps.py
 python -mpytest -v tests/pytests/test_utils.py
-python -mpytest -v tests/pytests/test_config.py
 python -mpytest -v tests/pytests/test_preprocessor.py
 python -mpytest -v tests/pytests/test_reporter.py
 $MPIRUN -n 4 python -mpytest -v tests/pytests/test_reporter.py

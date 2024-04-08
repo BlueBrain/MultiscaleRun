@@ -29,22 +29,24 @@ def test_gen_msh():
 
     """
     conf = config.MsrConfig.rat_sscxS1HL_V6()
-    tmp_mesh_path = conf.mesh_path.parent.name + "_tmp"
+    tmp_mesh_path = conf.multiscale_run.mesh_path.parent.name + "_tmp"
     utils.rename_path(
-        conf.mesh_path.parent, conf.mesh_path.parent.with_name(tmp_mesh_path)
+        conf.multiscale_run.mesh_path.parent,
+        conf.multiscale_run.mesh_path.parent.with_name(tmp_mesh_path),
     )
 
     pp = preprocessor.MsrPreprocessor(config=conf)
     ndam_m = neurodamus_manager.MsrNeurodamusManager(config=conf)
     bf_m = bloodflow_manager.MsrBloodflowManager(
         vasculature_path=ndam_m.get_vasculature_path(),
-        params=conf.bloodflow,
+        parameters=conf.multiscale_run.bloodflow,
     )
     pp.autogen_mesh(ndam_m=ndam_m, bf_m=bf_m)
 
-    utils.remove_path(conf.mesh_path.parent)
+    utils.remove_path(conf.multiscale_run.mesh_path.parent)
     utils.rename_path(
-        conf.mesh_path.parent.with_name(tmp_mesh_path), conf.mesh_path.parent
+        conf.multiscale_run.mesh_path.parent.with_name(tmp_mesh_path),
+        conf.multiscale_run.mesh_path.parent,
     )
 
 

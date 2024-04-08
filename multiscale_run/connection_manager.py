@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 
 from . import utils
@@ -12,31 +13,34 @@ class MsrConnectionManager:
         config (MsrConfig): The multiscale run configuration.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, managers):
         """Initialize the MsrConnectionManager with a given configuration.
 
         Args:
             config (MsrConfig): The multiscale run configuration.
+            managers (dict): Managers dictionary.
         """
         self.config = config
+        self.managers = managers
+        # needed for the merge syncing scheme
+        self.cache = {}
 
     @utils.cache_decorator(
         only_rank0=False,
         field_names=["nXsecMat", "nsecXnsegMat", "nXnsegMatBool"],
     )
     @utils.logs_decorator
-    def connect_ndam2ndam(self, ndam_m):
+    def connect_neurodamus2neurodamus(self):
         """Add some useful matrices that map ndam points, segments, sections, and neurons.
 
         This method calculates and stores several matrices that provide mappings between various components of neuronal and segment data.
 
-        Args:
-            ndam_m (NeurodamusModel): The neuronal digital anatomy model.
-
         Returns:
             None
         """
-        pts = ndam_m.get_seg_points(self.config.mesh_scale)
+
+        ndam_m = self.managers["neurodamus"]
+        pts = ndam_m.get_seg_points(self.config.multiscale_run.mesh_scale)
 
         self.nXsecMat = ndam_m.get_nXsecMat()
         self.nsecXnsegMat = ndam_m.get_nsecXnsegMat(pts)
@@ -47,19 +51,19 @@ class MsrConnectionManager:
         field_names=["nsegXtetMat", "nXtetMat"],
     )
     @utils.logs_decorator
-    def connect_ndam2steps(self, ndam_m, steps_m):
+    def connect_neurodamus2steps(self):
         """Neuron volume fractions in tets.
 
-        This method calculates the neuron volume fractions within tetrahedral elements and stores the results in connection matrices.
-
-        Args:
-            ndam_m (NeurodamusModel): The neuronal digital anatomy model.
-            steps_m (StepsModel): The steps model representing the vasculature.
+        This method calculates the neuron volume fractions within tetrahedral elements and stores the results in conection matrices.
 
         Returns:
             None
         """
-        pts = ndam_m.get_seg_points(scale=self.config.mesh_scale)
+
+        ndam_m = self.managers["neurodamus"]
+        steps_m = self.managers["steps"]
+
+        pts = ndam_m.get_seg_points(scale=self.config.multiscale_run.mesh_scale)
 
         # Connection matrices
         self.nsegXtetMat = steps_m.get_nsegXtetMat(pts)
@@ -70,18 +74,18 @@ class MsrConnectionManager:
         field_names=["tetXbfVolsMat", "tetXbfFlowsMat", "tetXtetMat"],
     )
     @utils.logs_decorator
-    def connect_bf2steps(self, bf_m, steps_m):
+    def connect_bloodflow2steps(self):
         """Volumes and flows fractions in tets.
 
         This method calculates and stores volumes and flows fractions within tetrahedral elements and synchronization matrices.
 
-        Args:
-            bf_m (BloodflowModel): The bloodflow model.
-            steps_m (StepsModel): The steps model representing the vasculature.
-
         Returns:
             None
         """
+
+        bf_m = self.managers["bloodflow"]
+        steps_m = self.managers["steps"]
+
         pts = None
         if utils.rank0():
             pts = bf_m.get_seg_points(steps_m.msh._scale)
@@ -104,283 +108,339 @@ class MsrConnectionManager:
             self.tetXbfVolsMat = mat
             self.tetXbfFlowsMat = flowsMat
 
-    def delete_rows(self, m, to_be_removed):
-        """Remove rows from a matrix.
-
-        This method removes specified rows from a matrix to accommodate changes, particularly in cases of failed neurons.
+    @utils.logs_decorator
+    def neurodamus2steps_sync(self, icon: int, con, action: str) -> None:
+        """Syncs data from 'MsrNeurodamusManager' (source) to 'MsrStepsManager' (destination).
 
         Args:
-            m: The matrix to be modified.
-            to_be_removed: A list of row indices to be removed.
+            icon: connection index. Position in the array of connections. It is important because later
+                connections override previous ones.
+            con (MsrConfig): Connection object from the MsrConfig object.
+            action: Syncing scheme. Details in: process_syncs. Not all the actions need to be
+                implemented for all the sync types.
 
         Returns:
             None
+
+        Raises:
+            NotImplementedError: If the action is not implemented.
         """
-        if hasattr(self, m):
-            attr = getattr(self, m)
-            setattr(self, m, utils.delete_rows_csr(attr, to_be_removed))
 
-    def delete_cols(self, m, to_be_removed):
-        """Remove columns from a matrix.
+        ndam_m = self.managers["neurodamus"]
+        steps_m = self.managers["steps"]
 
-        This method removes specified columns from a matrix, typically in cases of failed neurons or changes in the network structure.
+        match action:
+            case "sum":
+                vals = getattr(ndam_m, con.src_get_func)(**con.src_get_kwargs)
+                if "conversion" in con and "op" in con.conversion:
+                    vals = eval(con.conversion.op)
 
-        Args:
-            m: The matrix to be modified.
-            to_be_removed: A list of column indices to be removed.
+                vals = self.nsegXtetMat.transpose().dot(vals)
+                utils.comm().Allreduce(vals, vals, op=utils.mpi().SUM)
+                getattr(steps_m, con.dest_set_func)(vals=vals, **con.dest_set_kwargs)
 
-        Returns:
-            None
-        """
-        if hasattr(self, m):
-            attr = getattr(self, m)
-            setattr(self, m, utils.delete_cols_csr(attr, to_be_removed))
+            case _:
+                raise NotImplementedError(
+                    f"action: '{action}' not implemented! Available actions: ['add']"
+                )
+
+        if con.action == "merge":
+            self.cache[("steps", icon)] = np.copy(vals)
 
     @utils.logs_decorator
-    def ndam2steps_sync(self, ndam_m, steps_m, specs: list[str], DT: float):
-        """Use neuronal data to correct step concentrations.
-
-        Sync steps concentrations adding the output currents from neurodamus.
+    def neurodamus2metabolism_sync(self, icon, con, action) -> None:
+        """Syncs data from 'MsrNeurodamusManager' (source) to 'MsrMetabolismManager' (destination).
 
         Args:
-            ndam_m (MsrNeurodamusManager): neurodamus manager. Source of the data to be synchronized.
-            steps_m (MsrStepsManager): The source manager containing concentration data.
-            specs: A list of species and their names.
-            DT: steps dt.
+            icon: connection index. Position in the array of connections. It is important because later
+                connections override previous ones.
+            con (MsrConfig): Connection object from the MsrConfig object.
+            action: Syncing scheme. Details in: process_syncs. Not all the actions need to be
+                implemented for all the sync types.
 
         Returns:
             None
+
+        Raises:
+            NotImplementedError: If the action is not implemented.
+        """
+        ndam_m = self.managers["neurodamus"]
+        metab_m = self.managers["metabolism"]
+
+        match action:
+            case "set":
+                vals = getattr(ndam_m, con.src_get_func)(**con.src_get_kwargs)
+                vals = self.nXnsegMatBool.dot(vals)
+                # TODO atm I do not see a good way to generalize this. However, I am happy to
+                # receive feedback because I do not really like this "ad-hoc" operation - Katta
+                vals = np.divide(vals, ndam_m.nc_weights[con.src_get_kwargs.weight][0])
+
+                getattr(metab_m, con.dest_set_func)(vals=vals, **con.dest_set_kwargs)
+            case "merge":
+                # Merging means doing this operation:
+                # delta Vals_src + delta Vals_dest - Vals_previous sync = new Vals
+
+                # If Vals_previous is missing, downgrade to setting
+                if ("metabolism", icon) not in self.cache:
+                    self.neurodamus2metabolism_sync(icon=icon, con=con, action="set")
+                    return
+
+                # Collect and adapt vals from src
+                vals = getattr(ndam_m, con.src_get_func)(**con.src_get_kwargs)
+                vals = self.nXnsegMatBool.dot(vals)
+                vals = np.divide(vals, ndam_m.nc_weights[con.src_get_kwargs.weight][0])
+                # Add vals from dest
+                dest_vals = getattr(metab_m, con.dest_get_func)(**con.dest_get_kwargs)
+                # remove Vals_previous
+                prev_vals = self.cache[("metabolism", icon)]
+
+                vals += dest_vals - prev_vals
+
+                # Set merged vals into dest
+                getattr(metab_m, con.dest_set_func)(vals=vals, **con.dest_set_kwargs)
+                # Set merged vals into srcs
+                getattr(ndam_m, con.src_set_func)(vals=vals, **con.src_set_kwargs)
+
+            case _:
+                raise NotImplementedError(
+                    f"action: '{action}' not implemented! Available actions: ['set', 'merge']"
+                )
+
+        if con.action == "merge":
+            self.cache[("metabolism", icon)] = np.copy(vals)
+
+    def neurodamus2bloodflow_sync(self, icon, con, action) -> None:
+        """Syncs data from 'MsrNeurodamusManager' (source) to 'MsrBloodflowManager' (destination).
+
+        Args:
+            icon: connection index. Position in the array of connections. It is important because later
+                connections override previous ones.
+            con (MsrConfig): Connection object from the MsrConfig object.
+            action: Syncing scheme. Details in: process_syncs. Not all the actions need to be
+                implemented for all the sync types.
+
+        Returns:
+            None
+
+        Raises:
+            NotImplementedError: If the action is not implemented.
         """
 
-        for s in specs:
-            sp = getattr(self.config.species, s)
-            # there are 1e8 µm2 in a cm2, final output in mA
-            seg_curr = ndam_m.get_var(var=sp.neurodamus.curr.var, weight="area") * 1e-8
+        ndam_m = self.managers["neurodamus"]
+        bf_m = self.managers["bloodflow"]
 
-            tet_curr = self.nsegXtetMat.transpose().dot(seg_curr)
+        match action:
+            case "set":
+                # Probably the radii
+                # idxs of the vasculature segments
+                idxs, vals = getattr(ndam_m, con.src_get_func)(**con.src_get_kwargs)
+                idxs = utils.comm().gather(idxs, root=0)
+                vals = utils.comm().gather(vals, root=0)
+                if utils.rank0():
+                    idxs = [j for i in idxs for j in i]
+                    vals = [j for i in vals for j in i]
+                    getattr(bf_m, con.dest_set_func)(
+                        idxs=idxs, vals=vals, **con.dest_set_kwargs
+                    )
+            case _:
+                raise NotImplementedError(
+                    f"action: '{action}' not implemented! Available actions: ['set']"
+                )
 
-            utils.comm().Allreduce(tet_curr, tet_curr, op=utils.mpi().SUM)
+        if con.action == "merge":
+            self.cache[("bloodflow", icon)] = np.copy(vals)
 
-            steps_m.update_concs(species=sp, curr=tet_curr, DT=DT)
+    def bloodflow2metabolism_sync(self, icon, con, action) -> None:
+        """Syncs data from 'MsrBloodflowManager' (source) to 'MsrMetabolismManager' (destination).
+
+        Args:
+            icon: connection index. Position in the array of connections. It is important because later
+                connections override previous ones.
+            con (MsrConfig): Connection object from the MsrConfig object.
+            action: Syncing scheme. Details in: process_syncs. Not all the actions need to be
+                implemented for all the sync types.
+
+        Returns:
+            None
+
+        Raises:
+            NotImplementedError: If the action is not implemented.
+        """
+
+        bf_m = self.managers["bloodflow"]
+        metab_m = self.managers["metabolism"]
+
+        match action:
+            case "set":
+                vals = None
+                if utils.rank0():
+                    # get raw values
+                    vals = getattr(bf_m, con.src_get_func)(**con.src_get_kwargs)
+
+                    # apply conversion matrices. They bring the values to a tet by tet level
+                    for mat_name in con.conversion.matrices:
+                        vals = getattr(self, mat_name).dot(vals)
+
+                    # apply additional operators, if any
+                    if "op" in con.conversion:
+                        # Evaluate the expression using eval()
+                        vals = eval(con.conversion.op)
+
+                        # In this operation there should be this multiplier: 1e-12 * 500 = 5e-10
+
+                        # 1e-12 to pass from um^3 to ml and from um^3/s to ml/s.
+                        # 500 is 1/0.0002 (1/0.2%) since we discussed that the vasculature is only 0.2% of the total
+                        # and it is not clear to what the winter paper is referring to exactly for volume and flow
+                        # given that we are sure that we are not double counting on a tet Fin and Fout, we can use
+                        # and abs value to have always positive input flow
+
+                vals = utils.comm().bcast(vals, root=0)
+
+                vals = self.nXtetMat.dot(vals)
+
+                getattr(metab_m, con.dest_set_func)(vals=vals, **con.dest_set_kwargs)
+
+            case _:
+                raise NotImplementedError(
+                    f"action: '{action}' not implemented! Available actions: ['set']"
+                )
+
+        if con.action == "merge":
+            self.cache[("metabolism", icon)] = np.copy(vals)
 
     @utils.logs_decorator
-    def ndam2metab_sync(self, gids: list[int], ndam_m, metab_m):
-        """Use neuronal data to compute current and concentration concentrations for metabolism.
-
-        This method utilizes neurodamus to calculate the current and concentration concentrations for a metabolism model.
+    def steps2metabolism_sync(self, icon, con, action) -> None:
+        """Syncs data from 'MsrStepsManager' (source) to 'MsrMetabolismManager' (destination).
 
         Args:
-
-            gids: list of neurons (not kicked, on this rank)
-            ndam_m (MsrNeurodamusManager): neurodamus manager. Source of the data to be synchronized.
-            metab_m (MsrMetabolismManager): metabolism manager to be syncronized.
+            icon: connection index. Position in the array of connections. It is important because later
+                connections override previous ones.
+            con (MsrConfig): Connection object from the MsrConfig object.
+            action: Syncing scheme. Details in: process_syncs. Not all the actions need to be
+                implemented for all the sync types.
 
         Returns:
             None
+
+        Raises:
+            NotImplementedError: If the action is not implemented.
         """
 
-        ndam_vars = {}
-        d = {
-            "area": [i[0] for i in ndam_m.nc_areas],
-            "volume": [i[0] for i in ndam_m.nc_vols],
-        }
-        for s, t in self.config.metabolism.ndam_input_vars:
-            weight = "area" if t == "curr" else "volume"
-            var = getattr(getattr(self.config.species, s).neurodamus, t).var
-            ndam_vars[(s, t)] = self.nXnsegMatBool.dot(
-                ndam_m.get_var(var=var, weight=weight)
-            )
+        steps_m = self.managers["steps"]
+        metab_m = self.managers["metabolism"]
 
-            l = d.get(weight, None)
-            ndam_vars[(s, t)] = np.divide(ndam_vars[(s, t)], l)
+        match action:
+            case "set":
+                vals = getattr(steps_m, con.src_get_func)(**con.src_get_kwargs)
 
-        gids = ndam_m.gids()
-        ndam_vars["valid_gid"] = np.ones(len(gids))
+                if "conversion" in con and "op" in con.conversion:
+                    vals = eval(con.conversion.op)
 
-        # necessary for reporting. It will go away in a future MR
-        metab_m.ndam_vars = ndam_vars
-        metab_m.set_ndam_vars(gids=gids, ndam_vars=ndam_vars)
+                vals = self.nXtetMat.dot(vals)
+
+                getattr(metab_m, con.dest_set_func)(vals=vals, **con.dest_set_kwargs)
+
+            case _:
+                raise NotImplementedError(
+                    f"action: '{action}' not implemented! Available actions: ['set']"
+                )
+
+        if con.action == "merge":
+            self.cache[("metabolism", icon)] = np.copy(vals)
 
     @utils.logs_decorator
-    def steps2metab_sync(self, gids: list[int], steps_m, metab_m):
-        """
-        Synchronize concentration data from Steps to Metabolism models for specific species.
+    def process_syncs(self, dest_manager_name: str) -> None:
+        """Dispatch to the correct syncing procedure based on the destination manager: `dest_manager_name`
 
-        This function converts concentration data from a 'steps_m' model to a 'metab_m' model for specified species, taking into account scaling factors.
+        There are 3 ways to sync that may or may not be implemented depending on what was needed:
+
+        - add: the values from the source are added to the values of destination and inserted in destination
+        - set: the values from the source override the values in destination
+        - merge: in this case we consider source and destination as having the same level of priority.
+
+        It is appropriate when one simulator produces something and the other one consumes it. In formulae:
+
+        delta_val_src + delta_val_dest + previous_val = val
+
+        Since we usually do not have deltas, we can convert it to:
+
+        val_src + val_dest - previous_val = val
+
+        After, the val is set for both, source and destination. As a side effect, results are
+        source <-> desitination swap invaritant (obviously not the case for the other schemes) apart from
+        the fact that the sync may be done in different parts of the code.
 
         Args:
-
-            gids: list of neurons (not kicked, on this rank)
-            steps_m (MsrStepsManager): The source manager containing concentration data.
-            metab_m (MsrMetabolismManager): metabolism manager to be syncronized.
+            dest_manager_name: destination manager name.
 
         Returns:
             None
         """
 
-        r = 1.0 / (1e-3 * self.config.steps.conc_factor)
-
-        l = [
-            getattr(self.config.species, i).steps.name
-            for i in self.config.metabolism.steps_input_concs
-        ]
-        steps_vars = {}
-
-        for name in l:
-            steps_vars[name] = steps_m.get_tet_concs(name) * r
-            steps_vars[name] = self.nXtetMat.dot(steps_vars[name])
-
-        # necessary for reporting. It will go away in a future MR
-        metab_m.steps_vars = steps_vars
-        metab_m.set_steps_vars(gids=gids, steps_vars=steps_vars)
-
-    @utils.logs_decorator
-    def bloodflow2metab_sync(self, gids: list[int], bf_m, metab_m):
-        """
-        Synchronize bloodflow parameters including flows and volumes from a bloodflow model to a metabolism model.
-
-        This function calculates and synchronizes blood flow and volume data from a bloodflow model
-        to a metabolism model. It performs the necessary transformations and scaling based on the models' data to ensure accurate synchronization.
-
-        Args:
-
-            gids: list of neurons (not kicked, on this rank)
-            bf_m (MsrBloodflowManager): bloodFlow manager containing bloodflow data.
-            metab_m (MsrMetabolismManager): metabolism manager to be synchronized.
-
-        Returns:
-            None
-        """
-
-        Fin, vol = None, None
-        if utils.rank0():
-            # 1e-12 to pass from um^3 to ml
-            # 500 is 1/0.0002 (1/0.2%) since we discussed that the vasculature is only 0.2% of the total
-            # and it is not clear to what the winter paper is referring too exactly for volume and flow
-            # given that we are sure that we are not double counting on a tet Fin and Fout, we can use
-            # and abs value to have always positive input flow
-            Fin = np.abs(self.tetXbfFlowsMat.dot(bf_m.get_flows())) * 1e-12 * 500
-            vol = (
-                self.tetXtetMat.dot(self.tetXbfVolsMat.dot(bf_m.get_vols()))
-                * 1e-12
-                * 500
-            )
-
-        Fin = utils.comm().bcast(Fin, root=0)
-        vol = utils.comm().bcast(vol, root=0)
-
-        Fin = self.nXtetMat.dot(Fin)
-        vol = self.nXtetMat.dot(vol)
-
-        bloodflow_vars = {"Fin": Fin, "vol": vol}
-
-        # necessary for reporting. It will go away in a future MR
-        metab_m.bloodflow_vars = bloodflow_vars
-        metab_m.set_bloodflow_vars(gids=gids, bloodflow_vars=bloodflow_vars)
-
-    def ndam2bloodflow_sync(self, ndam_m, bf_m):
-        """
-        Synchronize vascular radii data from a ndam model to a bloodflow model.
-
-        This function gathers vascular IDs and radii information from the NDAM (Neuronal Digital Anatomy Model)
-        model and synchronizes it with the bloodflow model. The gathered data is used to set radii in the bloodflow model for corresponding vascular segments.
-
-        Args:
-            ndam_m (MsrNeurodamusManager): neurodamus manager. Source of the radii to be synchronized.
-            bf_m (MsrBloodflowManager): bloodFlow manager containing radii to be corrected.
-
-        Returns:
-            None
-        """
-
-        vasc_ids, radii = ndam_m.get_vasc_radii()
-        vasc_ids = utils.comm().gather(vasc_ids, root=0)
-        radii = utils.comm().gather(radii, root=0)
-        if utils.rank0():
-            vasc_ids = [j for i in vasc_ids for j in i]
-            radii = [j for i in radii for j in i]
-            bf_m.set_radii(vasc_ids=vasc_ids, radii=radii)
-
-    def metab2ndam_sync(self, metab_m, ndam_m):
-        """
-        Synchronize metabolic concentrations from a metabolism model to a NDAM (Neuronal Digital Anatomy Model) for specific variables.
-
-        This function calculates and synchronizes metabolic concentrations, including ATP, ADP, and potassium (K+),
-        from a metabolism model to a NDAM model for specific variables, taking into account weighted means. It corrects ndam with the metabolic output.
-
-        Args:
-            metab_m (MsrMetabolismManager): metabolism manager. Source of the data to be synchronized.
-            ndam_m (MsrNeurodamusManager): neurodamus manager. Destination of the data to be synchronized.
-
-        Returns:
-            None
-        """
-
-        if len(ndam_m.ncs) == 0:
+        if not self.config.is_manager_active(dest_manager_name):
             return
 
-        # u stands for Julia ODE var and m stands for metabolism
-        atpi_weighted_mean = np.array(
-            [
-                metab_m.vm[int(nc.CCell.gid)][self.config.metabolism.vm_idxs.atpn]
-                for nc in ndam_m.ncs
-            ]
-        )  # 1.4
-        # 0.5 * 1.2 + 0.5 * um[(idxm + 1, c_gid)][22] #um[(idxm+1,c_gid)][27]
+        for icon, con in enumerate(
+            self.config.multiscale_run.connect_to[dest_manager_name]
+        ):
+            if not self.config.is_manager_active(con.src_simulator):
+                continue
 
-        def f(atpiwm):
-            # based on Jolivet 2015 DOI:10.1371/journal.pcbi.1004036 page 6 botton eq 1
-            qak = 0.92
-            return (atpiwm / 2) * (
-                -qak
-                + np.sqrt(
-                    qak * qak
-                    + 4
-                    * qak
-                    * ((self.config.metabolism.constants.ATDPtot_n / atpiwm) - 1)
-                )
+            logging.info(
+                f"processing connection: ({dest_manager_name}, {icon}), src: {con.src_simulator}"
             )
 
-        adpi_weighted_mean = np.array([f(i) for i in atpi_weighted_mean])  # 0.03
-        #                         nao_weighted_mean = 0.5 * 140.0 + 0.5 * (
-        #                             140.0 - 1.33 * (um[(idxm + 1, c_gid)][6] - 10.0)
-        #                         )  # 140.0 - 1.33*(param[3] - 10.0) #14jan2021  # or 140.0 - .. # 144  # param[3] because pyhton indexing is 0,1,2.. julia is 1,2,..
+            getattr(self, f"{con.src_simulator}2{dest_manager_name}_sync")(
+                icon=icon, con=con, action=con.action
+            )
 
-        ko_weighted_mean = np.array(
-            [
-                metab_m.vm[int(nc.CCell.gid)][self.config.metabolism.vm_idxs.ko]
-                for nc in ndam_m.ncs
-            ]
+    @utils.logs_decorator
+    def remove_gids(self, failed_cells: list[int]):
+        """Remove igids from the various connection matrices, metabolism and neurodamus
+
+        Args:
+            failed_cells: list of errors for the failed cells. None if the cell is working.
+
+        Returns:
+            None
+        """
+
+        ndam_m = self.managers["neurodamus"]
+        metab_m = self.managers.get("metabolism", None)
+
+        gids = ndam_m.gids
+        failed_gids = {
+            gids[igid]: e for igid, e in enumerate(failed_cells) if e is not None
+        }
+        ndam_m.removed_gids |= failed_gids
+
+        to_be_removed = list(ndam_m.gen_to_be_removed_segs())
+
+        if hasattr(self, "nsegXtetMat"):
+            self.nsegXtetMat = utils.delete_rows(self.nsegXtetMat, to_be_removed)
+        if hasattr(self, "nXnsegMatBool"):
+            self.nXnsegMatBool = utils.delete_cols(self.nXnsegMatBool, to_be_removed)
+
+        to_be_removed = list(
+            [idx for idx, e in enumerate(failed_cells) if e is not None]
         )
-        # 5
-        #                         nai_weighted_mean = (
-        #                             0.5 * 10.0 + 0.5 * um[(idxm + 1, c_gid)][6]
-        #                         )  # 0.5*10.0 + 0.5*um[(idxm+1,c_gid)][6] #um[(idxm+1,c_gid)][6]
+        if hasattr(self, "nXtetMat"):
+            self.nXtetMat = utils.delete_rows(self.nXtetMat, to_be_removed)
+        if hasattr(self, "nXnsegMatBool"):
+            self.nXnsegMatBool = utils.delete_rows(self.nXnsegMatBool, to_be_removed)
 
-        #                         ki_weighted_mean = 0.5 * 140.0 + 0.5 * param[4]  # 14jan2021
-        #                         # sync loop to constrain ndamus by metabolism output
+        for k, v in self.cache.items():
+            self.cache[k] = utils.remove_elems(v=v, to_be_removed=to_be_removed)
 
-        # for seg in neurodamus_manager.gen_segs(nc, config.seg_filter):
-        #     seg.nao = nao_weighted_mean  # 140
-        #     seg.nai = nai_weighted_mean  # 10
-        #     seg.ko = ko_weighted_mean  # 5
-        #     seg.ki = ki_weighted_mean  # 140
-        #     seg.atpi = atpi_weighted_mean  # 1.4
-        #     seg.adpi = adpi_weighted_mean  # 0.03
+        if metab_m is not None:
+            metab_m.parameters = utils.delete_rows(metab_m.parameters, to_be_removed)
+            metab_m.vm = utils.delete_rows(metab_m.vm, to_be_removed)
 
-        # for seg in neurodamus_manager.gen_segs(nc, [Na.nai_var]):
-        #     seg.nao = nao_weighted_mean  # 140                       # TMP disable sync from STEPS to NDAM
+        # keep this as last
+        ndam_m.ncs = utils.remove_elems(v=ndam_m.ncs, to_be_removed=to_be_removed)
+        for k, v in ndam_m.nc_weights.items():
+            ndam_m.nc_weights[k] = utils.remove_elems(
+                v=v[0], to_be_removed=to_be_removed
+            ), utils.remove_elems(v=v[1], to_be_removed=to_be_removed)
 
-        #                             for seg in neurodamus_manager.gen_segs(nc, [Na.nai_var]):
-        #                                 seg.nai = nai_weighted_mean  # 10
-        ndam_k_conco = self.config.species.K.neurodamus.conco.var
-        ndam_atp_conco = self.config.species.atp.neurodamus.conci.var
-        ndam_adp_conco = self.config.species.adp.neurodamus.conci.var
-
-        l = [
-            (ndam_k_conco, ko_weighted_mean),
-            (ndam_atp_conco, atpi_weighted_mean),
-            (ndam_adp_conco, adpi_weighted_mean),
-        ]
-        for i, v in l:
-            ndam_m.set_var(i, v, filter=[i])
+        ndam_m.check_neuron_removal_status()

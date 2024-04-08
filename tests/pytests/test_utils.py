@@ -69,8 +69,12 @@ def instantiate_and_check(a, b, c, aexp, bexp, cexp):
 
 def test_cache_decor():
     utils.remove_path(cache)
-    instantiate_and_check(1, 2, 3 if utils.rank0() else 4, 1, 2, 3 if utils.rank0() else 4)
-    instantiate_and_check(10, 20, 30 if utils.rank0() else 40, 1, 2, 3 if utils.rank0() else 4)
+    instantiate_and_check(
+        1, 2, 3 if utils.rank0() else 4, 1, 2, 3 if utils.rank0() else 4
+    )
+    instantiate_and_check(
+        10, 20, 30 if utils.rank0() else 40, 1, 2, 3 if utils.rank0() else 4
+    )
     utils.remove_path(cache)
 
 
@@ -86,15 +90,13 @@ def test_logs_decorator():
     np.testing.assert_equal(res, (3, 4))
 
 
-def test_timestamps():
-    assert list(utils.timesteps(10, 1)) == list(range(1, 11, 1))
-    assert list(utils.timesteps(10, 0.9)) == [i * 0.9 for i in range(1, 12, 1)]
-
-
 def test_heavy_duty_MPI_gather():
     def get_rank_matrix(dtype="i", n=3, m=5, p=68573):
         return np.array(
-            [[(j + i * n + utils.rank() * n * m) % p for j in range(n)] for i in range(m)],
+            [
+                [(j + i * n + utils.rank() * n * m) % p for j in range(n)]
+                for i in range(m)
+            ],
             dtype=dtype,
         )
 
@@ -167,19 +169,6 @@ def test_replacing_algos():
     }
 
 
-def test_load_jsons():
-    path = (
-        Path(__file__).parent
-        / "test_folder"
-        / "test_folder1"
-        / "test_folder2"
-        / "msr_config.json"
-    )
-    d = utils.load_jsons(path, parent_path_key="parent_config_path")
-    utils.resolve_replaces(d)
-    print(d)
-
-
 def test_get_var_name():
     a = 3
     b = {3: 3}
@@ -231,7 +220,9 @@ def test_check_value():
     with pytest.raises(utils.MsrException) as exc_info:
         a = 3
         utils.check_value(a, heb=0)
-    assert str(exc_info.value) == "a: 3 >= 0"
+
+    print(exc_info.value)
+    assert str(exc_info.value) == "a (3) >= 0"
 
     class CustomException(Exception):
         pass
@@ -241,10 +232,20 @@ def test_check_value():
         utils.check_value(a, heb=0, err=CustomException)
 
 
+def test_timesteps():
+    l = utils.timesteps(10.0, 1.0)
+    assert np.allclose(l, list(range(1, 11, 1)))
+    l = utils.timesteps(10.01, 1.0)
+    assert np.allclose(l, list(range(1, 11, 1)))
+    l = utils.timesteps(10.99, 1.0)
+    assert np.allclose(l, list(range(1, 11, 1)))
+    l = utils.timesteps(9.99, 1.0)
+    assert np.allclose(l, list(range(1, 10, 1)))
+
+
 if __name__ == "__main__":
     test_get_var_name()
     test_check_value()
-    test_load_jsons()
     test_replacing_algos()
     test_cache_decor()
     test_logs_decorator()

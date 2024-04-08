@@ -1,48 +1,42 @@
+import enum
 import logging
 
 from bluepysnap import Circuit
 import numpy as np
 import pandas as pd
 
-from . import utils
+from . import utils, config
 
 
 class MsrMetabManagerException(Exception):
     """Generic Metabolism Manager Exception"""
 
 
-class MsrKickNeuronException(Exception):
+class MsrExcludeNeuronException(Exception):
     """This error should be recoverable. We just want to kick the neuron out
     of the simulation because it is misbehaving"""
 
 
-class MsrMetabParameters:
-    """Class that holds the parameters for metabolism in the l order"""
+class MsrAbortSimulationException(Exception):
+    """This error should not be recoverable. Something went very wrong and continuing the simulation is meaningless"""
 
-    l = ["ina_density", "ik_density", "mito_scale", "bf_Fin", "bf_Fout", "bf_vol"]
 
-    def __init__(self, metab_type: str):
-        """Initialize MsrMetabParameters with the given metabolism type.
-
-        Args:
-            metab_type: The type of metabolism, e.g., "main" or another value.
-        """
-        self.metab_type = metab_type
-        for i in self.l:
-            setattr(self, i, None)
-
-    def __iter__(self):
-        """Iterate over the parameters in the defined order.
-
-        Yields:
-            The values of the parameters in the defined order.
-        """
-        for i in self.l:
-            yield getattr(self, i)
+class MsrMetabolismParam(enum.Enum):
+    ina_density = 0
+    ik_density = 1
+    mito_scale = 2
+    bloodflow_Fin = 3
+    bloodflow_Fout = 4
+    bloodflow_vol = 5
 
 
 class MsrMetabolismManager:
     """Wrapper to manage the metabolism julia model"""
+
+    errors = {
+        "abort_simulation": MsrAbortSimulationException,
+        "exclude_neuron": MsrExcludeNeuronException,
+    }
 
     def __init__(self, config, main, neuron_pop_name: str, gids: list[int]):
         """Initialize the MsrMetabolismManager.
@@ -56,12 +50,51 @@ class MsrMetabolismManager:
         self.config = config
         self.load_metabolism_data(main)
         self.gen_metabolism_model(main)
-        self.vm = {}  # read/write values for metab
-        self.params = {}  # read values for metab
+        self.vm = None  # read/write values for metab
+        self.parameters = None  # read values for metab
         self.tspan_m = (-1, -1)
-        self.failed_cells = {}
-        self.neuro_df = Circuit(config.circuit_path).nodes[neuron_pop_name]
+        self.neuro_df = Circuit(
+            str(self.config.config_path.parent / self.config.network)
+        ).nodes[neuron_pop_name]
         self.reset(gids)
+
+    def get_error(self, key: str):
+        try:
+            return self.errors[key]
+        except KeyError as e:
+            raise config.MsrConfigException(
+                f"The error `{key}` does not exist in the config file: '{self.config.config_path}' or its logic is not implemented in metabolism. Possible values: {', '.join(self.errors)}"
+            ) from e
+
+    @property
+    def ngids(self):
+        """Gid number"""
+        return self.parameters.shape[0]
+
+    def set_parameters_idxs(self, vals: list[float], idxs: list[int]):
+        """Set one or more parameters slices equal to the vals list"""
+        for idx in idxs:
+            self.parameters[:, idx] = vals
+
+    def set_vm_idxs(self, vals, idxs):
+        """Set one or more vm slices equal to the vals list"""
+        for idx in idxs:
+            self.vm[:, idx] = vals
+
+    def get_parameters_idx(self, idx):
+        """Get parameters slice"""
+        return self.parameters[:, idx]
+
+    def get_vm_idx(self, idx):
+        """Get vm slice"""
+        return self.vm[:, idx]
+
+    def alive_gids(self):
+        """Convenience function to report which gids are still alive.
+
+        All the gids present are still alive.
+        """
+        return [1] * self.parameters.shape[0]
 
     @utils.logs_decorator
     def load_metabolism_data(self, main):
@@ -72,19 +105,20 @@ class MsrMetabolismManager:
         Args:
             main: An instance of the main class.
         """
-        if self.config.metabolism.type != "main":
-            return
 
         # includes
         cmd = (
             "\n".join(
-                [f'include("{item}")' for item in self.config.metabolism.model.includes]
+                [
+                    f'include("{item}")'
+                    for item in self.config.multiscale_run.metabolism.model.includes
+                ]
             )
             + "\n"
             + "\n".join(
                 [
                     f"{k} = {v}"
-                    for k, v in self.config.metabolism.model.constants.items()
+                    for k, v in self.config.multiscale_run.metabolism.model.constants.items()
                 ]
             )
         )
@@ -102,85 +136,69 @@ class MsrMetabolismManager:
         Returns:
             None
         """
-        with open(str(self.config.metabolism.julia_code_path), "r") as f:
+        with open(str(self.config.multiscale_run.metabolism.julia_code_path), "r") as f:
             julia_code = f.read()
         self.model = main.eval(julia_code)
 
     @utils.logs_decorator
-    def _advance_gid(self, c_gid: int):
-        """Advance metabolism simulation for a specific GID (Global ID).
-
-        This method advances the metabolism simulation for a specific GID.
+    def _advance_gid(self, igid: int, i_metab: int, failed_cells: list[str]):
+        """Advance metabolism simulation for gid: gids[igid].
 
         Args:
-            c_gid: The Global ID of the neuron.
+            igid: Index of the gid.
+            i_metab: metabolism, time step counter.
+            failed_cells: List of errors for the failed cells. Cells that are alive have `None` as value here.
 
-        Returns:
-            None
+        Raises:
+            MsrMetabManagerException: If sol is None.
         """
 
         from diffeqpy import de
 
+        metab_dt = self.config.metabolism_dt
+        tspan_m = (
+            1e-3 * float(i_metab) * metab_dt,
+            1e-3 * (float(i_metab) + 1.0) * metab_dt,
+        )
+
         prob = de.ODEProblem(
-            self.model, self.vm[c_gid], self.tspan_m, list(self.params[c_gid])
+            self.model, self.vm[igid, :], tspan_m, self.parameters[igid, :]
         )
         try:
             logging.info("   solve ODE problem")
             sol = de.solve(
                 prob,
                 de.Rosenbrock23(autodiff=False),
-                reltol=1e-8,
-                abstol=1e-8,
-                saveat=1,
-                maxiters=1e6,
+                **self.config.multiscale_run.metabolism.solver_kwargs,
             )
             logging.info("   /solve ODE problem")
             if str(sol.retcode) != "<PyCall.jlwrap Success>":
                 utils.rank_print(f" !!! sol.retcode: {str(sol.retcode)}")
 
         except Exception as e:
-            self.failed_cells[c_gid] = f"solver failed: {str(sol.retcode)}"
+            failed_cells[igid] = f"solver failed: {str(sol.retcode)}"
             error_solver = e
 
         if sol is None:
-            utils.comm().Abort(f"sol is None: {error_solver}")
+            raise MsrMetabManagerException(f"sol is None: {error_solver}")
 
-        self.vm[c_gid] = sol.u[-1]
+        self.vm[igid, :] = sol.u[-1]
 
     @utils.logs_decorator
-    def advance(self, gids: list[int], i_metab: int, metab_dt: float):
-        """Advance metabolism simulation for a list of neurons.
+    def advance(self, i_metab: int, failed_cells: list) -> None:
+        """Advance metabolism simulation
 
-        This method advances the metabolism simulation for a list of neurons using the provided parameters.
+        Already failed cells are skipped.
 
         Args:
-            gids: A list of neurons to simulate.
-            i_metab: The current metabolism iteration.
-            metab_dt: The time step for metabolism simulation.
-
-        Returns:
-            failed_cells: A dictionary containing information about neurons with failed simulations.
+            i_metab: metabolism, time step counter.
+            failed_cells: List of errors for the failed cells. Cells that are alive have `None` as value here.
         """
-
-        self.tspan_m = (
-            1e-3 * float(i_metab) * metab_dt,
-            1e-3 * (float(i_metab) + 1.0) * metab_dt,
-        )
-
-        self.failed_cells = {}
-        for c_gid in gids:
-            try:
-                self.check_inputs(c_gid=c_gid)
-            except MsrKickNeuronException as e:
-                self.failed_cells[c_gid] = str(e)
-                logging.warning(self.failed_cells[c_gid])
+        for igid, err in enumerate(failed_cells):
+            if err is not None:
                 continue
-            except Exception as e:
-                utils.comm().Abort(str(e))
 
-            self._advance_gid(c_gid=c_gid)
-
-        return self.failed_cells
+            self._advance_gid(igid=igid, i_metab=i_metab, failed_cells=failed_cells)
 
     def _get_GLY_a_and_mito_vol_frac(self, c_gid: int):
         """Get glycogen (GLY_a) and mitochondrial volume fraction.
@@ -200,9 +218,11 @@ class MsrMetabolismManager:
         # c_gid: ndam is 1-based while libsonata and bluepysnap are 0-based
         idx = self.neuro_df.get(c_gid - 1).layer - 1
 
-        glycogen_au = np.array(self.config.metabolism.constants.glycogen_au)
+        glycogen_au = np.array(
+            self.config.multiscale_run.metabolism.constants.glycogen_au
+        )
         mito_volume_fraction = np.array(
-            self.config.metabolism.constants.mito_volume_fraction
+            self.config.multiscale_run.metabolism.constants.mito_volume_fraction
         )
         glycogen_scaled = glycogen_au * (14.0 / max(glycogen_au))
         mito_volume_fraction_scaled = mito_volume_fraction * (
@@ -223,176 +243,104 @@ class MsrMetabolismManager:
         Returns:
             None
         """
-        u0 = pd.read_csv(self.config.metabolism.u0_path, sep=",", header=None)[
-            0
-        ].tolist()
-        for c_gid in gids:
-            self.params[c_gid] = MsrMetabParameters(
-                metab_type=self.config.metabolism.type
-            )
-            self.params[c_gid].bf_Fin = (
-                self.config.metabolism.constants.base_bloodflow.Fin
-            )
-            self.params[c_gid].bf_Fout = (
-                self.config.metabolism.constants.base_bloodflow.Fout
-            )
-            self.params[c_gid].bf_vol = (
-                self.config.metabolism.constants.base_bloodflow.vol
-            )
-            _, self.params[c_gid].mito_scale = self._get_GLY_a_and_mito_vol_frac(c_gid)
+        metab_conf = self.config.multiscale_run.metabolism
+        mito_scale_idx = MsrMetabolismParam.mito_scale.value
 
-            self.vm[c_gid] = u0
+        ngids = len(gids)
+        self.vm = np.tile(
+            pd.read_csv(metab_conf.u0_path, sep=",", header=None)[0].tolist(),
+            (ngids, 1),
+        )
+        self.parameters = np.tile(metab_conf.parameters, (ngids, 1))
 
-    @utils.logs_decorator
-    def set_bloodflow_vars(
-        self, gids: list[int], bloodflow_vars: dict[str, list[float]]
-    ):
-        """Set blood flow variables.
-
-        This method overrules the previous values in 'params'.
-
-        Args:
-            gids: gids of the cells.
-            bloodflow_vars: Dictionary containing blood flow variables.
-                Ex: {"Fin": 0.001, "vol": 0.023}. Fout is the same as Fin so it
-                is not included.
-        """
-        for inc, c_gid in enumerate(gids):
-            # set params
-            self.params[c_gid].bf_Fin = bloodflow_vars["Fin"][inc]
-            # for bloodflow, Fin is always == Fout. No need to transfer 2 numbers
-            self.params[c_gid].bf_Fout = bloodflow_vars["Fin"][inc]
-            self.params[c_gid].bf_vol = bloodflow_vars["vol"][inc]
-
-    @utils.logs_decorator
-    def set_ndam_vars(
-        self, gids: list[int], ndam_vars: dict[tuple[str, str], list[float]]
-    ):
-        """Set neurodamus variables
-
-        This method overrules the previous values in 'params' and 'vm'.
-        The formulae will change in the near future (Katta).
-
-        Args:
-            gids: cell gids.
-            ndam_vars: Dictionary containing neurodamus variables.
-        """
-
-        vm_idxs = self.config.metabolism.vm_idxs
-
-        for inc, c_gid in enumerate(gids):
-            # set params
-            self.params[c_gid].ina_density = ndam_vars[("Na", "curr")][inc]
-            self.params[c_gid].ik_density = ndam_vars[("K", "curr")][inc]
-
-            # set vm
-            atpi_mean = ndam_vars[("atp", "conci")][inc]
-            self.vm[c_gid][vm_idxs.atpn] = 0.5 * 1.384727988648391 + 0.5 * atpi_mean
-            self.vm[c_gid][vm_idxs.adpn] = 0.5 * 1.384727988648391 / 2 * (
-                -0.92
-                + np.sqrt(
-                    0.92 * 0.92
-                    + 4
-                    * 0.92
-                    * (
-                        self.config.metabolism.constants.ATDPtot_n / 1.384727988648391
-                        - 1
-                    )
-                )
-            ) + 0.5 * atpi_mean / 2 * (
-                -0.92
-                + np.sqrt(
-                    0.92 * 0.92
-                    + 4
-                    * 0.92
-                    * (self.config.metabolism.constants.ATDPtot_n / atpi_mean - 1)
-                )
-            )
-            self.vm[c_gid][vm_idxs.nai] = ndam_vars[("Na", "conci")][inc]
-            self.vm[c_gid][vm_idxs.ko] = 3.0 - 1.33 * (
-                ndam_vars[("K", "conci")][inc] - 140.0
-            )
-
-    @utils.logs_decorator
-    def set_steps_vars(self, gids: list[int], steps_vars: dict[str, list[float]]):
-        """Set steps variables
-
-        This method overrules the previous values in 'vm'.
-        The formulae will change in the near future (Katta).
-
-        Args:
-            gids: gids of the cells.
-            steps_vars: Dictionary containing step variables (typically K conc outside).
-        """
-
-        vm_idxs = self.config.metabolism.vm_idxs
-
-        for inc, c_gid in enumerate(gids):
-            k_steps_name = self.config.species.K.steps.name
-            self.vm[c_gid][vm_idxs.ko] = steps_vars[k_steps_name][inc]
-
-    @utils.logs_decorator
-    def check_inputs(self, c_gid: int) -> None:
-        """Check the inputs and parameters related to metabolism for a given cell group ID.
-
-        This function logs information about the metabolism variables and performs
-        value checks on them and the parameters.
-        It also raises exceptions if any values are outside the specified bounds.
-
-        Args:
-            c_gid: The cell group ID for which inputs and parameters are checked.
-
-        Returns:
-            None
-
-        Raises:
-            MsrException: if the error is not recoverable.
-                Example: a value is NaN.
-            MsrKickNeuronException: if we recover by kicking the neuron and continuing.
-                Example: there is no blood flow
-        """
-
-        # tspan_m = (float(t/1000.0),float(t/1000.0)+1) # tspan_m = (float(t/1000.0)-1.0,float(t/1000.0))
-
-        # um[(0, c_gid)][127] = GLY_a
-        # vm[161] = vm[161] - outs_r_glu.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
-        # vm[165] = vm[165] - outs_r_gaba.get(c_gid, 0.0)*4000.0/(6e23*1.5e-12)
-
-        # KKconc is computed in 3 different simulators: ndam, metab, steps. We calculate all of them to do computations later
-
-        vm_idxs = self.config.metabolism.vm_idxs
-
-        l = [
-            *[
-                f"vm[{c_gid}][{i}]: {utils.ppf(self.vm[c_gid][i])}"
-                for i in vm_idxs.values()
-            ],
-            f"bf_Fin: {self.params[c_gid].bf_Fin}",
-            f"bf_vol: {self.params[c_gid].bf_vol}",
+        # TODO this may be made more general. Atm it has low priority.
+        self.parameters[:, mito_scale_idx] = [
+            self._get_GLY_a_and_mito_vol_frac(c_gid)[1] for c_gid in gids
         ]
-        l = "\n".join(l)
-        logging.info(f"metab VIP vars:\n{l}")
 
-        # Katta: "Polina suggested the following asserts as rule of thumb. In this way we detect
-        # macro-problems like K+ accumulation faster. For now the additional computation is minimal.
-        # Improvements are possible if needed."
+    def _check_input_for_currently_valid_gids(
+        self,
+        vec: np.ndarray,
+        check_value_kwargs: dict,
+        err,
+        msgl,
+        failed_cells: list[str],
+    ):
+        """Check input values for every valid gid.
 
-        utils.check_value(v=self.vm[c_gid][vm_idxs.atpn], lb=0.25, hb=2.5)
-        utils.check_value(v=self.vm[c_gid][vm_idxs.nai], lb=5, hb=30)
+        Args:
+            vec: Input array.
+            check_value_kwargs: Keyword arguments for value checking.
+            err: Error argument.
+            msgl: Message argument. It is a lambda that requires the gid.
+            failed_cells: List of failed cells.
 
-        # TODO remove this if when https://bbpteam.epfl.ch/project/issues/browse/BBPP40-371 is fixed
-        if self.config.with_steps:
-            utils.check_value(v=self.vm[c_gid][vm_idxs.ko], lb=1, hb=10)
-        # check params
-        # TODO remove the following lb conditions
-        utils.check_value(v=self.params[c_gid].ina_density)
-        utils.check_value(v=self.params[c_gid].ik_density)
-        utils.check_value(
-            v=self.params[c_gid].bf_vol, leb=0.0, err=MsrKickNeuronException
-        )
-        utils.check_value(
-            v=self.params[c_gid].bf_Fin, leb=0.0, err=MsrKickNeuronException
-        )
-        utils.check_value(
-            v=self.params[c_gid].bf_Fout, leb=0.0, err=MsrKickNeuronException
-        )
+        Notes:
+            `check_value` can throw exceptions. `MsrExcludeNeuronException` is recoverable by marking
+            the neuron as broken and kicking it out of the simulation. The others are not.
+        """
+        for igid in range(self.ngids):
+            if failed_cells[igid] is not None:
+                continue
+
+            try:
+                utils.check_value(
+                    v=vec[igid], **check_value_kwargs, err=err, msg=msgl(igid)
+                )
+            except MsrExcludeNeuronException as e:
+                failed_cells[igid] = str(e)
+
+    @utils.logs_decorator
+    def check_inputs(self, failed_cells: list[str]) -> None:
+        """Check that some values stay in the prescribed bands
+
+        Loop over the inputs that require checking. Print in the logging for the same VIP values.
+        If no checking is specified in the config file just check that the values are still proper floats.
+
+        Args:
+
+            failed_cells: List of errors for the failed cells. Cells that are alive have `None` as value here.
+        """
+        base_ck_conf = {"kwargs": {}, "response": "abort_simulation", "name": ""}
+
+        d = self.config.multiscale_run.metabolism.checks.parameters
+        checks = [
+            d.get(str(idx), base_ck_conf) for idx in range(self.parameters.shape[1])
+        ]
+
+        for idx, ck_conf in enumerate(checks):
+            msgl = lambda igid: f"parameters[{igid}, {idx}], {ck_conf['name']}"
+            self._check_input_for_currently_valid_gids(
+                vec=self.parameters[:, idx],
+                check_value_kwargs=ck_conf["kwargs"],
+                err=self.get_error(ck_conf["response"]),
+                msgl=msgl,
+                failed_cells=failed_cells,
+            )
+            if str(idx) in self.config.multiscale_run.metabolism.checks.parameters:
+                name = ck_conf["name"]
+                utils.log_stats(
+                    vec=self.parameters[:, idx],
+                    **ck_conf["kwargs"],
+                    msg=f"parameters[:,  {idx}], {name}{' '*(16-len(name))}",
+                )
+
+        d = self.config.multiscale_run.metabolism.checks.vm
+        checks = [d.get(str(idx), base_ck_conf) for idx in range(self.vm.shape[1])]
+
+        for idx, ck_conf in enumerate(checks):
+            msgl = lambda igid: f"vm[{igid}, {idx}], {ck_conf['name']}"
+            self._check_input_for_currently_valid_gids(
+                vec=self.vm[:, idx],
+                check_value_kwargs=ck_conf["kwargs"],
+                err=self.get_error(ck_conf["response"]),
+                msgl=msgl,
+                failed_cells=failed_cells,
+            )
+            if str(idx) in self.config.multiscale_run.metabolism.checks.vm:
+                name = ck_conf["name"]
+                utils.log_stats(
+                    vec=self.vm[:, idx],
+                    **ck_conf["kwargs"],
+                    msg=f"    vm[:, {idx}], {name}{' '*(16-len(name))}",
+                )

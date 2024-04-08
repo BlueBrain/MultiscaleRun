@@ -19,12 +19,16 @@ def test_init_without_metabolism(tmp_path):
 
     assert sim_path.is_dir()
 
-    msr_config_f = sim_path / "msr_config.json"
-    assert msr_config_f.is_file(), "top JSON config is missing"
-    with open(msr_config_f) as istr:
-        msr_config = json.load(istr)
-    assert "with_metabolism" in msr_config, "JSON config is missing a mandatory key"
-    assert msr_config["with_metabolism"] is False, "Metabolism should be disabled"
+    simulation_config_f = sim_path / "simulation_config.json"
+    assert simulation_config_f.is_file(), "top JSON config is missing"
+    with open(simulation_config_f) as istr:
+        simulation_config = json.load(istr)
+    try:
+        assert (
+            simulation_config["multiscale_run"]["with_metabolism"] is False
+        ), "Metabolism should be disabled"
+    except KeyError as e:
+        raise KeyError(str(e) + "\nJSON config is missing a mandatory key")
 
 
 @pytest.mark.skipif(not BB5_JULIA_ENV.exists(), reason="BB5 resources required")
@@ -94,7 +98,9 @@ def test_virtualenv():
     spec = "py-multiscale-run@develop"
     spec += os.environ.get("SPACK_PACKAGE_DEPENDENCIES", "")
 
-    subprocess.check_call(["multiscale-run", "virtualenv", "--venv", str(venv), "--spec", spec])
+    subprocess.check_call(
+        ["multiscale-run", "virtualenv", "--venv", str(venv), "--spec", spec]
+    )
     assert (venv / "bin" / "multiscale-run").exists()
 
     with venvdo.open("w") as ostr:
@@ -172,3 +178,17 @@ def test_edit_mod_files(tmp_path):
 
     # this time, "check" doesn't complain
     msr("check", path, env=proper_env)
+
+
+if __name__ == "__main__":
+    tmp_path = Path("tmp")
+    test_init_without_metabolism(tmp_path)
+    utils.remove_path(tmp_path)
+    test_init_twice(tmp_path)
+    utils.remove_path(tmp_path)
+    test_valid_commands(tmp_path)
+    utils.remove_path(tmp_path)
+    test_virtualenv()
+    utils.remove_path(tmp_path)
+    test_edit_mod_files(tmp_path)
+    utils.remove_path(tmp_path)

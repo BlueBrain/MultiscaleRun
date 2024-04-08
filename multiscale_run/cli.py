@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import textwrap
+import traceback
 
 from nbconvert.nbconvertapp import main as NbConvertApp
 import diffeqpy
@@ -142,7 +143,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
 
     circuit = circuit_path(circuit)
 
-    SBATCH_CIRCUITS_PARAMS = dict(
+    SBATCH_CIRCUITS_parameters = dict(
         rat_sscxS1HL_V6=dict(
             job_name="msr_ratV6",
             nodes=1,
@@ -154,12 +155,12 @@ def init(directory, circuit, julia="shared", check=True, force=False):
             time="10:00:00",
         ),
     )
-    sbatch_params = copy.copy(SBATCH_CIRCUITS_PARAMS[circuit.name])
+    sbatch_parameters = copy.copy(SBATCH_CIRCUITS_parameters[circuit.name])
     loaded_modules = filter(
         lambda s: len(s) > 0, os.environ.get("LOADEDMODULES", "").split(":")
     )
-    sbatch_params["loaded_modules"] = loaded_modules
-    SBATCH_TEMPLATE.stream(sbatch_params).dump("simulation.sbatch")
+    sbatch_parameters["loaded_modules"] = loaded_modules
+    SBATCH_TEMPLATE.stream(sbatch_parameters).dump("simulation.sbatch")
     shutil.copy(MSR_POSTPROC, MSR_POSTPROC.name)
     shutil.copytree(
         str(circuit),
@@ -167,6 +168,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
         ignore=shutil.ignore_patterns("cache", "msr*"),
         dirs_exist_ok=True,
     )
+
     rd = {"msr_version": str(__version__)}
     if julia == "no":
         rd["with_metabolism"] = False
@@ -213,7 +215,9 @@ def init(directory, circuit, julia="shared", check=True, force=False):
             check_julia_env()
 
     MsrConfig.dump(
-        config_path=MSR_CONFIG_JSON, to_path=MSR_CONFIG_JSON.name, replace_dict=rd
+        config_path=circuit / MSR_CONFIG_JSON,
+        to_path=MSR_CONFIG_JSON,
+        replace_dict={"multiscale_run": rd},
     )
 
     LOGGER.warning(
@@ -247,7 +251,7 @@ def check(**kwargs):
 
     sane &= _check_local_neuron_mechanisms()
 
-    if sim.conf.with_metabolism:
+    if sim.conf.multiscale_run.with_metabolism:
         LOGGER.warning("Checking installation of differential equations solver...")
         # noinspection PyUnresolvedReferences
         from diffeqpy import de  # noqa : F401
@@ -268,7 +272,8 @@ def post_processing(notebook: str, **kwargs) -> Path:
     """
     from .config import MsrConfig
 
-    results = MsrConfig().results_path
+    conf = MsrConfig()
+    results = str(conf.output.output_dir)
     NbConvertApp(
         ["--execute", "--to", "html", "--no-input", f"--output-dir={results}", notebook]
     )
@@ -660,6 +665,9 @@ def main(**kwargs):
     Args:
         kwargs: optional arguments passed to the argument parser.
     """
+
+    from .utils import comm, size
+
     ap = argument_parser()
     args = ap.parse_args(**kwargs)
     args = vars(args)
@@ -675,8 +683,11 @@ def main(**kwargs):
     if callback := args.pop("func", None):
         try:
             callback(**args)
-        except MsrException as e:
+        except Exception as e:
             LOGGER.error(str(e))
-            sys.exit(1)
+            if size() > 1:
+                comm().Abort(errorcode=1)
+            else:
+                sys.exit(1)
     else:
         ap.error("a subcommand is required.")

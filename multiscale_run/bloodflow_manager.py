@@ -24,7 +24,7 @@ class MsrBloodflowManager:
         graph (PointVasculature): The vasculature graph.
     """
 
-    def __init__(self, vasculature_path, params):
+    def __init__(self, vasculature_path, parameters):
         """
         Initialize the MsrBloodflowManager.
 
@@ -34,12 +34,12 @@ class MsrBloodflowManager:
 
         Args:
             vasculature_path (str): The path to the vasculature data file.
-            params (dict): A dictionary containing parameters for bloodflow calculations.
+            parameters (dict): A dictionary containing parameters for bloodflow calculations.
         """
 
         logging.info("init MsrBloodflowManager")
 
-        self.params = params
+        self.parameters = parameters
 
         self.graph = None
         if utils.rank0():
@@ -104,14 +104,14 @@ class MsrBloodflowManager:
         Get bloodflow input nodes (entry nodes).
 
         This method determines the bloodflow input nodes in the vasculature graph. It identifies these
-        nodes based on criteria defined by the 'params' provided when initializing the MsrBloodflowManager.
+        nodes based on criteria defined by the 'parameters' provided when initializing the MsrBloodflowManager.
 
         Returns:
             list: A list of bloodflow input nodes as node IDs.
         """
 
         self.entry_nodes = create_entry_largest_nodes(
-            graph=self.graph, params=self.params
+            graph=self.graph, params=self.parameters
         )
         logging.info(f"entry nodes: {self.entry_nodes}")
 
@@ -156,7 +156,7 @@ class MsrBloodflowManager:
 
         input_flows = None
         if self.entry_nodes is not None:
-            input_flows = [self.params["input_v"]] * len(self.entry_nodes)
+            input_flows = [self.parameters["input_v"]] * len(self.entry_nodes)
         self.boundary_flows = bloodflow.boundary_flows_A_based(
             graph=self.graph, entry_nodes=self.entry_nodes, input_flows=input_flows
         )
@@ -178,42 +178,37 @@ class MsrBloodflowManager:
         bloodflow.update_static_flow_pressure(
             graph=self.graph,
             input_flow=self.boundary_flows,
-            blood_viscosity=self.params["blood_viscosity"],
-            base_pressure=self.params["base_pressure"],
+            params=self.parameters,
         )
 
     @utils.logs_decorator
-    def set_radii(self, vasc_ids, radii):
+    def set_radii(self, idxs: list[int], vals: list[float]) -> None:
         """
         Set radii for vasculature sections.
 
         This method allows you to set radii for specific vasculature sections identified by their indices.
-        It takes care of distributing the radii evenly across the sections to ensure that the total volume is maintained.
 
         Args:
-            vasc_ids (List[int]): A list of vasculature section indices to set the radii for.
-            radii (List[float]): A list of radii corresponding to the specified vasculature sections.
+            idxs: A list of vasculature section indices to set the radii for.
+            vals: A list of radii corresponding to the specified vasculature sections.
 
         Returns:
             None
 
         Note:
             - The method calculates equivalent radii to distribute across the specified sections while maintaining volume.
-            - It ensures that radii are evenly distributed among sections with the same index.
             - The updated radii are stored in the vasculature graph's edge properties.
         """
 
         def eq_radii(v):
-            v = np.array(v)
             r"""compute x from: 1/x^2 = \sum_n 1/(n*r_i^2)"""
+            v = np.array(v)
             return np.sqrt(v.dot(v) / len(v))
-
-        vasc_ids = [self.graph.edge_properties.index[i] for i in vasc_ids]
 
         # I did not find a more pythonic way of doing this. I am open to suggestions
         d = defaultdict(list)
-        for k, v in zip(vasc_ids, radii):
-            d[k].append(v)
+        for idx, v in zip(idxs, vals):
+            d[self.graph.edge_properties.index[idx]].append(v)
 
         d = {k: eq_radii(v) for k, v in d.items()}
         # without interventions, d.keys() and d.values() are ordered in the samw way

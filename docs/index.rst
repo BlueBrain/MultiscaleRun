@@ -14,3 +14,5 @@ You can find below the internal documentation of the ``multiscale_run`` Python p
    :maxdepth: 2
 
    Python API Reference <modules>
+
+   simulation_config

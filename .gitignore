@@ -7,6 +7,7 @@ __pycache__/
 output/
 core.*
 *.log
+*.logs
 python-venv/
 *.dat
 x86_64/
