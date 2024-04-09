@@ -7,8 +7,18 @@ set_test_environment
 
 pushd "${SCRIPT_DIR}/.." >/dev/null
 
+num_errors=0
+count_errors() {
+    ((num_errors++))
+    local command="$BASH_COMMAND"
+    echo "Error occurred while executing: $command (Trap: ERR)"
+    echo "num_errors: $num_errors"
+}
+trap count_errors ERR
+
 time $MPIRUN -n 2 python tests/integration_tests/test_connect_neurodamus2steps.py
 time $MPIRUN -n 2 python tests/integration_tests/test_autogen_mesh.py
 time $MPIRUN -n 2 python tests/integration_tests/test_preprocessor.py
 
 popd > /dev/null
+exit $num_errors

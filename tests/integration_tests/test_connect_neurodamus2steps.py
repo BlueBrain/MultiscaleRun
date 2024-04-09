@@ -101,14 +101,12 @@ def test_connection():
     prep.autogen_node_sets()
 
     managers["neurodamus"] = MsrNeurodamusManager(conf)
-    conn_m.connect_neurodamus2neurodamus(managers["neurodamus"])
+    conn_m.connect_neurodamus2neurodamus()
 
     prep.autogen_mesh(ndam_m=managers["neurodamus"])
     managers["steps"] = MsrStepsManager(conf)
 
-    conn_m.connect_neurodamus2steps(
-        ndam_m=managers["neurodamus"], steps_m=managers["steps"]
-    )
+    conn_m.connect_neurodamus2steps()
 
     check_ratio_mat(conn_m.nXtetMat)
     check_ratio_mat(conn_m.nsegXtetMat)
@@ -129,7 +127,7 @@ def test_connection():
     utils.rank_print("gid: ", [int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
     failed_cells_dict = {933: "remove from rank 0", 1004: "remove from rank 1"}
     failed_cells = [failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids]
-    conn_m.remove_gids(failed_cells=failed_cells, managers=managers)
+    conn_m.remove_gids(failed_cells=failed_cells)
 
     utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
 
@@ -160,7 +158,7 @@ def test_connection():
 
     failed_cells_dict = {17500: "reason 0"}
     failed_cells = [failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids]
-    conn_m.remove_gids(failed_cells=failed_cells, managers=managers)
+    conn_m.remove_gids(failed_cells=failed_cells)
     check_mats_shape(
         managers["neurodamus"],
         conn_m,
