@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def base_path():
-    return Path(__file__).resolve().parent / "test_folder" / "simulation_json"
+    return Path(__file__).resolve().parent / "test_folder" / "simulation_config.json"
 
 
 def test_load():
