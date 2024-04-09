@@ -20,7 +20,8 @@ packages = [
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "ignore::DeprecationWarning"
+    "ignore::DeprecationWarning",
+    "ignore::scipy.sparse.SparseEfficiencyWarning",
 ]
 
 [project]

@@ -16,10 +16,11 @@ import subprocess
 import sys
 import tempfile
 import textwrap
-import traceback
+import warnings
 from pathlib import Path
 
 import diffeqpy
+import scipy.sparse
 from nbconvert.nbconvertapp import main as NbConvertApp
 
 from . import __version__
@@ -667,6 +668,8 @@ def main(**kwargs):
     ap = argument_parser()
     args = ap.parse_args(**kwargs)
     args = vars(args)
+
+    warnings.filterwarnings("ignore", category=scipy.sparse.SparseEfficiencyWarning)
 
     verbosity = args.pop("verbose")
     log_level = logging.WARN
