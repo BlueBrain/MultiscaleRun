@@ -3,7 +3,7 @@ build-backend = "setuptools.build_meta"
 requires = [
     "setuptools>=42",
     "setuptools_scm[toml]>=3.4",
-    "wheel",
+    "wheel>=0.41",
 ]
 
 [tool.setuptools]
@@ -47,21 +47,20 @@ classifiers = [
 ]
 dependencies = [
     "astrovascpy>=0.1.5",
-    "bluepysnap",
-    "diffeqpy",
-    "gmsh",
-    "jinja2",
-    "julia",
-    "libsonata",
-    "mpi4py",
-    "notebook",
-    "numpy",
-    "pandas",
-    "psutil",
-    "pyyaml",
-    "scipy",
-    "tqdm",
-    "trimesh",
+    "bluepysnap>=2",
+    "diffeqpy>=1.1",
+    "gmsh>=4.2",
+    "jinja2>=3",
+    "julia>=0.6, <0.7",
+    "libsonata>=0.1.20",
+    "mpi4py>=3",
+    "notebook>=6",
+    "numpy>=1.22",
+    "pandas>=1.4",
+    "psutil>=5.8",
+    "scipy>=1.11.1",
+    "tqdm>=4.65",
+    "trimesh>=3",
 ]
 dynamic = ["version"]
 
