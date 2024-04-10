@@ -32,7 +32,7 @@ MultiscaleRun relies on ``setuptools-scm`` utility to infer the Python package v
   * ``multiscale_run/data/config/rat_sscxS1HL_V6/simulation_config.json``
   * ``multiscale_run/data/config/rat_sscxS1HL_V10_all_valid_cells/simulation_config.json``
 
-2. Ensure the Sphinx documentation is up-to-date.
+2. Ensure the Sphinx documentation is up-to-date. The fastest way is to check the artifacts of the ``docs`` stage in the CI.
 3. Ensure the *Releases Notes* section is completed for this version.
 4. Ensure the list of authors is up-to-date.
 5. Ensure no spurious files were added to the repository by mistake (log files, process core dumps, ...)
@@ -41,6 +41,7 @@ MultiscaleRun relies on ``setuptools-scm`` utility to infer the Python package v
 8. Create a git tag named after the new version, for instance: ``git tag 0.7``
 9. Push the tag: ``git push origin --tags``. This operation triggers a CI/CD pipeline that builds and tests the package, and upload the new documentation to the `BBP Software Catalog`_. The documentation will appear the next day.
 10. Create a new pull-request to the `BlueBrain/spack`_ GitHub repository mentioning the new version in the py-multiscale-run Spack package.
+11. Ensure that the bbp workflow still works with the new version.
 
 .. _BlueBrain/spack: https://github.com/BlueBrain/spack
 .. _BBP Software Catalog: https://bbpteam.epfl.ch/documentation
