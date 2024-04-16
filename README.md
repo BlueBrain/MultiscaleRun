@@ -53,8 +53,8 @@ multiscale-run virtualenv
 Then activate the virtualenv environment to work with your working-copy: `source .venv/bin/activate`
 
 ```bash
-$ .env/bin/multiscale-run --version
-multiscale-run 0.3.dev9+g6b660cb
+$ .venv/bin/multiscale-run --version
+multiscale-run 0.7
 ```
 
 > :rainbow: **This may also work on your spack-powered machine!**
