@@ -100,6 +100,9 @@ class MsrSimulation:
 
             self.conn_m.connect_neurodamus2neurodamus()
 
+            print("AAAAAAAAAAAAAAAA")
+            exit()
+
             self.managers["bloodflow"] = None
             if self.conf.is_bloodflow_active():
                 self.managers["bloodflow"] = bloodflow_manager.MsrBloodflowManager(
@@ -122,6 +125,9 @@ class MsrSimulation:
                 self.conn_m.connect_neurodamus2steps()
                 if self.conf.is_bloodflow_active():
                     self.conn_m.connect_bloodflow2steps()
+
+            #finalize neurodamus, removing the axons
+            self.managers["neurodamus"].sim_init()
 
             self.managers["metabolism"] = None
             if self.conf.is_metabolism_active():

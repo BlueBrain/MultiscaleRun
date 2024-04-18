@@ -23,10 +23,8 @@ class MsrNeurodamusManager:
             enable_coord_mapping=True,
             cleanup_atexit=False,
             lb_mode="RoundRobin",
+            detailed_axon=True
         )
-        logging.info("ndam sim init")
-        self.ndamus.sim_init()
-        logging.info("ndam is ready")
 
         self.set_managers()
         # list[neurodamus.metype.Cell_V6]
@@ -39,6 +37,11 @@ class MsrNeurodamusManager:
             k: self._cumulate_nc_sec_quantity(k) for k in ["volume", "area"]
         }
         self.removed_gids = {}
+
+    @utils.logs_decorator
+    def sim_init(self):
+        self.ndamus.sim_init()
+
 
     @property
     def gids(self):
