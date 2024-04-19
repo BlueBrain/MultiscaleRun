@@ -173,7 +173,7 @@ Blood Flow
 
 Parameters for the blood flow simulator (AstroVascPy).
 
-`astrovascpy documentation <https://astrovascpy.readthedocs.io/latest/generated/astrovascpy.bloodflow.html#astrovascpy.bloodflow.simulate_ou_process>`_.
+`astrovascpy parameters <https://astrovascpy.readthedocs.io/latest/generated/astrovascpy.typing.html#astrovascpy.typing.VasculatureParams>`_.
 
 Reports
 =======
