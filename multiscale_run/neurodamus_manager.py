@@ -23,7 +23,8 @@ class MsrNeurodamusManager:
             enable_coord_mapping=True,
             cleanup_atexit=False,
             lb_mode="RoundRobin",
-            detailed_axon=True
+            keep_axon=True,
+            auto_init=False,
         )
 
         self.set_managers()
