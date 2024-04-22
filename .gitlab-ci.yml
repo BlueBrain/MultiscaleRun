@@ -24,14 +24,13 @@ variables:
   variables:
     EXTRA_MODULES:
       unstable:gcc
+      unstable:git
       unstable:gmsh
       unstable:hpe-mpi
-      unstable:julia/1.9.3
+      unstable:julia
       unstable:neurodamus-neocortex-multiscale
       unstable:petsc
-      unstable:petsc
       unstable:py-libsonata
-      unstable:py-mpi4py
       unstable:py-mpi4py
       unstable:py-notebook
       unstable:py-numpy
