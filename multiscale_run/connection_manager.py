@@ -45,11 +45,7 @@ class MsrConnectionManager:
         self.nXsecMat = ndam_m.get_nXsecMat()
         self.nsecXnsegMat = ndam_m.get_nsecXnsegMat(pts)
         self.nXnsegMatBool = self.nXsecMat.dot(self.nsecXnsegMat) > 0
-
-        utils.rank_print("BBBBBBBBB")
-        utils.rank_print(self.nXsecMat.shape)
-        utils.rank_print(self.nsecXnsegMat.shape)
-
+        
     @utils.cache_decorator(
         only_rank0=False,
         field_names=["nsegXtetMat", "nXtetMat"],
