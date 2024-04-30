@@ -12,6 +12,7 @@ Before submitting a contribution, it is suggested to use `tox` utility to make p
 4. ``tox -e fixlint`` to format the code and applies ruff recommended fixes.
 
 
+.. _tox-installation:
 .. note:: If tox utility is not installed already, use a Python virtual environment for isolation purpose:
 
   .. code-block:: console
@@ -45,3 +46,72 @@ MultiscaleRun relies on ``setuptools-scm`` utility to infer the Python package v
 
 .. _BlueBrain/spack: https://github.com/BlueBrain/spack
 .. _BBP Software Catalog: https://bbpteam.epfl.ch/documentation
+
+How to rebuild the shared Julia environment on BB5?
+***************************************************
+
+A Julia environment providing all the packages required to execute the Metabolism model is available on BB5
+at the following location ``/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment``.
+By default, the command `multiscale-run init` uses this directory rather than creating a new Julia environment (which takes approximately 10min).
+
+When this shared Julia environment becomes out of date (newer Julia version or newer packages), then it is required to recreate it.
+
+**Prerequisite:** access to BBP project ``proj12``
+
+1. go to the shared folder:
+
+    ``cd /gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment``
+
+2. load the MultiscaleRun module:
+
+    ``module load unstable py-multiscale-run``
+
+3. Setup a new simulation with a fresh Julia environment. Usually we name the Julia environment based on the day. For example:
+
+    ``multiscale-run init --julia=create 2024-04-22``
+
+where `2024-04-22` is the name of the folder.
+
+4. Remove everything in the folder that is not `.julia` or `.julia_environment`.
+5. Create 2 symbolic links in the folder:
+
+  .. code-block:: console
+
+    cd 2024-04-22
+    ln -s julia .julia
+    ln -s julia_environment .julia_environment
+
+6. Finally, link `latest` to this new folder (in `/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment`):
+
+  .. code-block:: console
+
+    cd ..
+    ln -s 2024-04-22 latest
+
+How to build the Sphinx documentation locally?
+**********************************************
+
+1. Ensure the ``tox`` utility is available (see :ref:`note above <tox-installation>` for installation)
+2. Build the HTML documentation : ``tox -e docs``
+3. Open the generated documentation created in: ``./docs/build/html/index.html``
+
+.. note:: Troubleshooting if the build fails
+
+  By default, the creation of the documentation is canceled if at least one error occurs.
+  In case of unsuccessful build, either fix the issues reported by Sphinx to the console or update ``tox.ini`` to ignore
+  these errors.
+
+  .. code-block:: diff
+
+    diff --git a/tox.ini b/tox.ini
+    index 0796eba..4774331 100644
+    --- a/tox.ini
+    +++ b/tox.ini
+    @@ -12,7 +13,7 @@ deps =
+         sphinxcontrib-programoutput
+         sphinx-mdinclude
+         mistune<3 # there is a conflict with nbconvert
+    -commands = sphinx-build -W --keep-going docs docs/build/html
+    +commands = sphinx-build docs docs/build/html
+
+  Anyway, the continuous-integration process requires the build of the documentation to pass without error.

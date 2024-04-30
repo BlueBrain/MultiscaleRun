@@ -245,68 +245,6 @@ This happens because Neuron was built with Intel oneAPI compiler but the compile
 
 For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
 
-## Update the shared Julia environment
-
-Every now and then the Julia folder needs to be updated.
-
-> :ledger: **Prerequisite:** you need read and write provileges for `/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment`.
-
-
-Go to the shared folder:
-
-```
-cd /gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment
-```
-
-Load the usual modules:
-
-```
-module load unstable py-multiscale-run
-```
-
-Ask multiscale run to init a simulation in a new folder and install julia locally. Usually we name the folders based on the day. For example:
-
-```
-multiscale-run init --julia=create 2024-04-22
-```
-
-where `2024-04-22` is the name of the folder.
-
-Remove everything in the folder that is not `.julia` or `.julia_environment`. 
-
-Create 2 symbolic links in the folder:
-
-```
-cd 2024-04-22
-ln -s julia .julia
-ln -s julia_environemnt .julia_environment
-```
-
-Finally, link `latest` to this new folder (in `/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment`):
-
-```
-cd ..
-ln -s 2024-04-22 latest
-```
-
-## Build the documentation locally
-
-First, you need a fresh virtual environment with tox installed:
-
-```
-python -mvenv venv
-source venv/bin/activate
-pip install tox
-```
-
-After you can run:
-
-```
-tox -e docs
-```
-
-and, hopefully, the output docs are in: `docs/build/html`.
-
 # Release notes
 
 ## Upcoming release
