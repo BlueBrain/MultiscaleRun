@@ -59,6 +59,7 @@ dependencies = [
     "pandas>=1.4",
     "psutil>=5.8",
     "scipy>=1.11.1",
+    "simpleeval>=0.9.13",
     "tqdm>=4.65",
     "trimesh>=3",
 ]

@@ -214,7 +214,6 @@ def test_check_value():
         a = 3
         utils.check_value(a, heb=0)
 
-    print(exc_info.value)
     assert str(exc_info.value) == "a (3) >= 0"
 
     class CustomException(Exception):
@@ -236,6 +235,40 @@ def test_timesteps():
     assert np.allclose(l, list(range(1, 10, 1)))
 
 
+def test_py_expr_eval():
+    config = dict(
+        multiscale_run=dict(
+            steps=dict(
+                conc_factor=2,
+            ),
+            version="1.0",
+        )
+    )
+
+    pyeval = utils.PyExprEval(config)
+    # integral and floating-points
+    assert pyeval("42") == 42
+    assert pyeval("'42'") == "42"
+    assert 0.001 == pytest.approx(pyeval("1.0e-3"))
+    # test custom function 'config'
+    assert pyeval("config['multiscale_run']['version']") == "1.0"
+    assert pyeval("config.multiscale_run.steps.conc_factor") == 2
+    # test variables
+    assert pyeval("foo * 2", foo=21) == 42
+    assert pyeval("foo * 2", foo=[]) == [], "cannot handle Python list"
+    assert pyeval("foo * 3", foo=[1]) == [1, 1, 1], "cannot handle Python list"
+    assert np.array_equal(
+        pyeval("foo * 2", foo=np.array([1, 21])), np.array([2, 42])
+    ), "cannot handle NumPy arrays"
+    assert np.array_equal(
+        pyeval("np.arange(6)"), np.arange(6)
+    ), "cannot call Numpy functions"
+    assert (
+        pyeval("math.ceil(41.2)") == 42
+    ), "cannot call routines from the 'math' standard module"
+    assert pyeval("abs(-42)") == 42, "cannot call builtins from the standard library"
+
+
 if __name__ == "__main__":
     test_get_var_name()
     test_check_value()
@@ -244,3 +277,4 @@ if __name__ == "__main__":
     test_logs_decorator()
     test_heavy_duty_MPI_gather()
     test_clear_and_replace_files_decorator()
+    test_py_expr_eval()

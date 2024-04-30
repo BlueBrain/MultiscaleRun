@@ -25,6 +25,7 @@ class MsrConnectionManager:
         self.managers = managers
         # needed for the merge syncing scheme
         self.cache = {}
+        self.pyeval = utils.PyExprEval(self.config)
 
     @utils.cache_decorator(
         only_rank0=False,
@@ -54,7 +55,7 @@ class MsrConnectionManager:
     def connect_neurodamus2steps(self):
         """Neuron volume fractions in tets.
 
-        This method calculates the neuron volume fractions within tetrahedral elements and stores the results in conection matrices.
+        This method calculates the neuron volume fractions within tetrahedral elements and stores the results in connection matrices.
 
         Returns
             None
@@ -130,7 +131,7 @@ class MsrConnectionManager:
             case "sum":
                 vals = getattr(ndam_m, con.src_get_func)(**con.src_get_kwargs)
                 if "conversion" in con and "op" in con.conversion:
-                    vals = eval(con.conversion.op)
+                    vals = self.pyeval(con.conversion.op, vals=vals)
 
                 vals = self.nsegXtetMat.transpose().dot(vals)
                 utils.comm().Allreduce(vals, vals, op=utils.mpi().SUM)
@@ -278,8 +279,8 @@ class MsrConnectionManager:
 
                     # apply additional operators, if any
                     if "op" in con.conversion:
-                        # Evaluate the expression using eval()
-                        vals = eval(con.conversion.op)
+                        # Evaluate the expression
+                        vals = self.pyeval(con.conversion.op, vals=vals)
 
                         # In this operation there should be this multiplier: 1e-12 * 500 = 5e-10
 
@@ -328,7 +329,7 @@ class MsrConnectionManager:
                 vals = getattr(steps_m, con.src_get_func)(**con.src_get_kwargs)
 
                 if "conversion" in con and "op" in con.conversion:
-                    vals = eval(con.conversion.op)
+                    vals = self.pyeval(con.conversion.op, vals=vals)
 
                 vals = self.nXtetMat.dot(vals)
 

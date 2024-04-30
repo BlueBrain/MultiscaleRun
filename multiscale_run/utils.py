@@ -1,19 +1,22 @@
+import ast
 import contextlib
 import functools
 import inspect
 import json
 import logging
+import math
+import operator
 import os
 import pickle
 import re
 import shutil
 import time
-import traceback
 from collections.abc import Iterable
 from pathlib import Path
 
 import numpy as np
 import psutil
+import simpleeval
 from scipy import sparse
 
 
@@ -908,3 +911,94 @@ def log_stats(
         logging.info(
             f"{msg} (low_b/min/avg/max/high_b): {low_b}/{ppf(min0)}/{ppf(avg)}/{ppf(max0)}/{high_b}"
         )
+
+
+class PyExprEval:
+    """Parse and evaluate Python expressions in a controlled environment"""
+
+    def __init__(self, config: dict):
+        """
+        Args:
+          config: MultiscaleRun config. Can be a dict or an instance of `multiscale_run.MsrConfig`
+        """
+        operators = simpleeval.DEFAULT_OPERATORS.copy()
+        operators.update(
+            {
+                ast.Add: operator.add,
+                ast.Mult: operator.mul,
+            }
+        )
+        # list of variables and modules available in the scope
+        names = dict(
+            config=config,
+            math=math,
+            np=np,
+        )
+        # list of builtins available in the scope
+        functions = dict(
+            abs=abs,
+            min=min,
+            max=max,
+            pow=pow,
+            round=round,
+            sum=sum,
+        )
+        self._se = simpleeval.SimpleEval(
+            functions=functions, names=names, operators=operators
+        )
+
+    def __call__(self, expr: str, **names):
+        """Evaluate a restricted Python expression made of basic operations on builtin Python types and NumPy arrays.
+
+        Additional symbols available:
+
+        - `config`: the instance given in the constructor
+        - `np` and `math`: the NumPy and standard `math` modules
+        - computational Python builtins: abs, min, max, pow, round and sum
+
+        Args:
+          expr: the Python expression to evaluate
+          names: additional symbols available in the expression
+
+        Example::
+
+          >>> config = MsrConfig._from_dict({"factor": 2})
+          >>> pyeval = PyExprEval(config)
+          >>> pyeval("data * config.factor + 1", data=np.array([1, 2, 3])))
+          array([3, 5, 7])
+
+        Note::
+
+            This method is not reentrant since it modifies the state of `self._se` attribute.
+        """
+        tree = self._get_tree(expr)
+        self.simple_eval.names.update(names)
+        try:
+            return self.simple_eval.eval(expr, previously_parsed=tree)
+        except simpleeval.InvalidExpression as e:
+            raise MsrException(
+                f"Could not evaluate Python conversion expression: '{expr}'"
+            ) from e
+
+    @property
+    def simple_eval(self):
+        """Get internal instance of `simpleeval.SimpleEval`"""
+        return self._se
+
+    @functools.lru_cache(maxsize=None)
+    def _get_tree(self, expr: str):
+        """Get parsing result of a Python expression
+
+        Args:
+          expr: the Python expression to parse
+
+        Note::
+
+          The parsing is cached under the hood for efficiency.
+        """
+        try:
+            return self.simple_eval.parse(expr)
+        except simpleeval.InvalidExpression as e:
+            raise MsrException(
+                f"Could not parse Python conversion expression: '{expr}'"
+            ) from e

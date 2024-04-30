@@ -86,7 +86,7 @@
                     "src_get_kwargs": {},
                     "conversion": {
                         "matrices": ["tetXbfFlowsMat"],
-                        "op": "abs(vals)*5e-10"
+                        "op": "abs(vals) * 5e-10"
                     },
                     "dest_set_func": "set_parameters_idxs",
                     "dest_set_kwargs": {"idxs": [3, 4]},
@@ -98,7 +98,7 @@
                     "src_get_kwargs": {},
                     "conversion": {
                         "matrices": ["tetXbfVolsMat", "tetXtetMat"],
-                        "op": "vals*5e-10"
+                        "op": "vals * 5e-10"
                     },
                     "dest_set_func": "set_parameters_idxs",
                     "dest_set_kwargs": {"idxs": [5]},
@@ -109,7 +109,7 @@
                     "src_get_func": "get_tet_concs",
                     "src_get_kwargs": {"species_name": "KK"},
                     "conversion": {
-                        "op": "vals*(1.0/(1.0e-3*self.config.multiscale_run.steps.conc_factor))"
+                        "op": "vals * (1.0 / (1.0e-3 * config.multiscale_run.steps.conc_factor))"
                     },
                     "dest_set_func": "set_vm_idxs",
                     "dest_set_kwargs": {"idxs": [95]},
@@ -131,7 +131,7 @@
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "ik","weight": "area"},
-                    "conversion": {"op": "vals*1e-8"},
+                    "conversion": {"op": "vals * 1e-8"},
                     "dest_set_func": "add_curr_to_conc",
                     "dest_set_kwargs": {"species_name": "KK"},
                     "action": "sum"
