@@ -123,6 +123,8 @@ class MsrSimulation:
                 if self.conf.is_bloodflow_active():
                     self.conn_m.connect_bloodflow2steps()
 
+            print("AAAAAAAAAAAAA PROCEED TO INIT")
+
             #finalize neurodamus, removing the axons
             self.managers["neurodamus"].sim_init()
 
