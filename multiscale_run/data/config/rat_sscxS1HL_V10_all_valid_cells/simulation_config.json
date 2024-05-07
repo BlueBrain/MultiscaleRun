@@ -9,7 +9,7 @@
         "mesh_path": "mesh/autogen_mesh.msh",
         "cache_path": "cache",
         "mesh_scale": 1e-6,
-        "config_format": 2,
+        "config_format": 3,
         "msr_version": "develop",
         "preprocessor": {
             "mesh": {
@@ -22,8 +22,8 @@
                 "neuron_population_name": "All"
             }
         },
-        "connect_to": {
-            "metabolism": [
+        "connections": {
+            "after_metabolism_advance": [
                 {    
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
@@ -84,10 +84,7 @@
                     "src_simulator": "bloodflow",
                     "src_get_func": "get_flows",
                     "src_get_kwargs": {},
-                    "conversion": {
-                        "matrices": ["tetXbfFlowsMat"],
-                        "op": "abs(vals) * 5e-10"
-                    },
+                    "transform_expression": "abs(tetXbfFlowsMat.dot(vals)) * 5e-10",
                     "dest_set_func": "set_parameters_idxs",
                     "dest_set_kwargs": {"idxs": [3, 4]},
                     "action": "set"
@@ -96,10 +93,7 @@
                     "src_simulator": "bloodflow",
                     "src_get_func": "get_vols",
                     "src_get_kwargs": {},
-                    "conversion": {
-                        "matrices": ["tetXbfVolsMat", "tetXtetMat"],
-                        "op": "vals * 5e-10"
-                    },
+                    "transform_expression": "tetXtetMat.dot(tetXbfVolsMat.dot(vals)) * 5e-10",
                     "dest_set_func": "set_parameters_idxs",
                     "dest_set_kwargs": {"idxs": [5]},
                     "action": "set"
@@ -108,15 +102,13 @@
                     "src_simulator": "steps",
                     "src_get_func": "get_tet_concs",
                     "src_get_kwargs": {"species_name": "KK"},
-                    "conversion": {
-                        "op": "vals * (1.0 / (1.0e-3 * config.multiscale_run.steps.conc_factor))"
-                    },
+                    "transform_expression": "vals * (1.0 / (1.0e-3 * config.multiscale_run.steps.conc_factor))",
                     "dest_set_func": "set_vm_idxs",
                     "dest_set_kwargs": {"idxs": [95]},
                     "action": "set"
                 }
             ],
-            "bloodflow": [
+            "before_bloodflow_advance": [
                 {    
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_vasc_radii",
@@ -126,12 +118,12 @@
                     "action": "set"
                 }
             ],
-            "steps": [
+            "after_steps_advance": [
                 {    
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "ik","weight": "area"},
-                    "conversion": {"op": "vals * 1e-8"},
+                    "transform_expression": "vals * 1e-8",
                     "dest_set_func": "add_curr_to_conc",
                     "dest_set_kwargs": {"species_name": "KK"},
                     "action": "sum"

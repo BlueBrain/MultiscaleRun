@@ -55,16 +55,19 @@ Preprocessor
 Connections among simulators
 ============================
 
-The section **connect_to** outlines how data are exchanged between the different models.
+The section **connections** outlines how data are exchanged between the different models. 
+Simulations are performed alternating among simulators advancing each one based on their respective time step. 
+During this process the user can specify connection among simulators. **connections** is a dictionary of lists of connections. 
+The keys specify when that particular list of connections takes place. 
+For example: `after_metabolism_advance` means that that connection is called right after the advance call of metabolism. 
+When a connection is called, the various entries of the array are performed in sequence. 
+The order of the list is important: later connections in these lists may override previous ones.
 
-Models execution
-----------------
+The possible keys in **connections** are:
 
-Simulations are performed alternating among simulators advancing each one based on their respective time step.
-After a call to their respective `advance` method, each simulator is `synced` with the others based on the configuration in this section.
-A `sync` means that some values from another simulator affect some values of the current simulator (the one that just performed an `advance`).
-The keys in `connect_to` are the destination simulators: the simulators that just performed an `advance` and need to be synced with the others.
-Each value is a list of `connections` that may affect some values of the `destination simulator`. The order of the list is important: later connections in these lists may override previous ones.
+- **after_metabolism_advance, after_steps_advance, before_bloodflow_advance**
+
+Keys different from the list provided are disregarded and a warning is emitted.
 
 Configuration specification
 ---------------------------
@@ -74,6 +77,7 @@ Each connection must specify:
 - **src_simulator**: String. Simulator, source of the values that need to be synced. Possible values are "neurodamus", "steps", "bloodflow", or "metabolism".
 - **src_get_func**: String. Getter function for the source simulator.
 - **src_get_kwargs**: Dict. Inputs for the getter function for the source simulator.
+- **dest_simulator**: String. Simulator, destination of the values that need to be synced. Possible values are "neurodamus", "steps", "bloodflow", or "metabolism". It is very probably the same simulator mentioned as the key of the current connection.
 - **dest_get_func**: String. Setter function to the destination simulator.
 - **dest_get_kwargs**: Dict. Inputs for the setter function for the destination simulator.
 - **action**: String. Sync action type. It may be:
@@ -91,20 +95,26 @@ Each connection must specify:
     - **dest_get_func**: String. Getter function to the destination simulator.
     - **dest_get_kwargs**: Dict. Inputs for the getter function for the destination simulator.
 
+Optionally, the user may specify:
+
+- **src_set_func** and  **src_set_kwargs**: in this case, the final value is also set in the source simulator (this field is required for the `merge` action).
+- **transform_expression**: additional custom operations that may be performed on the values before setting them in the simulators. More on this in: :ref:`data transformation <data_transformation_label>`.
+
 Concrete example
 ----------------
 
 .. code-block:: json
 
     {
-        "connect_to": {
-            "metabolism": [
+        "connections": {
+            "after_metabolism_advance": [
                 {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "atpi", "weight": "volume"},
                     "src_set_func": "set_var",
                     "src_set_kwargs": {"var": "atpi"},
+                    "dest_simulator": "metabolism",
                     "dest_get_func": "get_vm_idx",
                     "dest_get_kwargs": {"idx": 22},
                     "dest_set_func": "set_vm_idxs",
@@ -125,30 +135,12 @@ All these values are based on the time step of Metabolism. :math:`n_{\text{metab
 
 The remaining keys indicate functions and arguments for setters and getters for both source and destination. For example, to set the values to the destination we use the function `set_vm_idxs` and its arguments are: `"idxs": [22]`. It may be possible, like in this case, to set the value for multiple indexes simultaneously if the appropriate function accepts lists. This functionality may be expanded in the future to other setters and simulators if needed.
 
+.. _data_transformation_label:
+
 Data transformation
 -------------------
 
-For a few couplings, it is possible to specify data transformation operations when sending values from one simulator to another with the **conversion** JSON object.
-
-- Bloodflow → Metabolism : matrices multiplication and Python expression
-- Neurodamus → STEPS: Python expression only
-- STEPS → Metabolism: Python expression only
-
-Matrices Multiplication
-^^^^^^^^^^^^^^^^^^^^^^^
-
-The **matrices** key is an array of strings. Possible values are the names of the connection matrices defined in ``MsrConnectionManager``:
-
-- **tetXtetMat**: tetrahedra x tetrahedra matrix to get the measure ratio compared to the mean tetrahedron measure. Useful to compute species dispersion in tetrahedra.
-- **tetXbfVolsMat**: matrix representing Bloodflow segments in tetrahedra. To be multiplied only by Bloodflow volumes.
-- **tetXbfFlowsMat**: matrix representing Bloodflow segments in tetrahedra. To be multiplied only by Bloodflow flows.
-
-The operation multiplies the transferred data against the specified matrices.
-
-Python expression
-^^^^^^^^^^^^^^^^^
-
-A Python expression whose result overrides the data transferred can be specified in the **op** configuration key.
+It is possible to specify data transformation operations when sending values from one simulator to another with the **conversion** JSON object. It is a python expression whose result overrides the data transferred and can be specified in the **transform_expression** configuration key.
 The Python expression is executed in a restricted environment where only few symbols are usable:
 
 - `vals`: the data being transferred
@@ -157,38 +149,48 @@ The Python expression is executed in a restricted environment where only few sym
 - `np`: the NumPy module
 - the computational Python builtins: `abs`, `min`, `max`, `pow`, `round`, and `sum`
 
-Example of valid expressions:
+In addition, a few matrices are available to perform the various averages that are likely required:
+
+- **nXsecMat**: neuron x section matrix. ``nXsecMat.dot(vals)`` does the volume-weighted average of the section-based values in ``vals``. Adimensional. Each element is: ``V_j / V_i`` where ``V_i`` is the total volume of the neuron and ``V_j`` is the volume of the section. Neurons and sections are local to the MPI rank.
+- **nsecXnsegMat**: neuron section x neuron segment matrix. ``nsecXnsegMat.dot(vals)`` does the volume-weighted average of the section-based values in ``vals``. Adimentional. Each element is: ``V_j / V_i`` where ``V_i`` is the total volume of the section and ``V_j`` is the volume of the segment. Sections and segments are local to the rank.
+- **nXnsegMatBool**: ``nXnsegMatBool = nXsecMat.dot(nsecXnsegMat) > 0``
+- **nsegXtetMat**: neuron segment x tet matrix. Adimensional. Each element is ``V_seg_in_tet_ij / V_seg_i`` where ``V_seg_in_tet`` is the volume of the neuron segment ``i`` in tet ``j`` and ``V_seg_i`` is the volume of the neuron segment ``i``. Tets are global while segments are local to the MPI rank. This means that each rank has a big row block of the total matrix.
+- **tetXbfVolsMat**: tetrahedra x bloodflow segments matrix. Adimentional. Each element is ``V_seg_in_tet_ij / V_seg_i`` where ``V_seg_in_tet`` is the volume of the bloodflow segment ``i`` in tet ``j`` and ``V_seg_i`` is the volume of the bloodflow segment ``i``. Tets and bloodflow segments are global and the same matrix is shared among all the ranks.
+- **tetXbfFlowsMat**: tetrahedra x bloodflow segments matrix. Bool matrix that computes what are the flows entering or exiting a tet. Segments completely encompassed inside a tet are not counted except if they are inputs/outputs of the the bloodflow simulator. Adimentional. Tets and bloodflow segments are global and the same matrix is shared among all the ranks.
+- **tetXtetMat**: tetrahedra x tetrahedra matrix that riscale tet values to the a reference, average tet. Adimentional and diagonal. Each element of the diagonal is: ``V_avg / V_i`` where ``V_avg`` is the volume of the average tet and ``V_i`` is the volume of the tet ``i``. Tets are global and the same matrix is shared among all the ranks.
+
+Examples of valid expressions:
 
 - ``vals * (1.0 / (1.0e-3 * config.multiscale_run.steps.conc_factor))``
 - ``abs(vals) * 5e-10``
 - ``np.floor(10 * rg.random((3, 4)))``
+- ``tetXtetMat.dot(tetXbfVolsMat.dot(vals)) * 5e-10``
 
 Full example of JSON connections with transformation:
 
 .. code-block:: json
 
   {
-    "connect_to": {
-      "metabolism": [
+    "connections": {
+      "after_metabolism_advance": [
         {
           "src_simulator": "bloodflow",
           "src_get_func": "get_vols",
           "src_get_kwargs": {},
-          "conversion": {
-            "matrices": ["tetXbfVolsMat", "tetXtetMat"],
-            "op": "vals * 5e-10"
-          },
+          "transform_expression": "tetXtetMat.dot(tetXbfVolsMat.dot(vals)) * 5e-10",
+          "dest_simulator": "metabolism",
           "dest_set_func": "set_parameters_idxs",
           "dest_set_kwargs": {"idxs": [5]},
           "action": "set"
         }
       ],
-      "steps": [
+      "after_steps_advance": [
         {
           "src_simulator": "neurodamus",
           "src_get_func": "get_var",
           "src_get_kwargs": {"var": "ik","weight": "area"},
-          "conversion": {"op": "vals * 1e-8"},
+          "transform_expression": "vals * 1e-8",
+          "dest_simulator": "steps",
           "dest_set_func": "add_curr_to_conc",
           "dest_set_kwargs": {"species_name": "KK"},
           "action": "sum"

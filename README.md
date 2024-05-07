@@ -249,6 +249,14 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 
 ## Upcoming release
 
+### Major Changes
+
+* The configuration file has changed in the `connections` section:
+  *  you can specify where the connection takes place and if you want to write the connection results (`vals`) in the source simulator too.
+  * matrices are now part of the `op` operation and can be used throughout the code.
+  * A `dest_simulator` key is now required for every connection as `connect_to` keys do not dictate which simulator is the destination simulator anymore.
+  * Previous `simulation_config.json` files must be adapted since backward compatibility is not possible. However, changes should be small and self-explanatory if a new template is compared to an old version (v 0.7, `config_format`: 2) of the configuration file.
+
 ## 0.7 - 2024-04-10
 
 ### Major Changes

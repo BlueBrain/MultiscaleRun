@@ -117,13 +117,17 @@ class MsrNeurodamusManager:
                 np.ndarray: An array of arrays containing individual values for each neuron compartment.
         """
         v = [
-            [
-                sum([getattr(seg, f)() for seg in self.gen_segs(sec=sec)])
-                for sec in self.gen_secs(nc=nc)
-            ]
+            np.array(
+                [
+                    sum([getattr(seg, f)() for seg in self.gen_segs(sec=sec)])
+                    for sec in self.gen_secs(nc=nc)
+                ],
+                dtype=float,
+            )
             for nc in self.ncs
         ]
-        return np.array([sum(i) for i in v], dtype=object), np.array(v, dtype=object)
+
+        return np.array([sum(i) for i in v], dtype=float), np.array(v, dtype=object)
 
     def get_seg_points(self, scale):
         """Get the segment points for all neurons.

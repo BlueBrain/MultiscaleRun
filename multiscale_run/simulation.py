@@ -135,7 +135,7 @@ class MsrSimulation:
                 )
 
             # sync bloodflow to give initial values to metabolism
-            self.conn_m.process_syncs(dest_manager_name="bloodflow")
+            self.conn_m.process_syncs(sync_event="before_bloodflow_advance")
             if self.conf.is_bloodflow_active():
                 self.managers["bloodflow"].update_static_flow()
 
@@ -147,7 +147,7 @@ class MsrSimulation:
                 when="before_sync",
             )
 
-            self.conn_m.process_syncs(dest_manager_name="metabolism")
+            self.conn_m.process_syncs(sync_event="after_metabolism_advance")
 
             # remove cells that already fail
             if self.conf.is_metabolism_active():
@@ -200,14 +200,14 @@ class MsrSimulation:
                     with timeit(name="steps_advance"):
                         self.managers["steps"].sim.run(t / 1000)  # ms to sec
 
-                    self.conn_m.process_syncs(dest_manager_name="steps")
+                    self.conn_m.process_syncs(sync_event="after_steps_advance")
 
                 if (
                     self.conf.is_bloodflow_active()
                     and i_ndam % self.conf.multiscale_run.bloodflow.ndts == 0
                 ):
                     # bloodflow has an implicit scheme because it works with quasi-static assumption
-                    self.conn_m.process_syncs(dest_manager_name="bloodflow")
+                    self.conn_m.process_syncs(sync_event="before_bloodflow_advance")
                     with timeit(name="bloodflow_advance"):
                         self.managers["bloodflow"].update_static_flow()
 
@@ -234,7 +234,7 @@ class MsrSimulation:
                         when="before_sync",
                     )
 
-                    self.conn_m.process_syncs(dest_manager_name="metabolism")
+                    self.conn_m.process_syncs(sync_event="after_metabolism_advance")
 
                     self.rep.record(
                         idt=i_metab,

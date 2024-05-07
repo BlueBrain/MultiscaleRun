@@ -54,6 +54,8 @@ class MsrConfig(dict):
         self.config_path = path
         self._load()
 
+        # TODO sanity check for connections that are not expected
+
     @classmethod
     def _from_dict(cls, data):
         obj = cls.__new__(cls, data)
