@@ -10,6 +10,10 @@ from bluepysnap import Circuit
 from . import utils
 
 
+class MsrMeshError(utils.MsrException):
+    """Generic Mesh Exception"""
+
+
 class MsrPreprocessor:
     """Preprocess manager for mesh generation in the Multi-Step Simulation Platform (MSP).
 
@@ -197,10 +201,10 @@ class MsrPreprocessor:
         trimesh.repair.fix_inversion(surface_mesh)
         trimesh.repair.fix_winding(surface_mesh)
 
-        stl_path = Path(self.config.multiscale_run.mesh_path).with_suffix(".stl")
+        stl_path = self.config.multiscale_run.mesh_path.with_suffix(".stl")
         surface_mesh.export(stl_path)
 
-        geo_path = Path(self.config.multiscale_run.mesh_path).with_suffix(".geo")
+        geo_path = self.config.multiscale_run.mesh_path.with_suffix(".geo")
 
         ss = f"""
 Merge '{stl_path.name}';
@@ -329,32 +333,34 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         # Initialize Gmsh
         gmsh.initialize()
 
-        # Load your script
-        gmsh.open(script_file)
+        try:
+            # Load your script
+            gmsh.open(script_file)
 
-        # Set the options
-        gmsh.option.setNumber("Mesh.Algorithm", algo)
+            # Set the options
+            gmsh.option.setNumber("Mesh.Algorithm", algo)
 
-        # Generate the initial mesh
-        gmsh.model.geo.synchronize()
+            # Generate the initial mesh
+            gmsh.model.geo.synchronize()
 
-        # gmsh.model.mesh.recombine()
-        gmsh.model.mesh.generate(3)  # 3 for 3D
+            # gmsh.model.mesh.recombine()
+            gmsh.model.mesh.generate(3)  # 3 for 3D
 
-        # Refine the mesh
-        for _ in range(refinement_steps):
-            gmsh.model.mesh.refine()
+            # Refine the mesh
+            for _ in range(refinement_steps):
+                gmsh.model.mesh.refine()
 
-        # Remove duplicate facets
-        gmsh.model.mesh.removeDuplicateElements()
+            # Remove duplicate facets
+            gmsh.model.mesh.removeDuplicateElements()
 
-        # Recombine elements
+            # Recombine elements
 
-        # gmsh.model.mesh.recombine(3)
+            # gmsh.model.mesh.recombine(3)
 
-        # Save the mesh to the output file
-        gmsh.write(output_file)
-        gmsh.finalize()
+            # Save the mesh to the output file
+            gmsh.write(output_file)
+        finally:
+            gmsh.finalize()
 
     @staticmethod
     def _explode_pts(pts, explode_factor):
@@ -405,6 +411,28 @@ Physical Volume("{phys_vol}", 1) = {{1}};
             )
         return pts
 
+    @property
+    def ntets(self):
+        """Count the total number of tets in the mesh"""
+        gmsh.initialize()
+        try:
+            gmsh.open(str(self.config.multiscale_run.mesh_path))
+
+            _, tets, _ = gmsh.model.mesh.getElements(dim=3)
+            return sum([len(i) for i in tets])
+
+        finally:
+            gmsh.finalize()
+
+    @utils.logs_decorator
+    def check_mesh(self):
+        if utils.rank0():
+            n = self.ntets
+            if n < utils.size():
+                raise MsrMeshError(
+                    f'There are less tetrahedrons than MPI ranks ({n} < {utils.size()}) and this is incompatible with Omega_h. Please increase "refinement_steps" in simulation_config.json or reduce the number of MPI ranks.'
+                )
+
     @utils.logs_decorator
     def autogen_mesh(self, ndam_m=None, bf_m=None, pts=None):
         """Generate a STEPS mesh when it is missing based on neuron and vasculature points.
@@ -426,7 +454,7 @@ Physical Volume("{phys_vol}", 1) = {{1}};
             >>> gen_mesh()
         """
         pts = pts if pts is not None else []
-        mesh_path = Path(self.config.multiscale_run.mesh_path)
+        mesh_path = self.config.multiscale_run.mesh_path
         mesh_path.parent.mkdir(parents=True, exist_ok=True)
         if mesh_path.exists():
             logging.info(f"Use existing steps mesh: {mesh_path}")

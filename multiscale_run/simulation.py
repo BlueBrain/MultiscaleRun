@@ -62,6 +62,7 @@ class MsrSimulation:
         self.conf = config.MsrConfig(self._base_path)
         self.conf.check()
         self.prep = preprocessor.MsrPreprocessor(self.conf)
+
         self.managers = {}
         self.conn_m = connection_manager.MsrConnectionManager(
             config=self.conf, managers=self.managers
@@ -118,6 +119,7 @@ class MsrSimulation:
                     ndam_m=self.neurodamus_manager,
                     bf_m=self.managers["bloodflow"],
                 )
+                self.prep.check_mesh()
                 self.managers["steps"] = steps_manager.MsrStepsManager(config=self.conf)
                 self.managers["steps"].init_sim()
                 self.conn_m.connect_neurodamus2steps()
