@@ -25,12 +25,12 @@ Base section
 
 This is the base section that configures the parameters to run MultiscaleRun simulations.
 
-- **with_steps**: Boolean. Indicates whether the STEPS simulator is included. It is in charge of the extracellular reactions/diffusions of the molecules.
-- **with_bloodflow**: Boolean. Indicates whether the AstroVascPy simulator is included. It is in change of computing the blood flows.
-- **with_metabolism**: Boolean. Indicates whether the Metabolism simulator is included. It is in charge of computing the Metabolism of the neurons (ATP/ADP etc. generation/consumption).
+- **with_steps**: Boolean. Indicates whether the STEPS simulator is enabled. It computes the extracellular reactions/diffusions of the molecules.
+- **with_bloodflow**: Boolean. Indicates whether the AstroVascPy simulator is enabled. It computes the blood flows and volumes inside the vasculature.
+- **with_metabolism**: Boolean. Indicates whether the Metabolism simulator is enabled. It computes the metabolism of the neurons (ATP/ADP etc. generation/consumption).
 - **cache_save**: Boolean. If true, some simulation matrices are cached on the filesystem. It greatly speeds up initialization in future simulations.
 - **cache_load**: Boolean. If true, some simulation matrices are loaded from the cache, if present. Used in conjunction with `cache_save`.
-- **logging_level**: Integer. Defines the verbosity level of logs (fed into Neurodamus).
+- **logging_level**: Integer. Defines the verbosity level of Neurodamus logs.
 - **mesh_path**: String. Path to the mesh file used in simulations, e.g., "mesh/autogen_mesh.msh".
 - **cache_path**: String. Filesystem location where the cached files are stored, e.g., "cache".
 - **mesh_scale**: Float. Scale factor applied to the mesh dimensions, typically in the order of 1e-6.
@@ -203,17 +203,17 @@ Full example of JSON connections with transformation:
 Metabolism
 ==========
 
-Configures the Metabolism simulator. The Julia model has 2 inputs: `parameters` and `vm`. The initial values of `vm` is `u0`.
+Parameters of the Metabolism simulator. The Julia model has 2 inputs: `parameters` and `vm`. The initial values of `vm` is `u0`.
 
 - **ndts**: Integer. Time step of the simulator. Measured in number of Neurodamus time steps.
-- **u0_path**: String. Path to the csv file that holds the initial values of the Metabolism model.
+- **u0_path**: String. Path to the CSV file providing the initial values of the Metabolism model.
 - **julia_code_path**: String. Path to the main Julia model file.
-- **model**: Dict. Holds the additional variables for the Julia model.
-    - **model_path**: String. Base path for the additional includes.
-    - **pardir_path**: String. Base path for the additional parameters required by the Metabolism model.
-    - **includes**: Dict. Additional includes required for the main Julia model to function.
+- **model**: Dict. Provides additional variables to the Metabolism model.
+    - **model_path**: String. Base path to the additional includes.
+    - **pardir_path**: String. Base path to the additional parameters required by the Metabolism model.
+    - **includes**: List. Additional includes required for the main Julia model to function.
     - **constants**: Dict. Additional constants required by the julia model.
-- **constants**: Dict. Constant necessary for the Metabolism manager of multiscale run.
+- **constants**: Dict. Constant necessary for the Metabolism manager of MultiscaleRun.
 - **parameters**: List. List of parameters of the Metabolism model. They are the inputs (except `vm`) in order of the main Julia model file. During initialization (before any advance for any simulator), the connections to `metabolism` may replace these values. In that case, and only in this case, the `merge` action is downgraded to a `set` action.
 - **solver_kwargs**: Dict. Parameters for the solver of the Metabolism model. The solver is currently: `de.Rosenbrock23`.
 - **checks**: Dict. This a list of checks that are performed on the Metabolism inputs (parameters and vm) for every Metabolism time steps to verify integrity of the inputs. Items are optional. The parameters and vms that are not mentioned in this list are still checked to be normal numbers (no inf, nan is allowed). For example:
@@ -237,9 +237,9 @@ Configures the Metabolism simulator. The Julia model has 2 inputs: `parameters` 
 - **kwargs**: Dict. Arguments of the checking routine. Its entries are optional. The following entries are supported:
     - **lb**: Float. Lower bound. The value `v` must be:  \(lb < v \)
     - **leb**: Float. Lower or equal bound. The value `v` must be:  \(lb \leq  v \)
-    - **hb**: Float. Higer bound. The value `v` must be:  \(v < hb \)
-    - **heb**: Float. Higer or equal bound. The value `v` must be:  \(v \leq  heb \)
-- **response**: String. If one of the values does not pass a check for a neuron we apply the response. Currently, the following responses are implemented:
+    - **hb**: Float. Higher bound. The value `v` must be:  \(v < hb \)
+    - **heb**: Float. Higher or equal bound. The value `v` must be:  \(v \leq  heb \)
+- **response**: String. Response applied if one of the values does not pass the check. Currently, the following responses are implemented:
     - **exclude_neuron**: The neuron is removed from the simulation. The rest may continue. If no neurons remain (among all ranks) the simulation is aborted at the end of a MultiscaleRun iteration.
     - **abort_simulation**: The simulation is aborted.
 
@@ -250,7 +250,7 @@ Parameters for the STEPS simulator.
 
 - **ndts**: Integer. Time step of the simulator. Measured in number of Neurodamus time steps.
 - **conc_factor**: Float. Rescaling factor for the number of molecules. Necessary because the mesh is very coarse and STEPS may overflow.
-- **compname**: String. Name of the `compartment <https://steps.sourceforge.net/manual/API_2/API_geom.html?highlight=compartment#steps.API_2.geom.Compartment>`_.
+- **compname**: String. Name of the `STEPS compartment <https://steps.sourceforge.net/manual/API_2/API_geom.html?highlight=compartment#steps.API_2.geom.Compartment>`_.
 - **Volsys**: Dict. `System volume <https://steps.sourceforge.net/manual/API_2/API_model.html?highlight=volumesystem#steps.API_2.model.VolumeSystem>`_ parameters.
     - **name**: String. Name of the system volume. It needs to be the same that was used to create appropriate physical entity in the mesh.
     - **species**: Dict. Parameters of the reaction-diffusion species.
@@ -263,7 +263,8 @@ Blood Flow
 
 Parameters for the blood flow simulator (AstroVascPy).
 
-`astrovascpy parameters <https://astrovascpy.readthedocs.io/latest/generated/astrovascpy.typing.html#astrovascpy.typing.VasculatureParams>`_.
+- **ndts**: Integer. Time step of the simulator. Measured in number of Neurodamus time steps.
+- other parameters: `astrovascpy parameters <https://astrovascpy.readthedocs.io/latest/generated/astrovascpy.typing.html#astrovascpy.typing.VasculatureParams>`_.
 
 Reports
 =======

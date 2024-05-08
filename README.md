@@ -134,7 +134,7 @@ spack env activate -d ~/spackenv
 If you want to run an interactive session instead you need the following modules too:
 
 ```
-module load unstable gmsh llvm
+module load unstable llvm
 ```
 
 **Important:**

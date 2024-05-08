@@ -1,0 +1,489 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/BlueBrain/sonata-extension/blob/master/source/msr.schema.json",
+  "title": "MultiscaleRun configuration",
+  "description": "SONATA extension for MultiscaleRun simulations",
+  "type": "object",
+  "required": [
+    "cache_load",
+    "cache_path",
+    "cache_save",
+    "config_format",
+    "logging_level",
+    "mesh_path",
+    "mesh_scale",
+    "msr_version",
+    "preprocessor",
+    "with_bloodflow",
+    "with_metabolism",
+    "with_steps"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "config_format": {
+      "type": "integer",
+      "description": "Specifies the configuration format version"
+    },
+    "msr_version": {
+      "type": "string",
+      "description": "Indicates the version of the MultiscaleRun that created this file"
+    },
+    "with_steps": {
+      "description": "Indicates whether the STEPS simulator is enabled. It computes the extracellular reactions/diffusions of the molecules.",
+      "type": "boolean"
+    },
+    "with_bloodflow": {
+      "description": "Indicates whether the AstroVascPy simulator is enabled. It computes the blood flows.",
+      "type": "boolean"
+    },
+    "with_metabolism": {
+      "description": "Indicates whether the Metabolism simulator is enabled. It is in charge of computing the Metabolism of the neurons (ATP/ADP etc. generation/consumption).",
+      "type": "boolean"
+    },
+    "cache_load": {
+      "description": "If true, some simulation matrices are loaded from the cache, if present. Used in conjunction with `cache_save`.",
+      "type": "boolean"
+    },
+    "cache_save": {
+      "description": "If true, some simulation matrices are cached on the filesystem. It greatly speeds up initialization in future simulations.",
+      "type": "boolean"
+    },
+    "logging_level": {
+      "description": "Defines the verbosity level of Neurodamus logs.",
+      "type": "integer"
+    },
+    "mesh_path": {
+      "description": "Path to the mesh file used in simulations, e.g., \"mesh/autogen_mesh.msh\".",
+      "type": "string"
+    },
+    "cache_path": {
+      "description": "Filesystem location where the cached files are stored, e.g., \"cache\".",
+      "type": "string"
+    },
+    "mesh_scale": {
+      "description": "Scale factor applied to the mesh dimensions, typically in the order of 1e-6.",
+      "type": "number"
+    },
+    "preprocessor": {
+      "type": "object",
+      "required": [
+        "mesh",
+        "node_sets"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mesh": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "explode_factor": {
+              "description": "With 1 the auto-generating-mesh routine creates cube that touches the convex hull of all the segment extremities of the vasculature and the neurons. We need something slightly bigger to be sure of encompassing everything in the mesh. Usually kept at 1.001.",
+              "type": "number"
+            },
+            "base_length": {
+              "description": "Base length of mesh elements.",
+              "type": "number"
+            },
+            "refinement_steps": {
+              "description": "Number of refinement steps applied to the mesh. Currently Omega_h fails if the number of tetrahedra is less than the number of ranks.",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "base_length",
+            "explode_factor",
+            "refinement_steps"
+          ]
+        },
+        "node_sets": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "filter_neuron": {
+              "description": "Determines if the neurons connected to astrocytes must be filtered out when generating the mesh.",
+              "type": "boolean"
+            },
+            "neuron_population_name": {
+              "description": "Name of the neuron population to use. Typically: \"All\".",
+              "type": "string"
+            }
+          },
+          "required": [
+            "filter_neuron",
+            "neuron_population_name"
+          ]
+        }
+      }
+    },
+    "connections": {
+      "description": "outlines how data are exchanged between the different models.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "after_metabolism_advance": {"$ref":  "#/$defs/connections"},
+        "after_steps_advance": {"$ref":  "#/$defs/connections"},
+        "before_bloodflow_advance": {"$ref":  "#/$defs/connections"}
+      }
+    },
+    "metabolism": {
+      "description":  "Parameters of the Metabolism simulator.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ndts": {
+          "type": "integer",
+          "description": "Time step of the simulator. Measured in number of Neurodamus time steps."
+        },
+        "u0_path": {
+          "type": "string",
+          "description": "Path to the CSV file providing the initial values of the Metabolism model."
+        },
+        "julia_code_path": {
+          "type": "string",
+          "description": "Path to the main Julia model file."
+        },
+        "model": {
+          "type": "object",
+          "description": "Provides additional variables to the Metabolism model.",
+          "additionalProperties": false,
+          "properties": {
+            "model_path": {
+              "type": "string",
+              "description": "Base path to the additional includes."
+            },
+            "pardir_path": {
+              "type": "string",
+              "description": "Base path to the additional parameters required by the Metabolism model."
+            },
+            "includes": {
+              "description": "Additional includes required for the main Julia model to function.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "constants": {
+              "description": "Additional constants required by the julia model.",
+              "type": "object"
+            }
+          }
+        },
+        "constants": {
+          "description": "Constant necessary for the Metabolism manager of MultiscaleRun.",
+          "type": "object"
+        },
+        "parameters": {
+          "description": "List of parameters of the Metabolism model. They are the inputs (except `vm`) in order of the main Julia model file. During initialization (before any advance for any simulator), the connections to `metabolism` may replace these values. In that case, and only in this case, the `merge` action is downgraded to a `set` action.",
+          "type": "array"
+        },
+        "solver_kwargs": {
+          "description": "Parameters for the solver of the Metabolism model. The solver is currently: `de.Rosenbrock23`.",
+          "type": "object"
+        },
+        "checks": {
+          "description": "This a list of checks that are performed on the Metabolism inputs (parameters and vm) for every Metabolism time steps to verify integrity of the inputs. Items are optional. The parameters and vms that are not mentioned in this list are still checked to be normal numbers (no inf, nan is allowed). For example:",
+          "type": "object",
+            "properties": {
+              "parameters": {"$ref":  "#/$defs/bloodflow_check"},
+              "vm": {"$ref":  "#/$defs/bloodflow_check"}
+            }
+        }
+      },
+      "required": [
+        "julia_code_path",
+        "model",
+        "ndts",
+        "u0_path"
+      ]
+    },
+    "steps": {
+      "description":  "Parameters of the STEPS simulator.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+       "ndts": {
+         "type": "integer",
+         "description": "Time step of the simulator. Measured in number of Neurodamus time steps."
+       },
+        "conc_factor": {
+          "type": "number",
+          "description": "Rescaling factor for the number of molecules. Necessary because the mesh is very coarse and STEPS may overflow."
+        },
+        "compname": {
+          "type": "string",
+          "description": "Name of the STEPS compartment."
+        },
+        "Volsys": {
+          "type": "object",
+          "description": "Description of the STEPS Volume system.",
+          "properties": {
+            "name": {
+              "description": "Name of the STEPS Volume system.",
+              "type": "string"
+            },
+            "species": {
+              "description": "Parameters of the reaction-diffusion species.",
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "required": [
+                  "conc_0",
+                  "diffcst",
+                  "ncharges"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "conc_0": {
+                    "type": "number",
+                    "description": "Initial concentration in mM."
+                  },
+                  "diffcst": {
+                    "type": "number",
+                    "description": "Diffusion constant in SI units."
+                  },
+                  "ncharges": {
+                    "type": "integer",
+                    "description": "Charge number of the ion."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "bloodflow": {
+      "description":  "Parameters for the blood flow simulator (AstroVascPy). https://astrovascpy.readthedocs.io/latest/generated/astrovascpy.typing.html#astrovascpy.typing.VasculatureParams",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ndts": {
+          "description": "Time step of the simulation. Measures in number of Neurodamus time steps.",
+          "type": "integer"
+        },
+        "blood_viscosity": {
+          "description": "plasma viscosity",
+          "type": "number"
+        },
+        "depth_ratio": {
+          "description": "depth along the vasc_axis. This is the portion of the vasculature where there are inputs",
+          "type": "number"
+        },
+        "max_nb_inputs": {
+          "description": "maximum number of entry nodes where we inject the flow into the vasculature",
+          "type": "integer",
+          "minimum": 1
+        },
+        "min_subgraph_size": {
+          "type": "integer"
+        },
+        "max_capillaries_diameter": {
+          "type": "number"
+        },
+        "edge_scale": {
+          "type": "number"
+        },
+        "node_scale": {
+          "type": "number"
+        },
+        "input_v": {
+          "type": "number"
+        },
+        "vasc_axis": {
+          "description": "vasculature axis corresponding to x, y, or z.",
+          "type": "integer",
+          "allOf": [
+            {"minimum":  0},
+            {"maximum":  2}
+          ]
+        },
+        "base_pressure": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "base_pressure",
+        "blood_viscosity",
+        "depth_ratio",
+        "edge_scale",
+        "input_v",
+        "max_capillaries_diameter",
+        "max_nb_inputs",
+        "min_subgraph_size",
+        "ndts",
+        "node_scale",
+        "vasc_axis"
+      ]
+    },
+    "reports": {
+      "description":  "Parameters to report the simulation outcome.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "metabolism": {"$ref":  "#/$defs/model_report"},
+        "bloodflow": {"$ref":  "#/$defs/model_report"},
+        "steps": {"$ref":  "#/$defs/model_report"}
+      }
+    }
+  },
+  "$defs": {
+    "model_report": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "src_get_func": {
+            "description": "Getter function for the simulator (in this case, `metabolism`)",
+            "type": "string"
+          },
+          "src_get_kwargs": {
+            "type": "object",
+            "description": "Inputs for the getter function."
+          },
+          "unit": {
+            "type": "string",
+            "description": "Units of the values in the report."
+          },
+          "file_name": {
+            "type": "string",
+            "description": "Name of the file."
+          },
+          "when": {
+            "type": "string",
+            "description": "Since multiple simulators are active at the same time and `sync` calls may modify the values of the simulators the report may take the values just before or just after the `sync` operation. This value selects that. Possible values: `after_sync`, `before_sync`. Multiple reports (with different file names) for reporting just before and after `sync` are possible."
+          }
+        },
+        "required": [
+          "file_name",
+          "src_get_func",
+          "src_get_kwargs",
+          "unit",
+          "when"
+        ]
+      }
+    },
+    "bloodflow_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "unevaluatedProperties": false,
+      "patternProperties": {
+        "^[0-9]+$":{
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Name of the parameter. Effectively unused in the simulation. Useful for the operator.",
+              "type": "string"
+            },
+            "kwargs": {
+              "description": "Arguments of the checking routine. Its entries are optional.",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "lb": {
+                  "type": "number",
+                  "description": "Lower bound."
+                },
+                "leb": {
+                  "type": "number",
+                  "description": "Lower or equal bound."
+                },
+                "hb": {
+                  "type": "number",
+                  "description": "Higher bound"
+                },
+                "heb": {
+                  "type": "number",
+                  "description": "Higher or equal bound"
+                }
+              }
+            },
+            "response": {
+              "description": "Response applied if one of the values does not pass the check.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "response"
+          ]
+        }
+      }
+    },
+    "connections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "action",
+          "dest_set_func",
+          "dest_set_kwargs",
+          "dest_simulator",
+          "src_get_func",
+          "src_get_kwargs",
+          "src_simulator"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "src_simulator": {
+            "description": "Simulator, source of the values that need to be synced.",
+            "enum": ["neurodamus", "steps", "bloodflow", "metabolism"],
+            "type": "string"
+          },
+          "dest_simulator": {
+            "description": "Simulator, destination of the values that need to be synced.",
+            "enum": ["neurodamus", "steps", "bloodflow", "metabolism"],
+            "type": "string"
+          },
+          "src_get_func": {
+            "description": "Getter function for the source simulator.",
+            "type": "string"
+          },
+          "src_get_kwargs": {
+            "description": "Inputs for the getter function for the source simulator.",
+            "type": "object"
+          },
+          "src_set_func": {
+              "type": "string",
+              "description": "Setter function for the source simulator."
+          },
+          "src_set_kwargs": {
+              "type": "object",
+              "description": "Inputs of the setter function for the source simulator"
+          },
+          "dest_get_func": {
+            "description": "Getter function to the destination simulator.",
+            "type": "string"
+          },
+          "dest_get_kwargs": {
+            "description": "Inputs for the getter function for the destination simulator.",
+            "type": "object"
+          },
+          "dest_set_func": {
+            "description": "Setter function to the destination simulator.",
+            "type": "string"
+          },
+          "dest_set_kwargs": {
+            "description": "Inputs for the setter function for the destination simulator.",
+            "type": "object"
+          },
+          "action": {
+            "description": "The data synchronization method.",
+            "type": "string",
+            "enum": ["set", "sum", "merge"]
+          },
+          "transform_expression": {
+            "description": "A Python expression whose result overrides the transferred data",
+            "type": "string",
+            "examples": [
+              "vals * (1.0 / (1.0e-3 * config.multiscale_run.steps.conc_factor))",
+              "abs(vals) * 5e-10",
+              "np.floor(10 * rg.random((3, 4)))",
+              "tetXtetMat.dot(tetXbfVolsMat.dot(vals)) * 5e-10"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

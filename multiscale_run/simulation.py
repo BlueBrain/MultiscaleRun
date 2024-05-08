@@ -60,6 +60,7 @@ class MsrSimulation:
         from multiscale_run import config, connection_manager, preprocessor
 
         self.conf = config.MsrConfig(self._base_path)
+        self.conf.check()
         self.prep = preprocessor.MsrPreprocessor(self.conf)
         self.managers = {}
         self.conn_m = connection_manager.MsrConnectionManager(

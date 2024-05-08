@@ -33,7 +33,7 @@
                     "dest_set_kwargs": {"idxs": [0]},
                     "action": "set"
                 },
-                {    
+                {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "ik","weight": "area"},
@@ -42,7 +42,7 @@
                     "dest_set_kwargs": {"idxs": [1]},
                     "action": "set"
                 },
-                {    
+                {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "atpi","weight": "volume"},
@@ -50,12 +50,12 @@
                     "src_set_kwargs": {"var": "atpi"},
                     "dest_simulator": "metabolism",
                     "dest_get_func": "get_vm_idx",
-                    "dest_get_kwargs": {"idx": 22},                    
+                    "dest_get_kwargs": {"idx": 22},
                     "dest_set_func": "set_vm_idxs",
                     "dest_set_kwargs": {"idxs": [22]},
                     "action": "merge"
                 },
-                {    
+                {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "adpi","weight": "volume"},
@@ -63,12 +63,12 @@
                     "src_set_kwargs": {"var": "adpi"},
                     "dest_simulator": "metabolism",
                     "dest_get_func": "get_vm_idx",
-                    "dest_get_kwargs": {"idx": 23},  
+                    "dest_get_kwargs": {"idx": 23},
                     "dest_set_func": "set_vm_idxs",
                     "dest_set_kwargs": {"idxs": [23]},
                     "action": "merge"
                 },
-                {    
+                {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "nai","weight": "volume"},
@@ -77,7 +77,7 @@
                     "dest_set_kwargs": {"idxs": [98]},
                     "action": "set"
                 },
-                {    
+                {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "ko","weight": "volume"},
@@ -86,7 +86,7 @@
                     "dest_set_kwargs": {"idxs": [95]},
                     "action": "set"
                 },
-                {    
+                {
                     "src_simulator": "bloodflow",
                     "src_get_func": "get_flows",
                     "src_get_kwargs": {},
@@ -96,7 +96,7 @@
                     "dest_set_kwargs": {"idxs": [3, 4]},
                     "action": "set"
                 },
-                {    
+                {
                     "src_simulator": "bloodflow",
                     "src_get_func": "get_vols",
                     "src_get_kwargs": {},
@@ -106,7 +106,7 @@
                     "dest_set_kwargs": {"idxs": [5]},
                     "action": "set"
                 },
-                {    
+                {
                     "src_simulator": "steps",
                     "src_get_func": "get_tet_concs",
                     "src_get_kwargs": {"species_name": "KK"},
@@ -206,19 +206,19 @@
             },
             "checks": {
                 "parameters": {
-                    "3": 
+                    "3":
                     {
                         "name": "bloodflow_Fin",
                         "kwargs": {"leb": 0.0},
                         "response": "exclude_neuron"
                     },
-                    "4": 
+                    "4":
                     {
                         "name": "bloodflow_Fout",
                         "kwargs": {"leb": 0.0},
                         "response": "exclude_neuron"
                     },
-                    "5": 
+                    "5":
                     {
                         "name": "bloodflow_vol",
                         "kwargs": {"leb": 0.0},
@@ -227,7 +227,7 @@
                 },
                 "vm": {
                     "22":
-                    {   
+                    {
                         "name": "atpi",
                         "kwargs": {"lb": 0.25, "hb": 2.5},
                         "response": "abort_simulation"
@@ -279,77 +279,77 @@
             "metabolism": {
                 "metab_ina": {
                     "src_get_func": "get_parameters_idx",
-                    "src_get_kwargs": {"idx": 0},  
+                    "src_get_kwargs": {"idx": 0},
                     "unit": "mA/cm^2",
                     "file_name": "metab_ina.h5",
                     "when": "after_sync"
                 },
                 "metab_ik": {
                     "src_get_func": "get_parameters_idx",
-                    "src_get_kwargs": {"idx": 1},  
+                    "src_get_kwargs": {"idx": 1},
                     "unit": "mA/cm^2",
                     "file_name": "metab_ik.h5",
                     "when": "after_sync"
                 },
                 "metab_bf_Fin": {
                     "src_get_func": "get_parameters_idx",
-                    "src_get_kwargs": {"idx": 3},  
+                    "src_get_kwargs": {"idx": 3},
                     "unit": "ml/s",
                     "file_name": "metab_bf_Fin.h5",
                     "when": "after_sync"
                 },
                 "metab_bf_vol": {
                     "src_get_func": "get_parameters_idx",
-                    "src_get_kwargs": {"idx": 5},  
+                    "src_get_kwargs": {"idx": 5},
                     "unit": "ml",
                     "file_name": "metab_bf_vol.h5",
                     "when": "after_sync"
                 },
                 "metab_atpi_before_sync": {
                     "src_get_func": "get_vm_idx",
-                    "src_get_kwargs": {"idx": 22},  
+                    "src_get_kwargs": {"idx": 22},
                     "unit": "mM",
                     "file_name": "metab_atpi_before_sync.h5",
                     "when": "before_sync"
                 },
                 "metab_atpi_after_sync": {
                     "src_get_func": "get_vm_idx",
-                    "src_get_kwargs": {"idx": 22},  
+                    "src_get_kwargs": {"idx": 22},
                     "unit": "mM",
                     "file_name": "metab_atpi_after_sync.h5",
                     "when": "after_sync"
                 },
                 "metab_adpi_before_sync": {
                     "src_get_func": "get_vm_idx",
-                    "src_get_kwargs": {"idx": 22},  
+                    "src_get_kwargs": {"idx": 22},
                     "unit": "mM",
                     "file_name": "metab_adpi_before_sync.h5",
                     "when": "before_sync"
                 },
                 "metab_adpi_after_sync": {
                     "src_get_func": "get_vm_idx",
-                    "src_get_kwargs": {"idx": 22},  
+                    "src_get_kwargs": {"idx": 22},
                     "unit": "mM",
                     "file_name": "metab_adpi_after_sync.h5",
                     "when": "after_sync"
                 },
                 "metab_nai": {
                     "src_get_func": "get_vm_idx",
-                    "src_get_kwargs": {"idx": 98},  
+                    "src_get_kwargs": {"idx": 98},
                     "unit": "mM",
                     "file_name": "metab_nai.h5",
                     "when": "after_sync"
                 },
                 "metab_ko": {
                     "src_get_func": "get_vm_idx",
-                    "src_get_kwargs": {"idx": 95},  
+                    "src_get_kwargs": {"idx": 95},
                     "unit": "mM",
                     "file_name": "metab_ko.h5",
                     "when": "after_sync"
                 },
                 "alive_gids": {
                     "src_get_func": "alive_gids",
-                    "src_get_kwargs": {},  
+                    "src_get_kwargs": {},
                     "unit": "",
                     "file_name": "alive_gids.h5",
                     "when": "after_sync"

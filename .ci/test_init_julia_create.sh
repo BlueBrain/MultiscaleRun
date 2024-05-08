@@ -2,7 +2,7 @@
 
 echo "pwd: ${PWD}"
 
-module load unstable intel-oneapi-mkl gmsh llvm py-pytest
+module load unstable intel-oneapi-mkl llvm py-pytest
 
 multiscale-run init --help
 sim_name=ratV6_local_julia

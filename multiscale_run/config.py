@@ -1,20 +1,47 @@
 import json
 import logging
-import time
+import textwrap
 from pathlib import Path
 
+import jsonschema
 import numpy as np
 
 from . import utils
-from .data import DATA_DIR, DEFAULT_CIRCUIT
+from .data import DATA_DIR, DEFAULT_CIRCUIT, MSR_SCHEMA_JSON
 
 
 class MsrConfigException(Exception):
     """General error for the config object"""
 
 
+class MsrConfigSchemaError(MsrConfigException):
+    """For invalid configuration in regard to the JSON Schema"""
+
+    def __init__(self, ve: jsonschema.exceptions.ValidationError):
+        super().__init__()
+        self.ve = ve
+
+    def __str__(self):
+        msg = "in the following JSON object at location '"
+        path = ["multiscale_run"] + list(self.ve.path)
+        msg += ".".join(str(e) for e in path)
+        msg += "':\n"
+
+        class Encoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, Path):
+                    return str(obj)
+                return super().default(obj)
+
+        msg += textwrap.indent(
+            json.dumps(self.ve.instance, indent=4, cls=Encoder), "  "
+        )
+        msg += "\nError: " + self.ve.message
+        return msg
+
+
 class MsrConfig(dict):
-    """Multiscale run Config class"""
+    """MultiscaleRun configuration class"""
 
     def __init__(self, path=None):
         """Multiscale run Config constructor
@@ -53,8 +80,6 @@ class MsrConfig(dict):
 
         self.config_path = path
         self._load()
-
-        # TODO sanity check for connections that are not expected
 
     @classmethod
     def _from_dict(cls, data):
@@ -188,6 +213,36 @@ class MsrConfig(dict):
         # get msr_dts and fix dts
         self.compute_multiscale_run_ndts()
 
+    def check(self, schema: Path = None):
+        """Validate this configuration instance in regard to the MultiscaleRun SONATA extension data schema.
+
+        Args:
+          schema: If specified, overwrites the default path to
+          the `JSON Schema <https://json-schema.org/>`_
+          file used to validate the configuration.
+
+        Raises:
+          MsrConfigSchemaError: If 'simulation_config' section is not valid.
+        """
+        with open(schema or MSR_SCHEMA_JSON) as istr:
+            schema = json.load(istr)
+            if isinstance(schema.get("additionalProperties"), bool):
+                schema["additionalProperties"] = {}
+            schema.setdefault("additionalProperties", {}).update(
+                pkg_data_path=dict(
+                    type="string",
+                    description="Location to the 'data' directory within the MultiscaleRun installation (property set internally)",
+                ),
+                ndts=dict(
+                    type="integer",
+                    description="Number of dts to perform (property computed internally)",
+                ),
+            )
+        try:
+            jsonschema.validate(self["multiscale_run"], schema)
+        except jsonschema.exceptions.ValidationError as ve:
+            raise MsrConfigSchemaError(ve)
+
     def is_steps_active(self):
         """Convenience function to check if a steps is active"""
         if "multiscale_run" not in self or "with_steps" not in self.multiscale_run:
@@ -255,11 +310,9 @@ class MsrConfig(dict):
         return None
 
     def compute_multiscale_run_ndts(self):
-        """Compute multiscale run n dts based on the active steps, metabolism, and bloodflow ndts.
+        """Compute MultiscaleRun n dts based on the active simulators
 
-        This method calculates the number of neurodamus dts required to synchronize simulations
-        based on active simulation steps (if enabled), metabolism, and bloodflow.
-
+        Calculates the number of Neurodamus dts required to synchronize simulations.
         """
         msr_conf = self.multiscale_run
         if self.is_metabolism_active() and self.is_steps_active():

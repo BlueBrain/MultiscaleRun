@@ -28,6 +28,6 @@ cat simulation_config.json
 popd >/dev/null
 unset steps bloodflow metabolism tstop
 
-module load unstable intel-oneapi-mkl gmsh
+module load unstable intel-oneapi-mkl
 srun --overlap -n $bb5_ntasks multiscale-run compute "$sim_name"
 multiscale-run post-processing "$sim_name"
