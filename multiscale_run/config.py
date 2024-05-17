@@ -111,41 +111,12 @@ class MsrConfig(dict):
         Example:
             >>> value = config.some_key.some_other_key
         """
-        if key in self:
-            if isinstance(self[key], dict):
-                self[key] = MsrConfig._from_dict(self[key])
-            if key.endswith("_path") and isinstance(self[key], str):
-                self[key] = Path(self[key])
-            if isinstance(self[key], list) and any(
-                isinstance(item, dict) for item in self[key]
-            ):
-                self[key] = [
-                    MsrConfig._from_dict(i) if isinstance(i, dict) else i
-                    for i in self[key]
-                ]
-
+        try:
             return self[key]
-        raise AttributeError(
-            f"'MsrConfig' object has no attribute '{key}'. Available keys: {', '.join(self.keys())}"
-        )
-
-    def __setattr__(self, key, value):
-        """Set configuration values using attributes.
-
-        This method allows you to set configuration values using attributes of the 'MsrConfig' object.
-        When you assign a value to an attribute, it is stored as a configuration key-value pair.
-
-        Args:
-            key (str): The name of the configuration key to set.
-            value (Any): The value to associate with the specified configuration key.
-
-        Example:
-            >>> config.some_key = value
-        """
-        if isinstance(value, Path):
-            self[key] = str(value)
-            return
-        self[key] = value
+        except KeyError:
+            raise AttributeError(
+                f"'MsrConfig' object has no attribute '{key}'. Available keys: {', '.join(self.keys())}"
+            )
 
     def items(self):
         """Generate key-value pairs from the configuration.
@@ -208,10 +179,40 @@ class MsrConfig(dict):
 
         d.setdefault("multiscale_run", {})["pkg_data_path"] = str(DATA_DIR)
         utils.resolve_replaces(d)
-        self.update(d)
+        self.update(MsrConfig._objectify_config(None, d))
 
         # get msr_dts and fix dts
         self.compute_multiscale_run_ndts()
+
+    @classmethod
+    def _objectify_config(cls, key, obj):
+        """Internal method recursively transforming the 'multiscale_run' data
+        from 'simulation_config.json' into a Python object. The following
+        transformations are:
+
+          * dictionaries are transformed to `MsrConfig` instances
+          * string values whose keys are suffixed with "_path" are
+          transformed to `pathlib.Path` instances
+
+        Args:
+          key: the closest key up in the tree
+          obj: the JSON object to transform recursively
+
+        Returns:
+          The transformed object.
+        """
+        if isinstance(obj, dict):
+            return MsrConfig._from_dict(
+                dict(
+                    (key, cls._objectify_config(key, value))
+                    for key, value in obj.items()
+                )
+            )
+        elif isinstance(obj, str) and key.endswith("_path"):
+            return Path(obj)
+        elif isinstance(obj, list):
+            return list(cls._objectify_config(key, item) for item in obj)
+        return obj
 
     def check(self, schema: Path = None):
         """Validate this configuration instance in regard to the MultiscaleRun SONATA extension data schema.
@@ -239,7 +240,21 @@ class MsrConfig(dict):
                 ),
             )
         try:
-            jsonschema.validate(self["multiscale_run"], schema)
+            cls = jsonschema.validators.validator_for(schema)
+            cls.check_schema(schema)
+            ext_cls = jsonschema.validators.extend(
+                cls,
+                type_checker=cls.TYPE_CHECKER.redefine(
+                    "string",
+                    lambda checker, instance: isinstance(instance, (str, Path)),
+                ),
+            )
+            validator = ext_cls(schema)
+            error = jsonschema.exceptions.best_match(
+                validator.iter_errors(self["multiscale_run"])
+            )
+            if error is not None:
+                raise error
         except jsonschema.exceptions.ValidationError as ve:
             raise MsrConfigSchemaError(ve)
 

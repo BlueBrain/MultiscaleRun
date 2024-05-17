@@ -28,7 +28,7 @@ def gen_segments_in_bbox(msh):
 
 def test_steps_connections_mats():
     conf = MsrConfig.rat_sscxS1HL_V6()
-    conf.multiscale_run.mesh_path = str(get_mesh_path())
+    conf.multiscale_run.mesh_path = get_mesh_path()
     utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
     conf.cache_load = False
     conf.cache_save = False
@@ -69,7 +69,7 @@ def test_steps_with_minimesh():
     """To be used manually with multiple ranks to see if omega_h complains"""
 
     conf = MsrConfig.rat_sscxS1HL_V6()
-    conf.multiscale_run.mesh_path = str(get_mesh_path())
+    conf.multiscale_run.mesh_path = get_mesh_path()
     conf.multiscale_run.preprocessor.mesh.refinement_steps = 0
     utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
     conf.cache_load = False

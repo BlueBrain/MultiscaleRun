@@ -245,10 +245,6 @@ This happens because Neuron was built with Intel oneAPI compiler but the compile
 
 For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
 
-# Release notes
-
-## Upcoming release
-
 ### Major Changes
 
 * The configuration file has changed in the `connections` section:
@@ -256,6 +252,11 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
   * matrices are now part of the `op` operation and can be used throughout the code.
   * A `dest_simulator` key is now required for every connection as `connect_to` keys do not dictate which simulator is the destination simulator anymore.
   * Previous `simulation_config.json` files must be adapted since backward compatibility is not possible. However, changes should be small and self-explanatory if a new template is compared to an old version (v 0.7, `config_format`: 2) of the configuration file.
+* New thorough verification of the MultiscaleRun configuration in file `simulation_config.json` during the `check` and `compute` operations.
+
+### Internal Changes
+
+* Improve memory usage of class `multiscale_run.MsrConfig`
 
 ## 0.7 - 2024-04-10
 
