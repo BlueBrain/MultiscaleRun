@@ -4,9 +4,7 @@ import numpy as np
 
 from multiscale_run import MsrConfig, MsrPreprocessor, MsrStepsManager, utils
 
-
-def get_mesh_path():
-    return Path.cwd() / "tmp/test_mesh.msh"
+MESH_FILE = "test_mesh.msh"
 
 
 def gen_segments_in_bbox(msh):
@@ -26,10 +24,9 @@ def gen_segments_in_bbox(msh):
     return ans
 
 
-def test_steps_connections_mats():
+def test_steps_connections_mats(tmp_path):
     conf = MsrConfig.rat_sscxS1HL_V6()
-    conf.multiscale_run.mesh_path = get_mesh_path()
-    utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
+    conf.multiscale_run.mesh_path = tmp_path / MESH_FILE
     conf.cache_load = False
     conf.cache_save = False
 
@@ -62,23 +59,19 @@ def test_steps_connections_mats():
             steps_m.get_tet_counts(species_name="KK") > 0
         ), "KK count is <=0 in at least one tet"
 
-    utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
 
-
-def test_steps_with_minimesh():
+def test_steps_with_minimesh(tmp_path):
     """To be used manually with multiple ranks to see if omega_h complains"""
 
     conf = MsrConfig.rat_sscxS1HL_V6()
-    conf.multiscale_run.mesh_path = get_mesh_path()
+    conf.multiscale_run.mesh_path = tmp_path / MESH_FILE
     conf.multiscale_run.preprocessor.mesh.refinement_steps = 0
-    utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
     conf.cache_load = False
     conf.cache_save = False
 
     prep = MsrPreprocessor(conf)
     prep.autogen_mesh(pts=np.array([[100, 100, 200], [300, 500, 400]]))
     MsrStepsManager(conf)
-    utils.remove_path(Path(conf.multiscale_run.mesh_path).parent)
 
 
 if __name__ == "__main__":

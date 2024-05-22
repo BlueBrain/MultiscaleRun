@@ -402,8 +402,16 @@ class MsrConfig(dict):
         return s
 
     @classmethod
-    def rat_sscxS1HL_V6(cls):
-        """Returns
-        MsrConfig: Default configuration using the rat v6 circuit
+    def rat_sscxS1HL_V6(cls, **kwargs):
+        """Create a MsrConfig instance based on the rat v6 circuit.
+        If keywords arguments are specified, then initialize a simulation
+        by calling ``multiscale_run.cli.init(**kwargs)``.
+
+        Returns:
+            MsrConfig: configuration using the rat v6 circuit
         """
+        if kwargs:
+            from . import cli
+
+            return cls(cli.init(circuit=DEFAULT_CIRCUIT, **kwargs))
         return cls(DEFAULT_CIRCUIT)

@@ -10,15 +10,19 @@ pushd "${SCRIPT_DIR}/.." >/dev/null
 
 num_errors=0
 count_errors() {
-    ((num_errors++))
     local command="$BASH_COMMAND"
+    ((num_errors++))
     echo "Error occurred while executing: $command (Trap: ERR)"
     echo "num_errors: $num_errors"
 }
 trap count_errors ERR
 
-python -mpytest tests/pytests
-$MPIRUN -n 4 python -mpytest -v tests/pytests/test_reporter.py
+if [ $# -eq 0 ] ;then
+    python -mpytest tests/pytests
+    $MPIRUN -n 4 python -mpytest -v tests/pytests/test_reporter.py
+else
+    python -mpytest $@
+fi
 
 popd >/dev/null
 exit $num_errors

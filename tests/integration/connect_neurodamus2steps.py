@@ -12,8 +12,6 @@ from multiscale_run import (
     utils,
 )
 
-conf0 = MsrConfig.rat_sscxS1HL_V6()
-
 
 def check_ratio_mat(m):
     """
@@ -80,9 +78,7 @@ def check_mats_shape(ndam_m, conn_m, steps_m, nshape=None, segshape=None):
     np.testing.assert_equal(conn_m.nXnsegMatBool.shape, (nn, nseg))
 
 
-@utils.clear_and_replace_files_decorator(
-    [conf0.multiscale_run.mesh_path.parent, conf0.multiscale_run.cache_path]
-)
+@utils.pushtempd
 @utils.logs_decorator
 def test_connection():
     """
@@ -92,7 +88,7 @@ def test_connection():
     It also checks various conditions using the 'check_ratio_mat' and 'check_mats_shape' functions.
 
     """
-    conf = MsrConfig.rat_sscxS1HL_V6()
+    conf = MsrConfig.rat_sscxS1HL_V6(check=False, force=True)
 
     prep = MsrPreprocessor(conf)
     managers = {}

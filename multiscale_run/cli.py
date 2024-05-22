@@ -228,6 +228,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
         "generated sbatch file. But feel free to browse and tweak "
         "the JSON configuration files at will!"
     )
+    return directory
 
 
 @command

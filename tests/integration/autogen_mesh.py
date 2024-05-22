@@ -36,6 +36,7 @@ def generate_random_points_in_cube(a, b, n):
     return random_points
 
 
+@utils.pushtempd
 @utils.logs_decorator
 def test_autogen_mesh(f, n):
     """
@@ -49,9 +50,6 @@ def test_autogen_mesh(f, n):
 
     """
     conf = MsrConfig(base_path())
-    mesh_path = conf.multiscale_run.mesh_path.parent
-    utils.remove_path(mesh_path)
-
     prep = MsrPreprocessor(conf)
 
     pts = None
@@ -65,7 +63,6 @@ def test_autogen_mesh(f, n):
     steps_m = MsrStepsManager(conf)
 
     steps_m.check_pts_inside_mesh_bbox(pts_list=[pts * conf.multiscale_run.mesh_scale])
-    utils.remove_path(mesh_path)
 
 
 if __name__ == "__main__":

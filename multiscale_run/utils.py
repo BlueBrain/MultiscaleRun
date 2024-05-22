@@ -10,6 +10,7 @@ import os
 import pickle
 import re
 import shutil
+import tempfile
 import time
 from collections.abc import Iterable
 from pathlib import Path
@@ -884,6 +885,30 @@ def pushd(path):
         yield path
     finally:
         os.chdir(cwd)
+
+
+def pushtempd(wrapped):
+    """Callable decorator changing the current working directory to a
+    temporary directory during the execution of the wrapped function.
+
+    Args:
+        wrapped (callable): the function wrapped by the decorator.
+
+     Returns:
+        callable: The wrapped function.
+    """
+
+    @functools.wraps(wrapped)
+    def _wrap(*args, **kwargs):
+        if rank0():
+            tempdir = tempfile.mkdtemp(prefix="msr-tests")
+        else:
+            tempdir = None
+        tempdir = comm().bcast(tempdir, root=0)
+        with pushd(tempdir):
+            return wrapped(*args, **kwargs)
+
+    return _wrap
 
 
 def log_stats(

@@ -16,9 +16,9 @@ count_errors() {
 }
 trap count_errors ERR
 
-time $MPIRUN -n 2 python tests/integration_tests/test_connect_neurodamus2steps.py
-time $MPIRUN -n 2 python tests/integration_tests/test_autogen_mesh.py
-time $MPIRUN -n 2 python tests/integration_tests/test_preprocessor.py
+time $MPIRUN -n 2 python tests/integration/connect_neurodamus2steps.py
+time $MPIRUN -n 2 python tests/integration/autogen_mesh.py
+time $MPIRUN -n 2 python tests/integration/preprocessor.py
 
 popd > /dev/null
 exit $num_errors
