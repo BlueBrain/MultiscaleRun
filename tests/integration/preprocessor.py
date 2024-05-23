@@ -9,6 +9,7 @@ from multiscale_run import (
 )
 
 
+@utils.pushtempd
 def test_gen_msh():
     """
     Test the generation of a mesh with specific configurations and managers.
@@ -26,12 +27,7 @@ def test_gen_msh():
     This function is responsible for testing the mesh generation process with given configurations and managers.
 
     """
-    conf = MsrConfig.rat_sscxS1HL_V6()
-    tmp_mesh_path = conf.multiscale_run.mesh_path.parent.name + "_tmp"
-    utils.rename_path(
-        conf.multiscale_run.mesh_path.parent,
-        conf.multiscale_run.mesh_path.parent.with_name(tmp_mesh_path),
-    )
+    conf = MsrConfig.rat_sscxS1HL_V6(force=True, check=False)
 
     pp = MsrPreprocessor(config=conf)
     ndam_m = MsrNeurodamusManager(config=conf)
@@ -40,12 +36,6 @@ def test_gen_msh():
         parameters=conf.multiscale_run.bloodflow,
     )
     pp.autogen_mesh(ndam_m=ndam_m, bf_m=bf_m)
-
-    utils.remove_path(conf.multiscale_run.mesh_path.parent)
-    utils.rename_path(
-        conf.multiscale_run.mesh_path.parent.with_name(tmp_mesh_path),
-        conf.multiscale_run.mesh_path.parent,
-    )
 
 
 if __name__ == "__main__":

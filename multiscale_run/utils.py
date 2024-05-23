@@ -336,61 +336,6 @@ def cache_decorator(
     return decorator_add_field_method
 
 
-def clear_and_replace_files_decorator(paths):
-    """A decorator that clears and replaces specified files before and after
-    calling the decorated function.
-
-    Args:
-        paths (str or list[str]): A file path or a list of file paths to be cleared
-            and replaced.
-
-    Returns:
-        Callable: A decorator that can be applied to functions.
-    """
-    logging.info("clear_and_replace_files_decorator")
-    if not isinstance(paths, list):
-        paths = [paths]
-    paths = [Path(i) for i in paths]
-
-    def remove_and_replace_path(path, to_tmp):
-        """Remove and replace a file or path.
-
-        Args:
-            path (str or Path): The path to the file or directory.
-            to_tmp (bool): True if replacing with a temporary file, False if restoring.
-        """
-        to_path = path.with_name(path.name + "_tmp")
-        from_path = path.with_name(path.name)
-        if not to_tmp:
-            to_path, from_path = from_path, to_path
-
-        rename_path(from_path, to_path)
-
-    def decor(method):
-        """The decorator function that wraps the original method.
-
-        Args:
-            method (callable): The function to be decorated.
-
-        Returns:
-            Callable: The decorated function.
-        """
-
-        @functools.wraps(method)
-        def wrapper(*args, **kwargs):
-            for path in paths:
-                remove_and_replace_path(path, True)
-
-            method(*args, **kwargs)
-
-            for path in paths:
-                remove_and_replace_path(path, False)
-
-        return wrapper
-
-    return decor
-
-
 def append_suffix(path: Path, suffix: str):
     """Append to path a suffix respecting file extensions"""
     path = Path(path)
@@ -624,26 +569,6 @@ def remove_path(path):
             os.remove(path)
         except FileNotFoundError:
             pass
-    comm().Barrier()
-
-
-def rename_path(path, new_path):
-    """Rename a file or directory to a new path.
-
-    This function renames a file or directory pointed to by the 'path' argument to
-    the 'new_path' argument. It also logs the renaming process.
-
-    Args:
-        path (str or Path): The original file or directory path.
-        new_path (str or Path): The new file or directory path to rename to.
-    """
-    remove_path(new_path)
-    if rank0():
-        if path.exists():
-            logging.info(f"renaming {path} to {new_path}")
-            path.rename(new_path)
-        else:
-            logging.info(f"{path} does not exist. Nothing to rename")
     comm().Barrier()
 
 

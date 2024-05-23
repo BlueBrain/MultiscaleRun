@@ -117,33 +117,6 @@ def test_heavy_duty_MPI_gather():
         assert (final_mat == final_mat2).all()
 
 
-def test_clear_and_replace_files_decorator():
-    p = Path("bau")
-
-    if utils.rank0():
-        if not p.exists():
-            p.mkdir()
-
-    @utils.clear_and_replace_files_decorator(str(p))
-    def f():
-        logging.info("check clear_and_replace_files_decorator")
-        utils.comm().Barrier()
-        assert not p.exists()
-        utils.comm().Barrier()
-
-    utils.comm().Barrier()
-    assert p.exists()
-    utils.comm().Barrier()
-
-    f()
-
-    utils.comm().Barrier()
-    assert p.exists()
-    utils.comm().Barrier()
-
-    utils.remove_path(p)
-
-
 def test_replacing_algos():
     d = {"a": "${q}/${p}/d", "p": "p", "q": "${p}/q"}
     d_copy = {"a": "${q}/${p}/d", "p": "p", "q": "${p}/q"}
@@ -276,5 +249,4 @@ if __name__ == "__main__":
     test_cache_decor()
     test_logs_decorator()
     test_heavy_duty_MPI_gather()
-    test_clear_and_replace_files_decorator()
     test_py_expr_eval()

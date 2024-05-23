@@ -47,7 +47,7 @@ class MsrConfig(dict):
         """Multiscale run Config constructor
 
         This class is composed from a chain of json files. We start from "config_path" which can
-        be provided or deducted from the environment. We look for a file named: <config_path>/msr_config.json.
+        be provided or deducted from the environment. We look for a file named: <config_path>/simulation_config.json.
         This provides the first hook. We load the file as a dict (child) and look recursively if there is a
         "parent_config_path" marked. In that case, we add that dict as parent and merge them using the
         priority rules of utils.merge_dicts.
@@ -58,10 +58,10 @@ class MsrConfig(dict):
         Args:
           path: The path to the top configuration:
 
-            * if `None`, then a file "msr_config.json" is expected to be found
+            * if `None`, then a file "simulation_config.json" is expected to be found
               in the current working directory.
             * otherwise, if this is a `pathlib.Path` instance pointing to a
-              directory, then a file "msr_config.json" is expected to be found
+              directory, then a file "simulation_config.json" is expected to be found
               in this directory.
             * Otherwise, if this is a `pathlib.Path` instance to a file, it is
               considered to be the JSON file to load.
@@ -410,8 +410,11 @@ class MsrConfig(dict):
         Returns:
             MsrConfig: configuration using the rat v6 circuit
         """
+        sim_path = DEFAULT_CIRCUIT
         if kwargs:
-            from . import cli
+            if utils.rank0():
+                from . import cli
 
-            return cls(cli.init(circuit=DEFAULT_CIRCUIT, **kwargs))
-        return cls(DEFAULT_CIRCUIT)
+                sim_path = cli.init(circuit=DEFAULT_CIRCUIT, **kwargs)
+            sim_path = utils.comm().bcast(sim_path, root=0)
+        return cls(sim_path)
