@@ -6,11 +6,20 @@
 #SBATCH --constraint=cpu
 #SBATCH --cpus-per-task=1
 #SBATCH --account=proj137
-#SBATCH --job-name=current
+#SBATCH --job-name=msr-update-currents
 
-module load unstable py-mpi4py
-module load unstable neurodamus-neocortex-multiscale
-module unload python
+# This script computes holding and threshold currents
+# (columns with values per cell) and write them in HDF5 file "nodes.h5".
+# These are needed to run a simulation (only neurons part) to know how much current
+# to inject per cell, so they are below threshold, etc...
+# It is usually part of circuit-build in regular BBP circuits.
+
+# nodes.h5 file is required in MultiscaleRun simulation to provide input resistance
+# information for the Ornstein-Uhlenbeck type of stimuli.
+
+module load unstable
+module load py-emodel-generalisation
+module load neurodamus-neocortex-multiscale
 
 srun \
 emodel-generalisation -v compute_currents \
