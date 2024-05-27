@@ -1,26 +1,8 @@
-BlueConfig.bkpOrigin
-Jean
-sim_conf/
-mcomplex.dat
-*.pyc
-__pycache__/
-output/
 core.*
 *.log
 *.logs
-python-venv/
-*.dat
-x86_64/
-bkp_x86_64/
 .ipynb_checkpoints/
 spackenv/
-!.setup_*
-bluepy-configfile/
-input_flow.pkl
-ngv2.json
-mod/*
-cache*
-*.stl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
