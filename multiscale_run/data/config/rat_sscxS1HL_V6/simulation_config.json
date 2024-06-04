@@ -58,15 +58,14 @@
                 {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
-                    "src_get_kwargs": {"var": "adpi","weight": "volume"},
+                    "src_get_kwargs": {"var": "atpi", "weight": "volume"},
                     "src_set_func": "set_var",
                     "src_set_kwargs": {"var": "adpi"},
                     "dest_simulator": "metabolism",
-                    "dest_get_func": "get_vm_idx",
-                    "dest_get_kwargs": {"idx": 23},
                     "dest_set_func": "set_vm_idxs",
                     "dest_set_kwargs": {"idxs": [23]},
-                    "action": "merge"
+                    "transform_expression": "vals / 2 * (-0.92 + np.sqrt(0.92 * 0.92 + 4 * 0.92 * (1.4449961078157665 / vals - 1)))",
+                    "action": "set"
                 },
                 {
                     "src_simulator": "neurodamus",

@@ -245,6 +245,10 @@ This happens because Neuron was built with Intel oneAPI compiler but the compile
 
 For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
 
+# Changelog
+
+## 0.8 - 2024-06-04
+
 ### Major Changes
 
 * The configuration file has changed in the `connections` section:
@@ -257,6 +261,7 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 ### Internal Changes
 
 * Improve memory usage of class `multiscale_run.MsrConfig`
+* Add `update_currents.sh` in root for temporary storage. We still need to figure out where to put it or if we want to keep it at all. Sofia Farina and Alexis Arnaudon know more about this file.
 
 ## 0.7 - 2024-04-10
 
