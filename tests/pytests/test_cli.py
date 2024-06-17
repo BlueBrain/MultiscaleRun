@@ -135,6 +135,11 @@ def test_virtualenv():
     utils.remove_path(venvdo)
 
 
+def test_init_in_empty_dir(tmp_path):
+    with utils.pushd(tmp_path):
+        subprocess.check_call(["multiscale-run", "init", "--julia", "no"])
+
+
 def test_edit_mod_files(tmp_path):
     path = str(tmp_path)
 

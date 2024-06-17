@@ -133,11 +133,14 @@ def init(directory, circuit, julia="shared", check=True, force=False):
     from .config import MsrConfig
 
     """Setup a new simulation"""
-    if not force and next(Path(".").iterdir(), None) is not None:
-        raise MsrException(
-            f"Directory '{directory}' is not empty. "
-            "Use option '-f' to overwrite the content of the directory."
-        )
+    if not force:
+        dir_content = set(Path(".").iterdir())
+        dir_content.discard(Path(".logs"))
+        if dir_content:
+            raise MsrException(
+                f"Directory '{directory}' is not empty. "
+                "Use option '-f' to overwrite the content of the directory."
+            )
     assert julia in ["shared", "create", "no"]
 
     circuit = circuit_path(circuit)
