@@ -510,7 +510,7 @@ def edit_mod_files(**kwargs):
         )
     if os.environ.get("NRNMECH_LIB_PATH") is None:
         raise MsrException("Environment variable 'NRNMECH_LIB_PATH' is missing")
-    ndam_mod = Path(ndam_root) / "lib" / "mod"
+    ndam_mod = Path(ndam_root) / "share" / "neurodamus_neocortex" / "mod"
     if not ndam_mod.exists():
         raise MsrException(f"Directory '{ndam_mod}' does not exist")
 
@@ -524,7 +524,7 @@ def edit_mod_files(**kwargs):
         ).returncode
         == 0
     )
-    build_cmd = f"build_neurodamus.sh '{ndam_mod}'"
+    build_cmd = f"build_neurodamus.sh '{ndam_mod}' --only-neuron"
     if BB5_JULIA_ENV.exists() and intel_compiler:
         build_cmd = "module load unstable intel-oneapi-compilers ; " + build_cmd
     subprocess.check_call(build_cmd, shell=True)

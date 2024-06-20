@@ -178,7 +178,7 @@ def test_edit_mod_files(tmp_path):
         ).returncode
         == 0
     )
-    build_cmd = "build_neurodamus.sh mod"
+    build_cmd = "build_neurodamus.sh mod --only-neuron"
     if BB5_JULIA_ENV.exists and intel_compiler:
         build_cmd = "module load unstable intel-oneapi-compilers ; " + build_cmd
     subprocess.check_call(build_cmd, shell=True, cwd=path)

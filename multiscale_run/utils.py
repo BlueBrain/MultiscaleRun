@@ -280,7 +280,7 @@ def cache_decorator(
             np.testing.assert_equal(len(field_names), len(file_names))
             np.testing.assert_array_less([0], [len(field_names)])
 
-            fn_pnz = [
+            fn_npz = [
                 (path / i).with_suffix(".npz")
                 for i in file_names
                 if (path / i).with_suffix(".npz").is_file()
@@ -291,11 +291,11 @@ def cache_decorator(
                 if (path / i).with_suffix(".pickle").is_file()
             ]
 
-            fn = [*fn_pnz, *fn_pickle]
+            fn = [*fn_npz, *fn_pickle]
 
             if len(fn) > len(file_names):
                 raise FileNotFoundError(
-                    "some files appear as pikle and npz, it is ambiguous"
+                    "some files appear as pickle and npz, it is ambiguous"
                 )
 
             all_files_are_present = len(fn) == len(file_names)
