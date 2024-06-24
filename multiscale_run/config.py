@@ -1,3 +1,5 @@
+import collections
+import functools
 import json
 import logging
 import textwrap
@@ -7,7 +9,81 @@ import jsonschema
 import numpy as np
 
 from . import utils
-from .data import DATA_DIR, DEFAULT_CIRCUIT, MSR_SCHEMA_JSON
+from .data import CONFIG_DIR, DATA_DIR, MSR_CONFIG_JSON, MSR_SCHEMA_JSON
+
+
+class NamedCircuit(
+    collections.namedtuple(
+        "NamedCircuit",
+        ["path", "sbatch_parameters", "config_transform"],
+        defaults=[None],
+    )
+):
+    """Define an internal circuit available within the MultiscaleRun package.
+    The circuit is defined through the following fields:
+
+    * path: its path on the filesystem
+    * sbatch_parameters: recommended SLURM parameters for the SBATCH script running its simulation
+    * config_transform: optional callable to apply on the loaded simulation_config.json
+    """
+
+    def config(self):
+        """
+        Returns
+          Instance of MsrConfig based on this circuit
+        """
+        conf = MsrConfig(self.path)
+        if self.config_transform:
+            conf = self.config_transform(conf)
+        return conf
+
+    def json(self):
+        """
+        Returns
+          the raw JSON representation of this circuit
+        """
+        with open(self.path / MSR_CONFIG_JSON) as istr:
+            conf = json.load(istr)
+        if self.config_transform:
+            conf = self.config_transform(conf)
+        return conf
+
+
+NAMED_CIRCUITS = {
+    "rat_sscxS1HL_V6": NamedCircuit(
+        path=CONFIG_DIR / "rat_sscxS1HL_V6",
+        sbatch_parameters=dict(
+            job_name="msr_ratV6",
+            nodes=1,
+            time="01:00:00",
+        ),
+    ),
+    "rat_sscxS1HL_V10": NamedCircuit(
+        path=CONFIG_DIR / "rat_sscxS1HL_V10",
+        sbatch_parameters=dict(
+            job_name="msr_ratV10",
+            nodes=64,
+            time="10:00:00",
+        ),
+    ),
+    "rat_sscxS1HL_V10_CI": NamedCircuit(
+        path=CONFIG_DIR / "rat_sscxS1HL_V10",
+        sbatch_parameters=dict(
+            job_name="msr_ratV10_CI",
+            nodes=1,
+            time="01:00:00",
+        ),
+        config_transform=functools.partial(
+            utils.replace_values,
+            replacements={
+                "testNGVSSCX": "testNGVSSCX_CI",
+                "testNGVSSCX_AstroMini": "testNGVSSCX_AstroMini_CI",
+            },
+        ),
+    ),
+}
+
+DEFAULT_CIRCUIT = "rat_sscxS1HL_V10_CI"
 
 
 class MsrConfigException(Exception):
@@ -151,17 +227,6 @@ class MsrConfig(dict):
         for key in self:
             yield getattr(self, key)
 
-    @staticmethod
-    def dump(config_path, to_path, replace_dict, indent=4):
-        """Convenience function to dump the config in a file, collapsing the jsons in case it is necessary
-
-        No substitutions are performed except for the parent path. Parent path is removed.
-        """
-        d = utils.load_jsons(config_path)
-        d = utils.merge_dicts(child=replace_dict, parent=d)
-        with open(to_path, "w") as file:
-            json.dump(d, file, indent=indent)
-
     def _load(self):
         """Convenience function to load the configuration files recursively.
 
@@ -171,7 +236,8 @@ class MsrConfig(dict):
         resolves relative paths.
 
         """
-        d = utils.load_jsons(self.config_path)
+        with open(self.config_path) as istr:
+            d = json.load(istr)
         if "multiscale_run" not in d:
             raise MsrConfigException(
                 f"Missing top-level 'multiscale_run' attribute in config file: '{self.config_path}'"
@@ -402,19 +468,23 @@ class MsrConfig(dict):
         return s
 
     @classmethod
-    def rat_sscxS1HL_V6(cls, **kwargs):
-        """Create a MsrConfig instance based on the rat v6 circuit.
+    def default(cls, **kwargs):
+        """Create a MsrConfig instance based on the default circuit.
         If keywords arguments are specified, then initialize a simulation
         by calling ``multiscale_run.cli.init(**kwargs)``.
 
         Returns:
-            MsrConfig: configuration using the rat v6 circuit
+            MsrConfig: configuration using the default circuit
         """
-        sim_path = DEFAULT_CIRCUIT
         if kwargs:
+            sim_path = None
             if utils.rank0():
                 from . import cli
 
-                sim_path = cli.init(circuit=DEFAULT_CIRCUIT, **kwargs)
+                if "circuit" not in kwargs:
+                    kwargs["circuit"] = DEFAULT_CIRCUIT
+                sim_path = cli.init(**kwargs)
             sim_path = utils.comm().bcast(sim_path, root=0)
-        return cls(sim_path)
+            return cls(sim_path)
+        else:
+            return NAMED_CIRCUITS[DEFAULT_CIRCUIT].config()

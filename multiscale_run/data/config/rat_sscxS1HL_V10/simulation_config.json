@@ -1,0 +1,477 @@
+{
+    "multiscale_run": {
+        "with_steps": true,
+        "with_bloodflow": true,
+        "with_metabolism": true,
+        "cache_save": true,
+        "cache_load": true,
+        "logging_level": 1,
+        "mesh_path": "mesh/autogen_mesh.msh",
+        "cache_path": "cache",
+        "mesh_scale": 1e-6,
+        "config_format": 3,
+        "msr_version": "develop",
+        "preprocessor": {
+            "mesh": {
+                "explode_factor": 1.001,
+                "base_length": 30.0,
+                "refinement_steps": 1
+            },
+            "node_sets": {
+                "filter_neuron": false,
+                "neuron_population_name": "All"
+            }
+        },
+        "connections": {
+            "after_metabolism_advance": [
+                {
+                    "src_simulator": "neurodamus",
+                    "src_get_func": "get_var",
+                    "dest_simulator": "metabolism",
+                    "src_get_kwargs": {"var": "ina","weight": "area"},
+                    "dest_set_func": "set_parameters_idxs",
+                    "dest_set_kwargs": {"idxs": [0]},
+                    "action": "set"
+                },
+                {
+                    "src_simulator": "neurodamus",
+                    "src_get_func": "get_var",
+                    "dest_simulator": "metabolism",
+                    "src_get_kwargs": {"var": "ik","weight": "area"},
+                    "dest_set_func": "set_parameters_idxs",
+                    "dest_set_kwargs": {"idxs": [1]},
+                    "action": "set"
+                },
+                {
+                    "src_simulator": "neurodamus",
+                    "src_get_func": "get_var",
+                    "src_get_kwargs": {"var": "atpi","weight": "volume"},
+                    "src_set_func": "set_var",
+                    "src_set_kwargs": {"var": "atpi"},
+                    "dest_simulator": "metabolism",
+                    "dest_get_func": "get_vm_idx",
+                    "dest_get_kwargs": {"idx": 22},
+                    "dest_set_func": "set_vm_idxs",
+                    "dest_set_kwargs": {"idxs": [22]},
+                    "action": "merge"
+                },
+                {
+                    "src_simulator": "neurodamus",
+                    "src_get_func": "get_var",
+                    "src_get_kwargs": {"var": "atpi", "weight": "volume"},
+                    "src_set_func": "set_var",
+                    "src_set_kwargs": {"var": "adpi"},
+                    "dest_simulator": "metabolism",
+                    "dest_set_func": "set_vm_idxs",
+                    "dest_set_kwargs": {"idxs": [23]},
+                    "transform_expression": "vals / 2 * (-0.92 + np.sqrt(0.92 * 0.92 + 4 * 0.92 * (1.4449961078157665 / vals - 1)))",
+                    "action": "set"
+                },
+                {
+                    "src_simulator": "neurodamus",
+                    "src_get_func": "get_var",
+                    "src_get_kwargs": {"var": "nai","weight": "volume"},
+                    "dest_simulator": "metabolism",
+                    "dest_set_func": "set_vm_idxs",
+                    "dest_set_kwargs": {"idxs": [98]},
+                    "action": "set"
+                },
+                {
+                    "src_simulator": "neurodamus",
+                    "src_get_func": "get_var",
+                    "src_get_kwargs": {"var": "ko","weight": "volume"},
+                    "dest_simulator": "metabolism",
+                    "dest_set_func": "set_vm_idxs",
+                    "dest_set_kwargs": {"idxs": [95]},
+                    "action": "set"
+                },
+                {
+                    "src_simulator": "bloodflow",
+                    "src_get_func": "get_flows",
+                    "src_get_kwargs": {},
+                    "transform_expression": "abs(tetXbfFlowsMat.dot(vals)) * 5e-10",
+                    "dest_simulator": "metabolism",
+                    "dest_set_func": "set_parameters_idxs",
+                    "dest_set_kwargs": {"idxs": [3, 4]},
+                    "action": "set"
+                },
+                {
+                    "src_simulator": "bloodflow",
+                    "src_get_func": "get_vols",
+                    "src_get_kwargs": {},
+                    "transform_expression": "tetXtetMat.dot(tetXbfVolsMat.dot(vals)) * 5e-10",
+                    "dest_simulator": "metabolism",
+                    "dest_set_func": "set_parameters_idxs",
+                    "dest_set_kwargs": {"idxs": [5]},
+                    "action": "set"
+                },
+                {
+                    "src_simulator": "steps",
+                    "src_get_func": "get_tet_concs",
+                    "src_get_kwargs": {"species_name": "KK"},
+                    "transform_expression": "vals * (1.0 / (1.0e-3 * config.multiscale_run.steps.conc_factor))",
+                    "dest_simulator": "metabolism",
+                    "dest_set_func": "set_vm_idxs",
+                    "dest_set_kwargs": {"idxs": [95]},
+                    "action": "set"
+                }
+            ],
+            "before_bloodflow_advance": [
+                {
+                    "src_simulator": "neurodamus",
+                    "src_get_func": "get_vasc_radii",
+                    "src_get_kwargs": {},
+                    "dest_simulator": "bloodflow",
+                    "dest_set_func": "set_radii",
+                    "dest_set_kwargs": {},
+                    "action": "set"
+                }
+            ],
+            "after_steps_advance": [
+                {
+                    "src_simulator": "neurodamus",
+                    "src_get_func": "get_var",
+                    "src_get_kwargs": {"var": "ik","weight": "area"},
+                    "transform_expression": "vals * 1e-8",
+                    "dest_simulator": "steps",
+                    "dest_set_func": "add_curr_to_conc",
+                    "dest_set_kwargs": {"species_name": "KK"},
+                    "action": "sum"
+                }
+            ]
+        },
+        "metabolism": {
+            "ndts": 4000,
+            "u0_path": "${pkg_data_path}/metabolismndam_reduced/u0steady_22nov22.csv",
+            "julia_code_path": "${pkg_data_path}/metabolismndam_reduced/metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl",
+            "model": {
+                "model_path": "/gpfs/bbp.cscs.ch/project/proj34/metabolismndam/sim/metabolism_unit_models/",
+                "pardir_path": "${model_path}/optimiz_unit/enzymes/enzymes_preBigg/COMBO/parameters_GLYCOGEN_cleaned4bigg/",
+                "includes" : [
+                    "${model_path}/FINAL_CLEAN/data_model_full/u0_db_refined_selected_oct2021.jl",
+                    "${pardir_path}/general_parameters.jl",
+                    "${pardir_path}/ephys_parameters.jl",
+                    "${pardir_path}/bf_input.jl",
+                    "${pardir_path}/generalisations.jl",
+                    "${pardir_path}/GLC_transport.jl",
+                    "${pardir_path}/GLYCOLYSIS.jl",
+                    "${pardir_path}/glycogen.jl",
+                    "${pardir_path}/creatine.jl",
+                    "${pardir_path}/ATDMP.jl",
+                    "${pardir_path}/pyrTrCytoMito.jl",
+                    "${pardir_path}/lactate.jl",
+                    "${pardir_path}/TCA.jl",
+                    "${pardir_path}/ETC.jl",
+                    "${pardir_path}/PPP_n.jl",
+                    "${pardir_path}/PPP_a.jl",
+                    "${pardir_path}/gshgssg.jl",
+                    "${pardir_path}/MAS.jl",
+                    "${pardir_path}/gltgln.jl",
+                    "${pardir_path}/pyrCarb.jl",
+                    "${pardir_path}/ketones.jl"
+                ],
+                "constants": {
+                    "xNEmod": 0.025,
+                    "KdNEmod": 3.0e-4,
+                    "Iinj": 0.0,
+                    "synInput": 0.0
+                }
+            },
+            "constants": {
+                "ATDPtot_n": 1.4449961078157665,
+                "glycogen_au": [
+                    128.0,
+                    100.0,
+                    100.0,
+                    90.0,
+                    80.0,
+                    75.0
+                ],
+                "mito_volume_fraction": [
+                    0.0459,
+                    0.0522,
+                    0.064,
+                    0.0774,
+                    0.0575,
+                    0.0403
+                ]
+            },
+            "parameters": [null, null, null, 0.0001, 0.0001, 0.023],
+            "solver_kwargs": {
+                "reltol": 1e-8,
+                "abstol": 1e-8,
+                "saveat": 1,
+                "maxiters": 1e6
+            },
+            "checks": {
+                "parameters": {
+                    "3":
+                    {
+                        "name": "bloodflow_Fin",
+                        "kwargs": {"leb": 0.0},
+                        "response": "exclude_neuron"
+                    },
+                    "4":
+                    {
+                        "name": "bloodflow_Fout",
+                        "kwargs": {"leb": 0.0},
+                        "response": "exclude_neuron"
+                    },
+                    "5":
+                    {
+                        "name": "bloodflow_vol",
+                        "kwargs": {"leb": 0.0},
+                        "response": "exclude_neuron"
+                    }
+                },
+                "vm": {
+                    "22":
+                    {
+                        "name": "atpi",
+                        "kwargs": {"lb": 0.25, "hb": 2.5},
+                        "response": "abort_simulation"
+                    },
+                    "95":
+                    {
+                        "name": "ko",
+                        "kwargs": {"lb": 1, "hb": 10},
+                        "response": "abort_simulation"
+                    },
+                    "98":
+                    {
+                        "name": "nai",
+                        "kwargs": {"lb": 5, "hb": 30},
+                        "response": "abort_simulation"
+                    }
+                }
+            }
+        },
+        "steps": {
+            "ndts": 1000,
+            "conc_factor": 1e-9,
+            "compname": "extra",
+            "Volsys": {
+                "name": "extra_volsys",
+                "species": {
+                    "KK": {
+                        "conc_0": 3,
+                        "diffcst": 2e-9,
+                        "ncharges": 1
+                    }
+                }
+            }
+        },
+        "bloodflow": {
+            "ndts": 4000,
+            "blood_viscosity": 1.2e-6,
+            "depth_ratio": 0.05,
+            "max_nb_inputs": 3,
+            "min_subgraph_size": 100,
+            "max_capillaries_diameter": 7.0,
+            "edge_scale": 2.0,
+            "node_scale": 20.0,
+            "input_v": 3.5e4,
+            "vasc_axis": 1,
+            "base_pressure": 1.33e-3
+        },
+        "reports": {
+            "metabolism": {
+                "metab_ina": {
+                    "src_get_func": "get_parameters_idx",
+                    "src_get_kwargs": {"idx": 0},
+                    "unit": "mA/cm^2",
+                    "file_name": "metab_ina.h5",
+                    "when": "after_sync"
+                },
+                "metab_ik": {
+                    "src_get_func": "get_parameters_idx",
+                    "src_get_kwargs": {"idx": 1},
+                    "unit": "mA/cm^2",
+                    "file_name": "metab_ik.h5",
+                    "when": "after_sync"
+                },
+                "metab_bf_Fin": {
+                    "src_get_func": "get_parameters_idx",
+                    "src_get_kwargs": {"idx": 3},
+                    "unit": "ml/s",
+                    "file_name": "metab_bf_Fin.h5",
+                    "when": "after_sync"
+                },
+                "metab_bf_vol": {
+                    "src_get_func": "get_parameters_idx",
+                    "src_get_kwargs": {"idx": 5},
+                    "unit": "ml",
+                    "file_name": "metab_bf_vol.h5",
+                    "when": "after_sync"
+                },
+                "metab_atpi_before_sync": {
+                    "src_get_func": "get_vm_idx",
+                    "src_get_kwargs": {"idx": 22},
+                    "unit": "mM",
+                    "file_name": "metab_atpi_before_sync.h5",
+                    "when": "before_sync"
+                },
+                "metab_atpi_after_sync": {
+                    "src_get_func": "get_vm_idx",
+                    "src_get_kwargs": {"idx": 22},
+                    "unit": "mM",
+                    "file_name": "metab_atpi_after_sync.h5",
+                    "when": "after_sync"
+                },
+                "metab_adpi_before_sync": {
+                    "src_get_func": "get_vm_idx",
+                    "src_get_kwargs": {"idx": 23},
+                    "unit": "mM",
+                    "file_name": "metab_adpi_before_sync.h5",
+                    "when": "before_sync"
+                },
+                "metab_adpi_after_sync": {
+                    "src_get_func": "get_vm_idx",
+                    "src_get_kwargs": {"idx": 23},
+                    "unit": "mM",
+                    "file_name": "metab_adpi_after_sync.h5",
+                    "when": "after_sync"
+                },
+                "metab_nai": {
+                    "src_get_func": "get_vm_idx",
+                    "src_get_kwargs": {"idx": 98},
+                    "unit": "mM",
+                    "file_name": "metab_nai.h5",
+                    "when": "after_sync"
+                },
+                "metab_ko": {
+                    "src_get_func": "get_vm_idx",
+                    "src_get_kwargs": {"idx": 95},
+                    "unit": "mM",
+                    "file_name": "metab_ko.h5",
+                    "when": "after_sync"
+                },
+                "alive_gids": {
+                    "src_get_func": "alive_gids",
+                    "src_get_kwargs": {},
+                    "unit": "",
+                    "file_name": "alive_gids.h5",
+                    "when": "after_sync"
+                }
+            }
+        }
+    },
+    "run": {
+        "random_seed": 0,
+        "tstop": 500,
+        "dt": 0.025
+    },
+    "network": "circuit_config.json",
+    "node_sets_file": "node_sets.json",
+    "node_set": "testNGVSSCX_AstroMini",
+    "output": {
+        "output_dir": "./RESULTS"
+    },
+    "conditions": {
+        "v_init": -65
+    },
+    "inputs": {
+        "ThresholdIntoExc": {
+            "node_set": "src_cells",
+            "input_type": "current_clamp",
+            "module": "noise",
+            "mean_percent": 200.0,
+            "variance": 0.001,
+            "delay": 0.0,
+            "duration": 30000.0
+        },
+        "pInj": {
+            "node_set": "testNGVSSCX",
+            "input_type": "current_clamp",
+            "module": "pulse",
+            "amp_start": 1.0,
+            "amp_end": 1.0,
+            "frequency": 10.0,
+            "width": 5.0,
+            "delay": 1.0,
+            "duration": 3000.0
+        }
+    },
+    "reports": {
+        "ndam_v": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "v",
+            "unit": "mV",
+            "dt": 0.025,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_v.h5"
+        },
+        "ndam_ina_sum": {
+            "cells": "testNGVSSCX",
+            "type": "summation",
+            "variable_name": "ina",
+            "unit": "nA",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_ina_sum.h5"
+        },
+        "ndam_nai": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "nai",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_nai.h5"
+        },
+        "ndam_ki": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "ki",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_ki.h5"
+        },
+        "ndam_atpi": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "atpi",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_atpi.h5"
+        },
+        "ndam_adpi": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "adpi",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_adpi.h5"
+        },
+        "ndam_cai": {
+            "cells": "testNGVSSCX",
+            "type": "compartment",
+            "variable_name": "cai",
+            "unit": "mM",
+            "dt": 1.0,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_cai.h5"
+        },
+        "ndam_IClamp": {
+            "cells": "testNGVSSCX",
+            "type": "summation",
+            "variable_name": "IClamp",
+            "sections": "soma",
+            "dt": 1,
+            "start_time": 0.0,
+            "end_time": 2000.0,
+            "file_name": "ndam_IClamp.h5"
+        }
+    }
+}

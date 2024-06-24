@@ -452,6 +452,29 @@ def merge_dicts(parent: dict, child: dict):
     return {k: merge_vals(k, parent, child) for k in set(parent) | set(child)}
 
 
+def replace_values(obj: dict | list | str, replacements: dict):
+    """Recursively replaces values in a dictionary, list, or string based on a replacement dictionary.
+
+    Args:
+        obj: object that needs the replacements
+        replacements: dictionary of string replacements
+
+    Returns:
+        the modified object
+    """
+    if isinstance(obj, str):
+        return replacements.get(obj, obj)
+    elif isinstance(obj, list):
+        for index, item in enumerate(obj):
+            obj[index] = replace_values(item, replacements)
+        return obj
+    elif isinstance(obj, dict):
+        obj.update((k, replace_values(v, replacements)) for k, v in obj.items())
+        return obj
+    else:
+        return obj  # In case obj is neither str, list, nor dict, return it as is
+
+
 def get_dict_from_json(path) -> dict:
     """Convenience function to load json files.
 
@@ -464,37 +487,6 @@ def get_dict_from_json(path) -> dict:
     logging.info(f"reading: {str(path)}")
     with open(str(path), "r") as json_file:
         return json.load(json_file)
-
-
-def load_jsons(path, replacing_dict: dict = None, parent_path_key: str = None):
-    """Recursively loads JSON files starting from the given path and merges them.
-
-    Args:
-        path (str or Path): The path to the JSON file or directory containing JSON files.
-        replacing_dict: A dictionary containing values to replace in the loaded JSON files.
-        parent_path_key: The key in the JSON file containing the parent path to load additional JSON files from.
-
-    Returns:
-        dict: A dictionary containing the merged content of all loaded JSON files.
-    """
-    if replacing_dict is None:
-        replacing_dict = {}
-    path = Path(path)
-
-    child = get_dict_from_json(path)
-    replacing_dict.update({k: v for k, v in child.items() if isinstance(v, str)})
-    if parent_path_key is None or str(parent_path_key) not in child:
-        return child
-    parent_path = Path(get_resolved_value(replacing_dict, parent_path_key))
-
-    if not parent_path.is_absolute():
-        parent_path = path.parent / parent_path
-    parent_path = str(parent_path.resolve())
-    parent = load_jsons(
-        parent_path, replacing_dict=replacing_dict, parent_path_key=parent_path_key
-    )
-    del child[parent_path_key]
-    return merge_dicts(parent=parent, child=child)
 
 
 def heavy_duty_MPI_Gather(v: np.ndarray, root=0):

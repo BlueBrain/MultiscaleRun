@@ -242,6 +242,43 @@ def test_py_expr_eval():
     assert pyeval("abs(-42)") == 42, "cannot call builtins from the standard library"
 
 
+def test_replace_values():
+    # Test case 1: Replace values in a simple dictionary
+    d1 = {"key1": "value1", "key2": "value2"}
+    replace_dict = {"value1": "new_value1", "value2": "new_value2"}
+    expected1 = {"key1": "new_value1", "key2": "new_value2"}
+    assert utils.replace_values(d1, replace_dict) == expected1
+
+    # Test case 2: Replace values in a nested dictionary
+    d2 = {"key1": {"subkey1": "value1"}, "key2": ["value2", "value3"]}
+    replace_dict2 = {
+        "value1": "new_value1",
+        "value2": "new_value2",
+        "value3": "new_value3",
+    }
+    expected2 = {
+        "key1": {"subkey1": "new_value1"},
+        "key2": ["new_value2", "new_value3"],
+    }
+    assert utils.replace_values(d2, replace_dict2) == expected2
+
+    # Test case 3: Replace values in a list with nested dictionaries
+    d3 = [{"key1": "value1"}, {"key2": "value2"}]
+    replace_dict3 = {"value1": "new_value1", "value2": "new_value2"}
+    expected3 = [{"key1": "new_value1"}, {"key2": "new_value2"}]
+    assert utils.replace_values(d3, replace_dict3) == expected3
+
+    # Test case 4: No replacements when replace_dict is empty
+    d4 = {"key1": "value1", "key2": "value2"}
+    replace_dict4 = {}
+    assert utils.replace_values(d4, replace_dict4) == d4
+
+    # Test case 5: No replacements when d is not a str, list, or dict
+    d5 = 123
+    replace_dict5 = {"value1": "new_value1"}
+    assert utils.replace_values(d5, replace_dict5) == d5
+
+
 if __name__ == "__main__":
     test_get_var_name()
     test_check_value()
@@ -250,3 +287,4 @@ if __name__ == "__main__":
     test_logs_decorator()
     test_heavy_duty_MPI_gather()
     test_py_expr_eval()
+    test_replace_values()

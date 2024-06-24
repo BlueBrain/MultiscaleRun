@@ -7,6 +7,7 @@ The CLI provides the required commands to create a run simulations.
 import argparse
 import copy
 import functools
+import json
 import logging
 import os
 import platform
@@ -24,21 +25,20 @@ import scipy.sparse
 from nbconvert.nbconvertapp import main as NbConvertApp
 
 from . import __version__
+from .config import (
+    DEFAULT_CIRCUIT,
+    NAMED_CIRCUITS,
+)
 from .data import (
     BB5_JULIA_ENV,
-    CIRCUITS_DIRS,
-    DEFAULT_CIRCUIT,
     MSR_CONFIG_JSON,
     MSR_POSTPROC,
     SBATCH_TEMPLATE,
-    circuit_path,
 )
-
-# Important: do not import msr stuff here (apart from what is already there)
-# as MPI may not close correctly
 from .simulation import MsrSimulation
 from .utils import (
     MsrException,
+    merge_dicts,
     pushd,
 )
 
@@ -130,8 +130,6 @@ def julia(args=None, **kwargs):
 
 @command
 def init(directory, circuit, julia="shared", check=True, force=False):
-    from .config import MsrConfig
-
     """Setup a new simulation"""
     if not force:
         dir_content = set(Path(".").iterdir())
@@ -143,21 +141,9 @@ def init(directory, circuit, julia="shared", check=True, force=False):
             )
     assert julia in ["shared", "create", "no"]
 
-    circuit = circuit_path(circuit)
+    circuit_def = NAMED_CIRCUITS[circuit]
 
-    SBATCH_CIRCUITS_parameters = dict(
-        rat_sscxS1HL_V6=dict(
-            job_name="msr_ratV6",
-            nodes=1,
-            time="01:00:00",
-        ),
-        rat_sscxS1HL_V10_all_valid_cells=dict(
-            job_name="msr_ratV10",
-            nodes=64,
-            time="10:00:00",
-        ),
-    )
-    sbatch_parameters = copy.copy(SBATCH_CIRCUITS_parameters[circuit.name])
+    sbatch_parameters = copy.copy(circuit_def.sbatch_parameters)
     loaded_modules = filter(
         lambda s: len(s) > 0, os.environ.get("LOADEDMODULES", "").split(":")
     )
@@ -165,7 +151,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
     SBATCH_TEMPLATE.stream(sbatch_parameters).dump("simulation.sbatch")
     shutil.copy(MSR_POSTPROC, MSR_POSTPROC.name)
     shutil.copytree(
-        str(circuit),
+        str(circuit_def.path),
         ".",
         ignore=shutil.ignore_patterns("cache", "msr*"),
         dirs_exist_ok=True,
@@ -216,11 +202,10 @@ def init(directory, circuit, julia="shared", check=True, force=False):
         if check:
             check_julia_env()
 
-    MsrConfig.dump(
-        config_path=circuit / MSR_CONFIG_JSON,
-        to_path=MSR_CONFIG_JSON,
-        replace_dict={"multiscale_run": rd},
-    )
+    circuit_config = circuit_def.json()
+    circuit_config = merge_dicts(child={"multiscale_run": rd}, parent=circuit_config)
+    with open(MSR_CONFIG_JSON, "w") as ostr:
+        json.dump(circuit_config, ostr, indent=4)
 
     LOGGER.warning(
         "Preparation of the simulation configuration and environment succeeded"
@@ -580,8 +565,8 @@ def argument_parser():
     parser_init.set_defaults(func=init)
     parser_init.add_argument(
         "--circuit",
-        choices=[p.name for p in CIRCUITS_DIRS],
-        default=DEFAULT_CIRCUIT.name,
+        choices=sorted(list(NAMED_CIRCUITS)),
+        default=DEFAULT_CIRCUIT,
     )
     parser_init.add_argument(
         "-f",

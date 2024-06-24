@@ -97,7 +97,10 @@ class MsrReporter:
             managers: dict of managers
             when: When the data should be recorded (before or after sync).
         """
-        if not self.config.is_manager_active(manager_name):
+        if (
+            not self.config.is_manager_active(manager_name)
+            or manager_name not in self.config.multiscale_run.reports
+        ):
             return
 
         manager = managers[manager_name]

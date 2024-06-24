@@ -101,12 +101,9 @@ dualrun_test 16/16:
   extends: .dualrun_test
   variables:
     bb5_ntasks: 16
-    tstop: 1000
 
 nrun_[steps, metab, bf]:
   extends: .nrun_test
-  variables:
-    tstop: 500
   parallel:
     matrix:
     - steps: ["false", "true"]

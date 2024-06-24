@@ -24,7 +24,7 @@
         },
         "connections": {
             "after_metabolism_advance": [
-                {    
+                {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "ina","weight": "area"},
@@ -117,7 +117,7 @@
                 }
             ],
             "before_bloodflow_advance": [
-                {    
+                {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_vasc_radii",
                     "src_get_kwargs": {},
@@ -128,7 +128,7 @@
                 }
             ],
             "after_steps_advance": [
-                {    
+                {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
                     "src_get_kwargs": {"var": "ik","weight": "area"},

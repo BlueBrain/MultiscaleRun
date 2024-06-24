@@ -12,7 +12,7 @@ postproc=${postproc:true}
 steps=${steps:-false}
 metabolism=${metabolism:-false}
 bloodflow=${bloodflow:-false}
-tstop=${tstop:-1000}
+tstop=${tstop:-300}
 
 if [ -z ${sim_name:x} ]; then
   fatal_error "expected environment variable 'SIM_NAME'."

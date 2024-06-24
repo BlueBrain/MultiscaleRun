@@ -13,6 +13,11 @@ CWD = Path(__file__).resolve().parent
 TEST_CONFIG = CWD / "test_folder" / "simulation_config.json"
 
 
+def test_named_circuit():
+    conf = MsrConfig.default()
+    assert conf.node_set == "testNGVSSCX_AstroMini_CI"
+
+
 def test_getattr():
     conf = MsrConfig(TEST_CONFIG)
     # ensure proper data transformation
@@ -53,23 +58,23 @@ def test_load():
 
 
 def test_check():
-    rat_v6 = MsrConfig.rat_sscxS1HL_V6()
+    default_circuit = MsrConfig.default()
     # default config is valid
-    rat_v6.check()
+    default_circuit.check()
 
-    ndts = rat_v6["multiscale_run"]["metabolism"]["ndts"]
+    ndts = default_circuit["multiscale_run"]["metabolism"]["ndts"]
     with pytest.raises(MsrConfigSchemaError) as excinfo:
-        rat_v6["multiscale_run"]["metabolism"]["ndts"] = "what?"
-        rat_v6.check()
+        default_circuit["multiscale_run"]["metabolism"]["ndts"] = "what?"
+        default_circuit.check()
     assert "'what?' is not of type 'integer'" in str(excinfo.value)
-    rat_v6["multiscale_run"]["metabolism"]["ndts"] = ndts
+    default_circuit["multiscale_run"]["metabolism"]["ndts"] = ndts
 
-    print(type(rat_v6["multiscale_run"]["metabolism"]["u0_path"]))
-    print(type(rat_v6.multiscale_run.metabolism.u0_path))
+    print(type(default_circuit["multiscale_run"]["metabolism"]["u0_path"]))
+    print(type(default_circuit.multiscale_run.metabolism.u0_path))
 
-    del rat_v6["multiscale_run"]["metabolism"]["ndts"]
+    del default_circuit["multiscale_run"]["metabolism"]["ndts"]
     with pytest.raises(MsrConfigSchemaError) as excinfo:
-        rat_v6.check()
+        default_circuit.check()
     assert "JSONEncoder" not in str(excinfo.value)
     assert "Error: 'ndts' is a required property" in str(excinfo.value)
 
@@ -78,3 +83,4 @@ if __name__ == "__main__":
     test_getattr()
     test_load()
     test_check()
+    test_named_circuit()

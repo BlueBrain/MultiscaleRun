@@ -31,7 +31,7 @@ MultiscaleRun relies on ``setuptools-scm`` utility to infer the Python package v
 1. If the structure of the JSON configuration changed during this release (key addition, removal, ...), then increment the JSON ``config_format`` key in the files:
 
   * ``multiscale_run/data/config/rat_sscxS1HL_V6/simulation_config.json``
-  * ``multiscale_run/data/config/rat_sscxS1HL_V10_all_valid_cells/simulation_config.json``
+  * ``multiscale_run/data/config/rat_sscxS1HL_V10/simulation_config.json``
 
 2. Ensure the Sphinx documentation is up-to-date. The fastest way is to check the artifacts of the ``docs`` stage in the CI.
 3. Ensure the *Releases Notes* section is completed for this version.
