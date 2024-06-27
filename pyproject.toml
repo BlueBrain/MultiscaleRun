@@ -30,9 +30,9 @@ authors = [
     {name = "Blue Brain Project, EPFL", email = "bbp.opensource@epfl.ch" }
 ]
 description = """
-    multiscale_run is a Python package to run brain cells simulation at different scales. \
-    It orchestrates the coupling between several brain simulators like neuron and \
-    steps but also solvers like AstroVascPy for the cerebral blood flow. \
+    MultiscaleRun is a Python package to run brain cells simulation at different scales. \
+    It orchestrates the coupling between several brain simulators like Neuron and \
+    STEPS but also solvers like AstroVascPy for the cerebral blood flow. \
     The package also embeds a Julia solver to simulate the astrocytes activity. \
     """
 readme = "README.md"

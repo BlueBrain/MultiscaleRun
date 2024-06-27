@@ -1,7 +1,7 @@
 Simulation Configuration
 ========================
 
-This document describes the various configurations available in `simulation_config.json` in the section `multiscale_run`. The documentation about `sonata <https://sonata-extension.readthedocs.io/en/latest/sonata_simulation.html>`_ is here.
+This document describes the various configurations available in `simulation_config.json` in the section `multiscale_run`. The general documentation about SONATA Simulation Configuration file `here <https://sonata-extension.readthedocs.io/en/latest/sonata_simulation.html>`_.
 
 Paths
 =====

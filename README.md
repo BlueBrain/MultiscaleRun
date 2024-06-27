@@ -1,12 +1,17 @@
 # MultiscaleRun
 
-1. dualrun : Coupling Neuron & STEPS. The dualrun is based on the one found in the **triplerun** folder of [this repo](https://bbpgitlab.epfl.ch/molsys/metabolismndam). The official repo for dualrun is now the [following](https://bbpgitlab.epfl.ch/molsys/dualrun).
-1. triplerun : Coupling dualrun & metabolism. The triplerun is based on the one found in the **triplerun** folder of [this repo](https://bbpgitlab.epfl.ch/molsys/metabolismndam).
-1. quadrun : Coupling triplerun & blood flow. [**WIP**]
+MultiscaleRun is a Python package to run brain cells simulation at different scales.
+It orchestrates the coupling between several brain simulators like Neuron and
+STEPS but also solvers like AstroVascPy for the cerebral blood flow.
+The package also embeds a Julia solver to simulate the astrocytes activity.
 
-# MultiscaleRun on BB5
+The Python package includes a program called `multiscale-run` that lets you run
+and analyze multiscale simulations from start to finish.
 
-You may not use MultiscaleRun on the login nodes bbpv1 and bbpv2 to either configure or run a simulation.
+# How to load MultiscaleRun on BB5?
+
+MultiscaleRun is already installed on BB5 but first of all, allocate a compute node
+to save the load on the login nodes, for instance:
 ```
 salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 --constraint=clx
 ```
@@ -24,128 +29,14 @@ spack install py-multiscale-run@develop
 spack load py-multiscale-run
 ```
 
-Using spack environments is recommended so that you can work in an isolated environment with only the MultiscaleRun required spack packages.
+Using spack environments is recommended to work in an isolated environment with only the MultiscaleRun required spack packages.
 More info [here](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md)
-
-> :rainbow: **This may also work on your spack-powered machine!**
-
-
-## Your own working-copy of MultiscaleRun
-
-In this section we explain how to get your own working copy of MultiscaleRun. Typically, these methods are employed by developers that want to customize MultiscaleRun itself or one or more dependencies.
-
-There are 2 ways to do that:
-
-- **MultiscaleRun virtualenv**: <u>recommended</u> when you just need to change MultiscaleRun code.
-- **Spack environments**: all the other cases.
-
-### MultiscaleRun virtualenv (python-venv)
-
-Create a Python virtual environment `.venv` with this simple series of commands:
-
-```bash
-git clone git@bbpgitlab.epfl.ch:molsys/multiscale_run.git /path/to/multiscale_run
-cd /path/to/multiscale_run
-module load unstable py-multiscale-run
-multiscale-run virtualenv
-```
-
-Then activate the virtualenv environment to work with your working-copy: `source .venv/bin/activate`
-
-```bash
-$ .venv/bin/multiscale-run --version
-multiscale-run 0.7
-```
-
-> :rainbow: **This may also work on your spack-powered machine!**
-
-
-### Spack environments
-
-This section is a specialization of this [generic spack guide](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md). 
-
-As a concrete example, let's say that we want to make some modifications in Neurodamus and MultiscaleRun and see how the code performs in rat V6. Let's also assume that we are on BB5 with a working spack. If it is not the case please check [the spack documentation on BB5](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/setup_bb5.md) on how to install spack on BB5. 
-
-It is **recommended to allocated a node** before starting. Compiling in the log in node is deprecated. 
-
-Let's first clone the repositories:
-
-```
-git clone git@bbpgitlab.epfl.ch:molsys/multiscale_run.git
-git clone git@github.com:BlueBrain/neurodamus.git
-```
-
-Our environment will be called `spackenv`. Let's create and activate it:
-
-```
-spack env create -d spackenv
-spack env activate -d spackenv
-```
-
-Now, we should have 3 folders:
-
-```
-.
-├ multiscale_run
-├ neurodamus
-└ spackenv
-```
-
-Let's add Neurodamus and tell spack to use the source code that we cloned before:
-
-```
-spack add py-neurodamus@develop
-spack develop -p ${PWD}/neurodamus --no-clone py-neurodamus@develop
-```
-
-And let's do the same for MultiscaleRun:
-
-```
-spack add py-multiscale-run@develop
-spack develop -p ${PWD}/multiscale_run --no-clone py-multiscale-run@develop
-```
-
-Now we can finally install:
-
-```
-spack install
-```
-
-In order to be sure that all changes have been in effect and `$PYTHONPATH` is populated properly (note that this is only needed when you set up the Spack environment the first time):
-
-```
-spack env deactivate
-spack env activate -d spackenv
-```
-
-Now you are ready to test your version of MultiscaleRun (follow the section **How to use the `multiscale-run` executable?**). If you use SLURM you need to remove the py-multiscale-run and, instead, load the spackenv environment. In concrete terms, in `simulation.sbatch` you need to replace this line:
-
-```
-module load py-multiscale-run
-```
-
-with these lines (assuming that your spackenv is in ~. Change the location accordingly):
-
-```
-module load llvm
-spack env activate -d ~/spackenv
-```
-
-If you want to run an interactive session instead you need the following modules too:
-
-```
-module load unstable llvm
-```
-
-**Important:**
-
-Remember that every time you add a modification to the code you need to call `spack install` before testing it.
 
 > :rainbow: **This may also work on your spack-powered machine!**
 
 # How to use the MultiscaleRun executable?
 
-This program provides several commands to initialize, configure and execute simulations
+The `multiscale-run` executable provides several commands to initialize, configure and execute simulations
 
 ## Setup a new simulation
 
@@ -155,17 +46,15 @@ multiscale-run init /path/to/my-sim
 
 This command creates the following files in `/path/to/my-sim` providing both the circuit, the configuration files, and the runtime dependencies:
 
-```
-.
-├── circuit_config.json
-├── msr_config.json
-├── node_sets.json
-└── simulation_config.json
-├── postproc.ipynb
-└── simulation.sbatch
-```
+* `circuit_config.json`: description of the circuit to simulate
+* `node_sets.json`: subsets of cells acting as targets for different reports or stimulations. See also
+https://github.com/AllenInstitute/sonata/blob/master/docs/SONATA_DEVELOPER_GUIDE.md#node-sets-file
+* `simulation_config.json`: ties together the definition of the simulation on the circuit, see section _Simulation Configuration_ below to have an understanding of the dedicated "multiscale_run" section.
+* `simulation.sbatch`: An example of SLURM script to launch the simulation on BB5 
+* `postproc.ipynb`: An example of Jupyter notebook making use of the simulation results to build a report
 
-The generated setup is ready to compute, but feel free to browse and tweak the JSON configuration files at will!
+The generated setup is ready to compute, but feel free to browse and tweak the JSON configuration files at will,
+especially the "multiscale_run" section of file `simulation_config.json`
 
 > :ledger: **See `multiscale-run init --help` for more information**
 
@@ -205,6 +94,8 @@ Three more folders will be created during the simulation:
 sbatch simulation.sbatch
 ```
 
+# Other operations
+
 ## Custom Neuron mechanisms
 
 This operation clones the Neurodamus mod files library for local editing.
@@ -225,8 +116,6 @@ icpx: error: linker command failed with exit code 1 (use -v to see invocation)
 make: *** [/gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/bin/nrnmech_makefile:133: mech_lib_shared] Error 1
 ```
 This happens because Neuron was built with Intel oneAPI compiler but the compiler is not available in the environment. Loading the proper module on BB5 may fix the issue `module load unstable  intel-oneapi-compilers`
-
-# Other operations
 
 ## Convert BlueConfig to SONATA compatible JSON file
 

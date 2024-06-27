@@ -1,6 +1,120 @@
 Contributing
 ============
 
+How to use your own working-copy?
+*********************************
+
+This section details how to use a working copy of MultiscaleRun. Typically, these methods are employed by developers that want to customize MultiscaleRun itself or one or more dependencies.
+
+There are 2 ways to do that:
+
+* **MultiscaleRun virtualenv**: recommended when you just need to change MultiscaleRun code.
+* **Spack environments**: all the other cases.
+
+MultiscaleRun virtualenv (python-venv)
+--------------------------------------
+
+Create a Python virtual environment ``.venv`` with this simple series of commands:
+
+.. code-block:: console
+
+  git clone git@bbpgitlab.epfl.ch:molsys/multiscale_run.git /path/to/multiscale_run
+  cd /path/to/multiscale_run
+  module load unstable py-multiscale-run
+  multiscale-run virtualenv
+
+Then activate the virtualenv environment to work with your working-copy: ``source .venv/bin/activate``
+
+.. code-block:: console
+
+  $ .venv/bin/multiscale-run --version
+  multiscale-run 0.7
+
+.. note:: **This may also work on your spack-powered machine!**
+
+Spack environments
+------------------
+
+This section is a specialization of this `generic spack guide <https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md>`_.
+
+As a concrete example, let's say that we want to make some modifications in Neurodamus and MultiscaleRun and see how the code performs in rat V6. Let's also assume that we are on BB5 with a working spack. If it is not the case please check `the spack documentation on BB5 <https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/setup_bb5.md>`_ on how to install spack on BB5.
+
+It is **imperative to allocate a node** before starting as heavy usage of the login nodes is prohibited.
+
+Let's first clone the repositories:
+
+.. code-block:: console
+
+  git clone git@bbpgitlab.epfl.ch:molsys/multiscale_run.git
+  git clone git@github.com:BlueBrain/neurodamus.git
+
+Our environment will be called ``spackenv``. Let's create and activate it:
+
+.. code-block:: console
+
+  spack env create -d spackenv
+  spack env activate -d spackenv
+
+Now, we should have 3 folders:
+
+.. code-block:: console
+
+  .
+  ├ multiscale_run
+  ├ neurodamus
+  └ spackenv
+
+Let's add Neurodamus and tell spack to use the source code that we cloned before:
+
+.. code-block:: console
+
+  spack add py-neurodamus@develop
+  spack develop -p ${PWD}/neurodamus --no-clone py-neurodamus@develop
+
+And let's do the same for MultiscaleRun:
+
+.. code-block:: console
+
+  spack add py-multiscale-run@develop
+  spack develop -p ${PWD}/multiscale_run --no-clone py-multiscale-run@develop
+
+Now we can finally install:
+
+.. code-block:: console
+
+  spack install
+
+In order to be sure that all changes have been in effect and ``$PYTHONPATH`` is populated properly (note that this is only needed when you set up the Spack environment the first time):
+
+.. code-block:: console
+
+  spack env deactivate
+  spack env activate -d spackenv
+
+Now you are ready to test your version of MultiscaleRun (follow the section **How to use the ``multiscale-run` executable?**). If you use SLURM you need to remove the py-multiscale-run and, instead, load the spackenv environment. In concrete terms, in `simulation.sbatch` you need to replace this line:
+
+.. code-block:: console
+
+  module load py-multiscale-run
+
+with these lines (assuming that your spackenv is in ~. Change the location accordingly):
+
+.. code-block:: console
+
+  module load llvm
+  spack env activate -d ~/spackenv
+
+If you want to run an interactive session instead you need the following modules too:
+
+.. code-block:: console
+
+  module load unstable llvm
+
+.. note:: Remember that every time you add a modification to the code you need to call ``spack install`` before testing it.
+
+.. note:: **This may also work on your spack-powered machine!**
+
+
 How to check a contribution?
 ****************************
 
