@@ -547,7 +547,7 @@ def edit_mod_files(**kwargs):
         Whenever you modify the mod files, launch this command to rebuild the mechanisms:
 
             cd {os.getcwd()}
-            build_neurodamus.sh mod
+            build_neurodamus.sh mod --only-neuron
 
         Happy hacking!
     """

@@ -136,6 +136,13 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 
 # Changelog
 
+## 0.8.1 - 2024-07-03
+
+### Bugfixes
+
+* `edit-mod-files` was not working anymore because neurodamus changed the position of the `mod` folder. Updated.
+* `edit-mod-files` was giving wrong suggestions since we should use `build_neurodamus.sh mod --only-neuron` now.
+
 ## 0.8 - 2024-06-04
 
 ### Major Changes
