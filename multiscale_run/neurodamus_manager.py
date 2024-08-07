@@ -435,8 +435,8 @@ class MsrNeurodamusManager:
 
         simulation_config.json is expected to be in the folder.
         """
-        from collections import Counter
         import libsonata
+        from collections import Counter
 
         simulation_config = libsonata.SimulationConfig.from_file(
             "simulation_config.json"
