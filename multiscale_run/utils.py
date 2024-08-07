@@ -475,7 +475,7 @@ def replace_values(obj: dict | list | str, replacements: dict):
         return obj  # In case obj is neither str, list, nor dict, return it as is
 
 
-def get_dict_from_json(path) -> dict:
+def get_dict_from_json(path, auto_replace=False) -> dict:
     """Convenience function to load json files.
 
     Args:
@@ -486,7 +486,12 @@ def get_dict_from_json(path) -> dict:
     """
     logging.info(f"reading: {str(path)}")
     with open(str(path), "r") as json_file:
-        return json.load(json_file)
+        ans = json.load(json_file)
+
+    if resolve_replaces:
+        subs_d = get_subs_d(ans)
+        resolve_replaces(ans, subs_d)
+    return ans
 
 
 def heavy_duty_MPI_Gather(v: np.ndarray, root=0):
@@ -576,7 +581,16 @@ def get_subs_d(d: dict) -> dict:
     Returns:
     dict: A new dictionary containing only string key-value pairs.
     """
-    ans = {k: v for k, v in d.items() if isinstance(k, str) and isinstance(v, str)}
+    ans = {
+        k[2:-1]: v
+        for k, v in d.items()
+        if isinstance(k, str) and isinstance(v, str) and re.match(r"\$\{(.*?)\}", k)
+    } | {
+        k[1:]: v
+        for k, v in d.items()
+        if isinstance(k, str) and isinstance(v, str) and re.match(r"\$(\w+)", k)
+    }
+
     for k, v in d.items():
         if isinstance(k, str) and isinstance(v, dict):
             ans.update(get_subs_d(v))
@@ -598,11 +612,15 @@ def get_resolved_value(d: dict, key: str, in_place: bool = False):
       str: The resolved value associated with the specified key.
     """
     v = d[key]
-    tokens = set(re.findall(r"\${(.*?)}", v))
-    if not len(tokens):
-        return v
-    for token in tokens:
+    tokens1 = set(re.findall(r"\$\{(.*?)\}", v))
+    for token in tokens1:
         v = v.replace(f"${{{token}}}", get_resolved_value(d, token, in_place))
+    tokens2 = set(re.findall(r"\$(\w+)", v))
+    for token in tokens2:
+        v = v.replace(f"${token}", get_resolved_value(d, token, in_place))
+
+    if len(tokens1) + len(tokens2) == 0:
+        return v
     if in_place:
         d[key] = v
     return v
@@ -632,9 +650,15 @@ def resolve_replaces(d: dict, base_subs_d: dict = None) -> None:
 
     def _rep(obj, subs_d):
         if isinstance(obj, str):
-            tokens = set(re.findall(r"\${(.*?)}", obj))
+            tokens = set(re.findall(r"\$\{(.*?)\}", obj))
             for token in tokens:
-                obj = obj.replace(f"${{{token}}}", subs_d[token])
+                if token in subs_d:
+                    obj = obj.replace(f"${{{token}}}", subs_d[token])
+
+            tokens = set(re.findall(r"\$(\w+)", obj))
+            for token in tokens:
+                if token in subs_d:
+                    obj = obj.replace(f"${token}", subs_d[token])
 
         if isinstance(obj, list):
             for idx, item in enumerate(obj):

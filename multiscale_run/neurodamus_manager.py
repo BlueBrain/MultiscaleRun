@@ -428,3 +428,49 @@ class MsrNeurodamusManager:
         assert len(vasc_ids) == len(radii), f"{len(vasc_ids)} == {len(radii)}"
 
         return vasc_ids, radii
+
+    @staticmethod
+    def stats():
+        """Extract general statistics from a simulation
+
+        simulation_config.json is expected to be in the folder.
+        """
+        from collections import Counter
+        import libsonata
+
+        simulation_config = libsonata.SimulationConfig.from_file(
+            "simulation_config.json"
+        )
+        circuit_config = libsonata.CircuitConfig.from_file(simulation_config.network)
+        node_sets = libsonata.NodeSets.from_file(circuit_config.node_sets_path)
+        node_sets.update(libsonata.NodeSets.from_file(simulation_config.node_sets_file))
+
+        def print_attribute(attribute, pop, selection):
+            """Print attribute if present"""
+            if attribute in pop.attribute_names:
+                print(f"{attribute}: frequency")
+                d = sorted(Counter(pop.get_attribute(attribute, selection)).items())
+                print("    " + "\n    ".join(f"{k[0]}: {k[1]}" for k in d))
+
+        # extract and print
+        print()
+        for pop_name in circuit_config.node_populations:
+            prop = circuit_config.node_population_properties(pop_name)
+            print(f"population: {pop_name}")
+            print(f"type: {prop.type}")
+            pop = circuit_config.node_population(pop_name)
+            selection = node_sets.materialize(simulation_config.node_set, pop)
+            print(f"selection: {len(selection.flatten())}/{pop.size}")
+            print_attribute("etype", pop, selection)
+            print_attribute("mtype", pop, selection)
+            print_attribute("layer", pop, selection)
+            if prop.biophysical_neuron_models_dir:
+                base_path = prop.biophysical_neuron_models_dir
+                print(f"emodel paths in: {base_path}")
+                paths = [
+                    i.split(":")
+                    for i in sorted(set(pop.get_attribute("model_template", selection)))
+                ]
+                paths = [base_path + "/" + i[1] + "." + i[0] for i in paths]
+                print("    " + "\n    ".join(paths))
+                print()

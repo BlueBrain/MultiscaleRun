@@ -220,6 +220,11 @@ def init(directory, circuit, julia="shared", check=True, force=False):
 
 
 @command
+def stats(**kwargs):
+    MsrSimulation.stats()
+
+
+@command
 @julia_env
 def compute(**kwargs):
     """Compute the simulation"""
@@ -601,6 +606,10 @@ def argument_parser():
     parser_compute = subparsers.add_parser("compute", help=compute.__argparse_help__)
     parser_compute.set_defaults(func=compute)
     parser_compute.add_argument("directory", nargs="?")
+
+    parser_stats = subparsers.add_parser("stats", help=stats.__argparse_help__)
+    parser_stats.set_defaults(func=stats)
+    parser_stats.add_argument("directory", nargs="?")
 
     parser_postproc = subparsers.add_parser(
         "post-processing", help=post_processing.__argparse_help__
