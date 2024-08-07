@@ -221,6 +221,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
 
 @command
 def stats(**kwargs):
+    """Get some stats from a simulation"""
     MsrSimulation.stats()
 
 

@@ -136,6 +136,8 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 
 # Changelog
 
+* Add the command `multiscale_run stats` to retrieve some simple stats from the simulation.
+
 ## 0.8.1 - 2024-07-03
 
 ### Bugfixes
