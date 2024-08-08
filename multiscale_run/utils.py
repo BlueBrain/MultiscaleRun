@@ -475,7 +475,7 @@ def replace_values(obj: dict | list | str, replacements: dict):
         return obj  # In case obj is neither str, list, nor dict, return it as is
 
 
-def get_dict_from_json(path, auto_replace=False) -> dict:
+def load_json(path, base_subs_d=None) -> dict:
     """Convenience function to load json files.
 
     Args:
@@ -483,14 +483,14 @@ def get_dict_from_json(path, auto_replace=False) -> dict:
 
     Returns:
         dict from the json
+
+        TODO
     """
     logging.info(f"reading: {str(path)}")
     with open(str(path), "r") as json_file:
         ans = json.load(json_file)
 
-    if resolve_replaces:
-        subs_d = get_subs_d(ans)
-        resolve_replaces(ans, subs_d)
+    resolve_replaces(ans, base_subs_d=base_subs_d)
     return ans
 
 
@@ -581,15 +581,26 @@ def get_subs_d(d: dict) -> dict:
     Returns:
     dict: A new dictionary containing only string key-value pairs.
     """
-    ans = {
-        k[2:-1]: v
-        for k, v in d.items()
-        if isinstance(k, str) and isinstance(v, str) and re.match(r"\$\{(.*?)\}", k)
-    } | {
-        k[1:]: v
-        for k, v in d.items()
-        if isinstance(k, str) and isinstance(v, str) and re.match(r"\$(\w+)", k)
-    }
+    ans = (
+        {
+            k[2:-1]: v
+            for k, v in d.items()
+            if isinstance(k, str) and isinstance(v, str) and re.match(r"\$\{(.*?)\}", k)
+        }
+        | {
+            k[1:]: v
+            for k, v in d.items()
+            if isinstance(k, str) and isinstance(v, str) and re.match(r"\$(\w+)", k)
+        }
+        | {
+            k: v
+            for k, v in d.items()
+            if isinstance(k, str)
+            and isinstance(v, str)
+            and not re.match(r"\$(\w+)", k)
+            and not re.match(r"\$\{(.*?)\}", k)
+        }
+    )
 
     for k, v in d.items():
         if isinstance(k, str) and isinstance(v, dict):
@@ -645,6 +656,7 @@ def resolve_replaces(d: dict, base_subs_d: dict = None) -> None:
 
     subs_d = get_subs_d(d)
     subs_d.update(base_subs_d)
+
     for k in subs_d.keys():
         get_resolved_value(subs_d, k, True)
 

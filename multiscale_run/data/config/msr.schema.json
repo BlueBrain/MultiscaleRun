@@ -147,11 +147,11 @@
           "description": "Provides additional variables to the Metabolism model.",
           "additionalProperties": false,
           "properties": {
-            "$model_path": {
+            "model_path": {
               "type": "string",
               "description": "Base path to the additional includes."
             },
-            "$pardir_path": {
+            "pardir_path": {
               "type": "string",
               "description": "Base path to the additional parameters required by the Metabolism model."
             },
