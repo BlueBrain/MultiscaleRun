@@ -448,9 +448,21 @@ class MsrNeurodamusManager:
         def print_attribute(attribute, pop, selection):
             """Print attribute if present"""
             if attribute in pop.attribute_names:
-                print(f"{attribute}: frequency")
-                d = sorted(Counter(pop.get_attribute(attribute, selection)).items())
-                print("    " + "\n    ".join(f"{k[0]}: {k[1]}" for k in d))
+                with np.printoptions(threshold=3):
+                    print(f"{attribute}: (frequency) gids")
+                    attr = pop.get_attribute(attribute, selection)
+                    d = {}
+                    for idx, val in zip(selection.flatten(), attr):
+                        if val not in d:
+                            d[val] = []
+                        d[val].append(idx)
+                    d = sorted(d.items())
+                    print(
+                        "    "
+                        + "\n    ".join(
+                            f"{k[0]}: ({len(k[1])}) {np.array(k[1])}" for k in d
+                        )
+                    )
 
         # extract and print
         print()

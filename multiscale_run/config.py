@@ -243,7 +243,7 @@ class MsrConfig(dict):
                 f"Missing top-level 'multiscale_run' attribute in config file: '{self.config_path}'"
             )
 
-        d.setdefault("multiscale_run", {})["pkg_data_path"] = str(DATA_DIR)
+        d.setdefault("multiscale_run", {})["$pkg_data_path"] = str(DATA_DIR)
         utils.resolve_replaces(d)
         self.update(MsrConfig._objectify_config(None, d))
 
