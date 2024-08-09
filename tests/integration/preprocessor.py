@@ -27,7 +27,7 @@ def test_gen_msh():
     This function is responsible for testing the mesh generation process with given configurations and managers.
 
     """
-    conf = MsrConfig.default(circuit="rat_sscxS1HL_V6", force=True, check=False)
+    conf = MsrConfig.default(circuit="rat_sscxS1HL_V10_CI", force=True, check=False)
 
     pp = MsrPreprocessor(config=conf)
     ndam_m = MsrNeurodamusManager(config=conf)
