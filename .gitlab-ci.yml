@@ -78,7 +78,7 @@ integration:
   - ${SPACK_SOURCE_DIR}/.ci/test_simulation.sh
 
 .dualrun:
-  extends: .nrun_test
+  extends: .nrun
   timeout: 2 hours
   variables:
     steps: "true"
