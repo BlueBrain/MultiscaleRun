@@ -8,6 +8,10 @@ The package also embeds a Julia solver to simulate the astrocytes activity.
 The Python package includes a program called `multiscale-run` that lets you run
 and analyze multiscale simulations from start to finish.
 
+# Docs
+
+After installation, the general user documentation is available on the [Software Catalog](https://bbpteam.epfl.ch/documentation/projects/multiscale_run/latest/).
+
 # How to load MultiscaleRun on BB5?
 
 MultiscaleRun is already installed on BB5 but first of all, allocate a compute node
@@ -30,7 +34,7 @@ spack load py-multiscale-run
 ```
 
 Using spack environments is recommended to work in an isolated environment with only the MultiscaleRun required spack packages.
-More info [here](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md)
+More info about [spack environments](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md)
 
 > :rainbow: **This may also work on your spack-powered machine!**
 
@@ -135,6 +139,12 @@ This happens because Neuron was built with Intel oneAPI compiler but the compile
 For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=BBPHPC&title=How+to+use+Arm+MAP).
 
 # Changelog
+
+## 0.8.2 - 2024-??-??
+
+### Bugfixes
+
+* `virtualenv` was not setting correctly `HOC_LIBRARY_PATH` when called from a python environment itself.
 
 ## 0.8.1 - 2024-07-03
 

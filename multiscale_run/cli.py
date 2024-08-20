@@ -277,6 +277,8 @@ def spack(*args, log=True):
     # run command outside any spack environment
     env.pop("SPACK_ENV", None)
     env.pop("SPACK_ENV_VENV", None)
+    # remove it so that spack may export the correct path
+    env.pop("HOC_LIBRARY_PATH", None)
     if log:
         print(" ".join(command))
     return subprocess.check_output(command, encoding="utf-8", env=env)
