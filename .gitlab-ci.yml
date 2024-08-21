@@ -16,7 +16,7 @@ workflow:
   rules:
   - if: $CI_PIPELINE_SOURCE == "schedule"
   - if: $CI_PIPELINE_SOURCE == "web"
-  - if: "$CI_MERGE_REQUEST_IID"
+  - if: "$CI_EXTERNAL_PULL_REQUEST_IID"
   - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
   - if: $CI_COMMIT_TAG
 
@@ -29,6 +29,10 @@ stages:
 variables:
   SPACK_PACKAGE: py-multiscale-run
   SPACK_PACKAGE_DEPENDENCIES: ^hdf5~cxx
+
+spack_setup:
+  variables:
+    SPACK_BRANCH: tristan/msr-on-github
 
 .tox-template:
   tags: [bb5_map]
