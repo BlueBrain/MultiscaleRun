@@ -2,15 +2,15 @@ include:
   - project: hpc/gitlab-pipelines
     file:
     - github-project-pipelines.gitlab-ci.yml
-    - spack-build-ctest.gitlab-ci.yml
+    - spack-build.gitlab-ci.yml
   - project: hpc/gitlab-upload-logs
     file: enable-upload.yml
   - project: nse/ci
     file:
-    - /ci/lib/tox-bb5.yml
-    - /ci/jobs/docs.yml
+    - ci/lib/tox-bb5.yml
+    - ci/jobs/docs.yml
     - ci/jobs/lint.yml
-    - /ci/jobs/publish-docs.yml
+    - ci/jobs/publish-docs.yml
 
 workflow:
   rules:
