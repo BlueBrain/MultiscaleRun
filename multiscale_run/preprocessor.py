@@ -1,8 +1,8 @@
 import json
 import logging
 from pathlib import Path
+import textwrap
 
-import gmsh
 import numpy as np
 import trimesh
 from bluepysnap import Circuit
@@ -163,59 +163,6 @@ class MsrPreprocessor:
         self.selected_neurons = selected_neurons
         self.selected_astrocytes = selected_astrocytes
 
-    @utils.logs_decorator
-    def _gen_stl_and_geo(self, points: np.array):
-        """Generate an STL file and its corresponding GEO file from a set of 3D coordinates.
-
-        This method creates an STL file containing a 3D surface mesh and a GEO file that references the STL file for mesh
-        generation.
-
-        Args:
-            points (np.array): NumPy array of shape (N, 3) containing 3D coordinates of points.
-
-        Returns:
-            None
-
-        Note:
-            - The `points` parameter should be of dtype np.float64.
-            - The method generates a convex hull surface mesh from the provided points.
-            - It allows specifying the number of surface subdivisions through the configuration settings.
-            - The STL and GEO files are saved with the same name as the mesh path but with different extensions.
-            - The GEO file references the STL file, defining a surface loop and volume.
-
-        Example:
-            >>> points = np.array([[x1, y1, z1], [x2, y2, z2], ...])
-            >>> gen_stl_and_geo(points)
-        """
-        point_cloud = trimesh.PointCloud(points)
-        surface_mesh = point_cloud.convex_hull
-
-        for _ in range(
-            self.config.multiscale_run.preprocessor.mesh.surface_subdivisions
-        ):
-            surface_mesh = surface_mesh.subdivide()
-
-        surface_mesh.update_faces(surface_mesh.unique_faces())
-        trimesh.repair.broken_faces(surface_mesh)
-        trimesh.repair.fill_holes(surface_mesh)
-        trimesh.repair.fix_inversion(surface_mesh)
-        trimesh.repair.fix_winding(surface_mesh)
-
-        stl_path = self.config.multiscale_run.mesh_path.with_suffix(".stl")
-        surface_mesh.export(stl_path)
-
-        geo_path = self.config.multiscale_run.mesh_path.with_suffix(".geo")
-
-        ss = f"""
-Merge '{stl_path.name}';
-Mesh.CharacteristicLengthFactor = 0.1;
-Surface Loop(1) = {{1}};
-Volume(1) = {{1}};
-Physical Volume('{self.config.multiscale_run.steps.compname}', 1) = {{1}};
-"""
-
-        with open(geo_path, "w") as f:
-            f.write(ss)
 
     @utils.logs_decorator
     def _gen_bbox_msh(self, pts):
@@ -228,139 +175,65 @@ Physical Volume('{self.config.multiscale_run.steps.compname}', 1) = {{1}};
         bb = utils.bbox(pts)
 
         # Your Geo string containing the geometric description
-        geo_string = f"""
-Mesh.CharacteristicLengthFactor = 10;
+        newline = "\n            "
+        geo_string = textwrap.dedent(f"""\
+            Mesh.CharacteristicLengthFactor = 10;
 
-Mesh.MshFileVersion = 4.1;
-Mesh.PartitionOldStyleMsh2 = 1;
-Mesh.PartitionCreateGhostCells = 1;
+            Mesh.MshFileVersion = 4.1;
+            Mesh.PartitionOldStyleMsh2 = 1;
+            Mesh.PartitionCreateGhostCells = 1;
 
-Point(1) = {{{bb[0][0]}, {bb[0][1]}, {bb[0][2]}, {length}}};
-Point(2) = {{{bb[0][0]}, {bb[0][1]}, {bb[1][2]}, {length}}};
-Point(3) = {{{bb[0][0]}, {bb[1][1]}, {bb[0][2]}, {length}}};
-Point(4) = {{{bb[0][0]}, {bb[1][1]}, {bb[1][2]}, {length}}};
-Point(5) = {{{bb[1][0]}, {bb[0][1]}, {bb[0][2]}, {length}}};
-Point(6) = {{{bb[1][0]}, {bb[0][1]}, {bb[1][2]}, {length}}};
-Point(7) = {{{bb[1][0]}, {bb[1][1]}, {bb[0][2]}, {length}}};
-Point(8) = {{{bb[1][0]}, {bb[1][1]}, {bb[1][2]}, {length}}};
+            Point(1) = {{{bb[0][0]}, {bb[0][1]}, {bb[0][2]}, {length}}};
+            Point(2) = {{{bb[0][0]}, {bb[0][1]}, {bb[1][2]}, {length}}};
+            Point(3) = {{{bb[0][0]}, {bb[1][1]}, {bb[0][2]}, {length}}};
+            Point(4) = {{{bb[0][0]}, {bb[1][1]}, {bb[1][2]}, {length}}};
+            Point(5) = {{{bb[1][0]}, {bb[0][1]}, {bb[0][2]}, {length}}};
+            Point(6) = {{{bb[1][0]}, {bb[0][1]}, {bb[1][2]}, {length}}};
+            Point(7) = {{{bb[1][0]}, {bb[1][1]}, {bb[0][2]}, {length}}};
+            Point(8) = {{{bb[1][0]}, {bb[1][1]}, {bb[1][2]}, {length}}};
 
-Line(1) = {{1, 2}};
-Line(2) = {{1, 3}};
-Line(3) = {{1, 5}};
-Line(4) = {{3, 4}};
-Line(5) = {{4, 2}};
-Line(6) = {{2, 6}};
-Line(7) = {{6, 5}};
-Line(8) = {{5, 7}};
-Line(9) = {{7, 8}};
-Line(10) = {{8, 6}};
-Line(11) = {{8, 4}};
-Line(12) = {{7, 3}};
+            Line(1) = {{1, 2}};
+            Line(2) = {{1, 3}};
+            Line(3) = {{1, 5}};
+            Line(4) = {{3, 4}};
+            Line(5) = {{4, 2}};
+            Line(6) = {{2, 6}};
+            Line(7) = {{6, 5}};
+            Line(8) = {{5, 7}};
+            Line(9) = {{7, 8}};
+            Line(10) = {{8, 6}};
+            Line(11) = {{8, 4}};
+            Line(12) = {{7, 3}};
 
+            Curve Loop(1) = {{2, -12, -8, -3}};
+            Plane Surface(1) = {{1}};
+            Curve Loop(2) = {{8, 9, 10, 7}};
+            Plane Surface(2) = {{2}};
+            Curve Loop(3) = {{10, -6, -5, -11}};
+            Plane Surface(3) = {{3}};
+            Curve Loop(4) = {{5, -1, 2, 4}};
+            Plane Surface(4) = {{4}};
+            Curve Loop(5) = {{12, 4, -11, -9}};
+            Plane Surface(5) = {{5}};
+            Curve Loop(6) = {{3, -7, -6, -1}};
+            Plane Surface(6) = {{6}};
 
-Curve Loop(1) = {{2, -12, -8, -3}};
-Plane Surface(1) = {{1}};
-Curve Loop(2) = {{8, 9, 10, 7}};
-Plane Surface(2) = {{2}};
-Curve Loop(3) = {{10, -6, -5, -11}};
-Plane Surface(3) = {{3}};
-Curve Loop(4) = {{5, -1, 2, 4}};
-Plane Surface(4) = {{4}};
-Curve Loop(5) = {{12, 4, -11, -9}};
-Plane Surface(5) = {{5}};
-Curve Loop(6) = {{3, -7, -6, -1}};
-Plane Surface(6) = {{6}};
+            Surface Loop(1) = {{1, 4, 3, 2, 5, 6}};
+            Volume(1) = {{1}};
 
-
-Surface Loop(1) = {{1, 4, 3, 2, 5, 6}};
-Volume(1) = {{1}};
-
-Physical Volume("{phys_vol}", 1) = {{1}};
-        """
+            Physical Volume("{phys_vol}", 1) = {{1}};
+            {newline.join(["RefineMesh;"] * refinement_steps)}
+            Mesh 3;
+            Save "{mesh_path}";
+        """)
 
         mesh_path = self.config.multiscale_run.mesh_path
-        with open(str(mesh_path.with_suffix(".geo")), "w") as geo_file:
+        geo_path = mesh_path.with_suffix(".geo")
+        with geo_path.open("w") as geo_file:
             geo_file.write(geo_string)
+        logging.info(f"Creating mesh '{mesh_path}' with gmsh utility")
+        subprocess.check_call(["gmsh", str(geo_path)])
 
-        gmsh.initialize()
-
-        # Load the Geo string as if it were a Geo file
-        gmsh.merge(str(mesh_path.with_suffix(".geo")))
-
-        # Synchronize the Gmsh model
-        gmsh.model.geo.synchronize()
-
-        # Generate 3D mesh
-        gmsh.model.mesh.generate(3)
-
-        for _ in range(refinement_steps):
-            gmsh.model.mesh.refine()
-
-        # Save the mesh to a file (optional)
-        gmsh.write(str(mesh_path))
-
-        # Finalize Gmsh
-        gmsh.finalize()
-
-    @utils.logs_decorator
-    def _gen_msh_from_geo(self):
-        """Generate and refine a .msh file for mesh generation.
-
-        This method generates and refines a mesh using the Gmsh meshing tool. It allows specifying the refinement steps and
-        the generative algorithm used for meshing. The following generative algorithms are available:
-        1: Delaunay-based frontal algorithm (for complex 3D geometries).
-        2: Frontal algorithm with support for pyramids (suitable for tetrahedral meshing and non-convex geometries).
-        3: Advancing-front meshing (generic algorithm for both 2D and 3D meshes).
-        4: Delaunay-based coarsening (for tetrahedral mesh generation and complex 3D geometries).
-        5: Frontal algorithm with support for pyramids and coarsening (for complex 3D geometries with pyramidal elements).
-        6: Aggressive coarsening (aimed at generating a coarser mesh).
-        7: Delaunay-based frontal algorithm with coarsening.
-        8: Red-green refinement (H-adaptivity) for adaptive meshing.
-
-        Note:
-            The method initializes Gmsh, loads the mesh generation script, sets the generative algorithm, generates the
-            initial mesh, refines the mesh for the specified number of steps, performs coherence, removes duplicate facets, and
-            saves the mesh to an output file.
-
-        Example:
-            >>> gen_msh()
-        """
-        script_file = str(self.config.multiscale_run.mesh_path.with_suffix(".geo"))
-        output_file = str(self.config.multiscale_run.mesh_path.with_suffix(".msh"))
-        refinement_steps = self.config.multiscale_run.preprocessor.mesh.refinement_steps
-        algo = self.config.multiscale_run.preprocessor.mesh.generative_algorithm
-
-        # Initialize Gmsh
-        gmsh.initialize()
-
-        try:
-            # Load your script
-            gmsh.open(script_file)
-
-            # Set the options
-            gmsh.option.setNumber("Mesh.Algorithm", algo)
-
-            # Generate the initial mesh
-            gmsh.model.geo.synchronize()
-
-            # gmsh.model.mesh.recombine()
-            gmsh.model.mesh.generate(3)  # 3 for 3D
-
-            # Refine the mesh
-            for _ in range(refinement_steps):
-                gmsh.model.mesh.refine()
-
-            # Remove duplicate facets
-            gmsh.model.mesh.removeDuplicateElements()
-
-            # Recombine elements
-
-            # gmsh.model.mesh.recombine(3)
-
-            # Save the mesh to the output file
-            gmsh.write(output_file)
-        finally:
-            gmsh.finalize()
 
     @staticmethod
     def _explode_pts(pts, explode_factor):
@@ -463,5 +336,3 @@ Physical Volume("{phys_vol}", 1) = {{1}};
         pts = self._gen_pts(ndam_m=ndam_m, bf_m=bf_m, pts=pts)
         if utils.rank0():
             self._gen_bbox_msh(pts)
-            # self._gen_stl_and_geo(pts)
-            # self._gen_msh_from_geo()
