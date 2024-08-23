@@ -33,10 +33,6 @@ variables:
   SPACK_PACKAGE: py-multiscale-run
   SPACK_PACKAGE_DEPENDENCIES: ^hdf5~cxx
 
-spack_setup:
-  variables:
-    SPACK_BRANCH: tristan/msr-on-github
-
 .tox-template:
   tags: [bb5_map]
   variables:
