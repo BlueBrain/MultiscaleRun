@@ -13,6 +13,8 @@ You can find below the internal documentation of the ``multiscale_run`` Python p
 .. toctree::
    :maxdepth: 2
 
+   bb5
+
    Python API Reference <modules>
 
    simulation_config

@@ -1,4 +1,4 @@
-# MultiscaleRun
+# MultiscaleRun [![PyPI version](https://badge.fury.io/py/multiscale-run.svg)](https://badge.fury.io/py/multiscale-run) [![Documentation Status](https://readthedocs.org/projects/multiscalerun/badge/?version=stable)](https://multiscalerun.readthedocs.io/stable/?badge=stable)
 
 MultiscaleRun is a Python package to run brain cells simulation at different scales.
 It orchestrates the coupling between several brain simulators like Neuron and
@@ -8,31 +8,17 @@ The package also embeds a Julia solver to simulate the astrocytes activity.
 The Python package includes a program called `multiscale-run` that lets you run
 and analyze multiscale simulations from start to finish.
 
-# How to load MultiscaleRun on BB5?
+# Dependencies
 
-MultiscaleRun is already installed on BB5 but first of all, allocate a compute node
-to save the load on the login nodes, for instance:
-```
-salloc -N 1 -A proj40 -p prod --exclusive --mem=0 -t 02:00:00 --cpus-per-task=2 --constraint=clx
-```
+This Python package requires Python 3.8 or higher.
 
-## As a module (recommended)
+# How to install MultiscaleRun?
+
+Apart from supercomputers where MultiscaleRun may be provided as a module, the general way to install MultiscaleRun is via the `pip` utility:
 
 ```
-module load unstable py-multiscale-run
+pip install multiscale-run
 ```
-
-## As a spack package
-
-```
-spack install py-multiscale-run@develop
-spack load py-multiscale-run
-```
-
-Using spack environments is recommended to work in an isolated environment with only the MultiscaleRun required spack packages.
-More info about [spack environments](https://github.com/BlueBrain/spack/blob/develop/bluebrain/documentation/installing_with_environments.md)
-
-> :rainbow: **This may also work on your spack-powered machine!**
 
 # How to use the MultiscaleRun executable?
 
@@ -109,11 +95,11 @@ multiscale-run edit-mod-files [/path/to/my-sim]
 The command `build_neurodamus.sh mod` may fail with the following error:
 ```
 => LINKING shared library ./libnrnmech.so
-/usr/bin/ld: /gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: unable to initialize decompress status for section .debug_info
-/usr/bin/ld: /gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: unable to initialize decompress status for section .debug_info
-/gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: file not recognized: File format not recognized
+/usr/bin/ld: /path/to/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: unable to initialize decompress status for section .debug_info
+/usr/bin/ld: /path/to/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: unable to initialize decompress status for section .debug_info
+/path/to/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/lib/libnrniv.so: file not recognized: File format not recognized
 icpx: error: linker command failed with exit code 1 (use -v to see invocation)
-make: *** [/gpfs/bbp.cscs.ch/ssd/apps/bsd/2024-02-01/stage_applications/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/bin/nrnmech_makefile:133: mech_lib_shared] Error 1
+make: *** [/path/to/install_oneapi-2023.2.0-skylake/neuron-9.0.a15-lrspl6/bin/nrnmech_makefile:133: mech_lib_shared] Error 1
 ```
 This happens because Neuron was built with Intel oneAPI compiler but the compiler is not available in the environment. Loading the proper module on BB5 may fix the issue `module load unstable  intel-oneapi-compilers`
 
