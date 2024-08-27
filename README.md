@@ -8,10 +8,6 @@ The package also embeds a Julia solver to simulate the astrocytes activity.
 The Python package includes a program called `multiscale-run` that lets you run
 and analyze multiscale simulations from start to finish.
 
-# Docs
-
-After installation, the general user documentation is available on the [Software Catalog](https://bbpteam.epfl.ch/documentation/projects/multiscale_run/latest/).
-
 # How to load MultiscaleRun on BB5?
 
 MultiscaleRun is already installed on BB5 but first of all, allocate a compute node
@@ -176,7 +172,7 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 #### Rework of the config object and the config file
 
 * The configuration file `msr_config.json` does not exist anymore. All the MultiscaleRun configurations have been merged into `simulation_config.json` in a new root section:`multiscale_run`. This is not yet SONATA. The configuration is in the same file but Neurodamus is not aware of it. [BBPP40-455].
-* The configuration has changed significantly from 0.6. The [documentation](https://bbpteam.epfl.ch/documentation/projects/multiscale_run) has now a dedicated page to explain how to use it.
+* The configuration has changed significantly from 0.6. The [documentation](https://multiscalerun.rtfd.io/) has now a dedicated page to explain how to use it.
 * All the `magic numbers` in metabolism have been moved to the configuration or eliminated. For this reason, simulation behavior changed. Currently, neurons develop an ATP deficiency that breaks the simulations after a certain amount of time. This requires studies that will be incorporated in a future release. 
 
 #### Rework of metabolism
@@ -194,7 +190,7 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
   
 #### Rework of the reporting
 
-* The reporting structure has been changed significantly (mostly simplified and improved). However, these changes are mostly under the hood except for the changes in the configuration file. Consider reading the appropriate section in the [documentation](https://bbpteam.epfl.ch/documentation/projects/multiscale_run) to know more MultiscaleRun reports.
+* The reporting structure has been changed significantly (mostly simplified and improved). However, these changes are mostly under the hood except for the changes in the configuration file. Consider reading the appropriate section in the [documentation](https://multiscalerun.rtfd.io/) to know more MultiscaleRun reports.
 
 ### Minor Changes
   

@@ -222,7 +222,6 @@ How to build the Sphinx documentation locally?
     --- a/tox.ini
     +++ b/tox.ini
     @@ -12,7 +13,7 @@ deps =
-         sphinxcontrib-programoutput
          sphinx-mdinclude
          mistune<3 # there is a conflict with nbconvert
     -commands = sphinx-build -W --keep-going docs docs/build/html
