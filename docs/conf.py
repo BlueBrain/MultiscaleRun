@@ -24,7 +24,6 @@ release = version
 extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
-    "sphinxcontrib.programoutput",
     "sphinx_mdinclude",
 ]
 

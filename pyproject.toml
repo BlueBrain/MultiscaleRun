@@ -66,13 +66,21 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+docs = [
+    "mistune<3",
+    "sphinx",
+    "sphinx-bluebrain-theme",
+    "sphinx-mdinclude",
+]
+
 [project.scripts]
 multiscale-run = "multiscale_run.cli:main"
 
 [project.urls]
-Homepage = "https://bbpgitlab.epfl.ch/molsys/multiscale_run"
-Source = "ssh://git@bbpgitlab.epfl.ch:molsys/multiscale_run.git"
-Tracker = "https://bbpteam.epfl.ch/project/issues/projects/BBPP40"
+Homepage = "https://multiscalerun.rtfd.io"
+Source = "https://github.com/BlueBrain/MultiscaleRun.git"
+Tracker = "https://github.com/BlueBrain/MultiscaleRun/issues"
 
 [tool.ruff]
 # Same as Black.
