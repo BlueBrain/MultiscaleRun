@@ -136,7 +136,13 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 
 # Changelog
 
-## 0.8.2 - 2024-??-??
+## 0.8.2 - 2024-08-27
+
+### Project governance
+
+* Open-source release on GitHub https://github.com/BlueBrain/MultiscaleRun
+* Publication of the documentation on https://multiscalerun.rtfd.io
+* Move some of the GitLab CI/CD tasks to GitHub workflows.
 
 ### Bugfixes
 
