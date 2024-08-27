@@ -73,6 +73,9 @@ docs = [
     "sphinx-bluebrain-theme",
     "sphinx-mdinclude",
 ]
+test = [
+    "pytest",
+]
 
 [project.scripts]
 multiscale-run = "multiscale_run.cli:main"
