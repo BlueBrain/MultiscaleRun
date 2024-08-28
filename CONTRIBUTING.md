@@ -74,7 +74,7 @@ When you wish to contribute to the code base, please consider the following guid
 
        ```shell
         git rebase master -i
-        git push -f
+        git push --force-with-lease
        ```
 
 That’s it! Thank you for your contribution!
