@@ -31,7 +31,7 @@ stages:
 
 variables:
   SPACK_PACKAGE: py-multiscale-run
-  SPACK_PACKAGE_DEPENDENCIES: ^hdf5~cxx
+  SPACK_PACKAGE_DEPENDENCIES: ^hdf5~cxx ^neurodamus-models@git.sofia/bugfix_nakpump
 
 .tox-template:
   tags: [bb5_map]
