@@ -1,6 +1,7 @@
 {
     "multiscale_run": {
         "with_metabolism": true,
+        "with_bloodflow": true,
         "foo_path": "RESULTS",
         "a": 1,
         "c": 1,
@@ -22,6 +23,9 @@
         "metabolism": {
             "ndts": 10
         },
+        "bloodflow": {
+            "ndts": 4000
+        },
         "reports": {
             "metabolism": {
                 "metab_ina": {
@@ -29,6 +33,15 @@
                     "src_get_kwargs": {"idx": 1},  
                     "unit": "foo3",
                     "file_name": "test_reporter.h5",
+                    "when": "after_sync"
+                }
+            },
+            "bloodflow": {
+                "bf_flow": {
+                    "src_get_func": "get_flows",
+                    "src_get_kwargs": {"idxs": [0, 2, 5]},  
+                    "unit": "foo3",
+                    "file_name": "test_bf_flows.h5",
                     "when": "after_sync"
                 }
             }

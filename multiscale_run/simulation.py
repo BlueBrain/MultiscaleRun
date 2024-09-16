@@ -96,10 +96,6 @@ class MsrSimulation:
             logging.info(self.conf.dt_info())
 
             logging.info("Initializing simulations...")
-            self.rep = reporter.MsrReporter(
-                config=self.conf, gids=self.neurodamus_manager.gids
-            )
-
             self.conn_m.connect_neurodamus2neurodamus()
 
             self.managers["bloodflow"] = None
@@ -142,6 +138,14 @@ class MsrSimulation:
             if self.conf.is_bloodflow_active():
                 self.managers["bloodflow"].update_static_flow()
 
+            self.rep = reporter.MsrReporter(
+                config=self.conf,
+                gids=self.neurodamus_manager.gids,
+                n_bf_segs=self.managers["bloodflow"].n_segs
+                if self.conf.is_bloodflow_active()
+                else 0,
+            )
+
             # apply all the connections for initialization
             self.rep.record(
                 idt=0,
@@ -160,6 +164,12 @@ class MsrSimulation:
             self.rep.record(
                 idt=0,
                 manager_name="metabolism",
+                managers=self.managers,
+                when="after_sync",
+            )
+            self.rep.record(
+                idt=0,
+                manager_name="bloodflow",
                 managers=self.managers,
                 when="after_sync",
             )
@@ -242,6 +252,12 @@ class MsrSimulation:
                     self.rep.record(
                         idt=i_metab,
                         manager_name="metabolism",
+                        managers=self.managers,
+                        when="after_sync",
+                    )
+                    self.rep.record(
+                        idt=i_metab,
+                        manager_name="bloodflow",
                         managers=self.managers,
                         when="after_sync",
                     )

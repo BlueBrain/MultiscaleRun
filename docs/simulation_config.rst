@@ -286,9 +286,11 @@ Parameters to report the simulation outcome. Currently, MultiscaleRun reports in
             }
     }
 
-- **src_get_func**: String. Getter function for the simulator (in this case, `metabolism`).
+- **src_get_func**: String. Getter function for the simulator. Options: [`metabolism`, `bloodflow`].
 - **src_get_kwargs**: Dict. Inputs for the getter function.
 - **unit**: String. Units of the values in the report.
 - **file_name**: String. Name of the file.
 - **when**: String. Since multiple simulators are active at the same time and `sync` calls may modify the values of the simulators the report may take the values just before or just after the `sync` operation. This value selects that. Possible values: `after_sync`, `before_sync`. Multiple reports (with different file names) for reporting just before and after `sync` are possible.
+
+`bloodflow` reports are vasculature-segment-based. The section has the same structure as for `metabolism` apart from the content of `src_get_kwargs`. If you leave it empty the report will give the results for all the segments. Otherwise, you can specify a subset of them adding an `idxs` array of their indexes.
 

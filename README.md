@@ -122,6 +122,9 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 
 # Changelog
 
+* Remove upload gitlab logs as the CI logs are used only internally.
+* New vasculature-segment-based reports are available now. Postproc and docs have been updated as well to address these new functionalities.
+
 ## 0.8.2 - 2024-08-27
 
 ### Project governance
