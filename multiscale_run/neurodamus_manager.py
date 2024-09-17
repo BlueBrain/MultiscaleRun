@@ -40,10 +40,11 @@ class MsrNeurodamusManager:
         }
         self.removed_gids = {}
 
-    @property
-    def gids(self):
+    def gids(self, raw=False):
         """Convenience function to get the gids from ncs"""
-        return [int(nc.CCell.gid) for nc in self.ncs]
+        if raw:
+            return [nc.raw_gid for nc in self.ncs]
+        return [nc.gid for nc in self.ncs]
 
     def set_managers(self):
         """Find useful node managers for neurons, astrocytes, and glio-vascular management.

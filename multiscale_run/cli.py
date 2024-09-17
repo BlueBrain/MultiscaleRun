@@ -671,10 +671,11 @@ def main(**kwargs):
     logging.basicConfig(level=log_level)
 
     if callback := args.pop("func", None):
+        callback(**args)
         try:
             callback(**args)
         except Exception as e:
-            LOGGER.error(str(e))
+            LOGGER.error(str(e), exc_info=True)
             if size() > 1:
                 comm().Abort(errorcode=1)
             else:

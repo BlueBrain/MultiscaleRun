@@ -3,7 +3,7 @@ import logging
 
 import numpy as np
 import pandas as pd
-from bluepysnap import Circuit
+import libsonata
 
 from . import config, utils
 
@@ -39,7 +39,7 @@ class MsrMetabolismManager:
         "exclude_neuron": MsrExcludeNeuronException,
     }
 
-    def __init__(self, config, main, neuron_pop_name: str, gids: list[int]):
+    def __init__(self, config, main, neuron_pop_name: str, raw_gids: list[int]):
         """Initialize the MsrMetabolismManager.
 
         Args:
@@ -54,10 +54,10 @@ class MsrMetabolismManager:
         self.vm = None  # read/write values for metab
         self.parameters = None  # read values for metab
         self.tspan_m = (-1, -1)
-        self.neuro_df = Circuit(
+        self.neuron_node_pop = libsonata.CircuitConfig.from_file(
             str(self.config.config_path.parent / self.config.network)
-        ).nodes[neuron_pop_name]
-        self.reset(gids)
+        ).node_population(neuron_pop_name)
+        self.reset(raw_gids)
 
     def get_error(self, key: str):
         try:
@@ -164,7 +164,7 @@ class MsrMetabolismManager:
             self.model, self.vm[igid, :], tspan_m, self.parameters[igid, :]
         )
         try:
-            logging.info("   solve ODE problem")
+            logging.info(f"   solve ODE problem {igid}/{self.ngids}")
             sol = de.solve(
                 prob,
                 de.Rosenbrock23(autodiff=False),
@@ -199,13 +199,13 @@ class MsrMetabolismManager:
 
             self._advance_gid(igid=igid, i_metab=i_metab, failed_cells=failed_cells)
 
-    def _get_GLY_a_and_mito_vol_frac(self, c_gid: int):
+    def _get_GLY_a_and_mito_vol_frac(self, raw_gid: int):
         """Get glycogen (GLY_a) and mitochondrial volume fraction.
 
         This method calculates glycogen (GLY_a) and mitochondrial volume fraction for a given neuron based on its layer.
 
         Args:
-            c_gid: The Global ID of the neuron.
+            raw_gid: 1-based raw gid (no offsets). GID: The Global ID of the neuron.
 
         Returns:
             a tuple (glycogen, mito_volume_fraction) where glycogen is
@@ -214,8 +214,8 @@ class MsrMetabolismManager:
         """
         # idx: layers are 1-based while python vectors are 0-based
         # c_gid: ndam is 1-based while libsonata and bluepysnap are 0-based
-        idx = self.neuro_df.get(c_gid - 1).layer - 1
 
+        idx = int(self.neuron_node_pop.get_attribute("layer", raw_gid - 1)) - 1
         glycogen_au = np.array(
             self.config.multiscale_run.metabolism.constants.glycogen_au
         )
@@ -232,11 +232,11 @@ class MsrMetabolismManager:
         )
 
     @utils.logs_decorator
-    def reset(self, gids: list[int]):
+    def reset(self, raw_gids: list[int]):
         """Reset the parameters and initial conditions for metabolic simulation.
 
         Args:
-            gids: List of cells to reset.
+            raw_gids: List of cells to reset without offset.
 
         Returns:
             None
@@ -244,16 +244,18 @@ class MsrMetabolismManager:
         metab_conf = self.config.multiscale_run.metabolism
         mito_scale_idx = MsrMetabolismParam.mito_scale.value
 
-        ngids = len(gids)
+        ngids = len(raw_gids)
         self.vm = np.tile(
             pd.read_csv(metab_conf.u0_path, sep=",", header=None)[0].tolist(),
             (ngids, 1),
         )
+
         self.parameters = np.tile(metab_conf.parameters, (ngids, 1))
 
         # TODO this may be made more general. Atm it has low priority.
+
         self.parameters[:, mito_scale_idx] = [
-            self._get_GLY_a_and_mito_vol_frac(c_gid)[1] for c_gid in gids
+            self._get_GLY_a_and_mito_vol_frac(c_gid)[1] for c_gid in raw_gids
         ]
 
     def _check_input_for_currently_valid_gids(
