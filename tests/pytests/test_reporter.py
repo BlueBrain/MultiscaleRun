@@ -38,7 +38,21 @@ class FakeMetabolismManager:
         return self.vals[:, idx]
 
 
-def test_simple_report():
+class FakeBloodflowManager:
+    def __init__(self):
+        self.vals = np.array(list(range(10)))
+
+    @property
+    def n_segs(self):
+        return len(self.vals)
+
+    def get_flows(self, idxs=None):
+        if idxs is not None:
+            return self.vals[idxs]
+        return self.vals
+
+
+def test_simple_reports():
     conf = MsrConfig(config_path())
     folder_path = conf.config_path.parent / conf.output.output_dir
 
@@ -48,15 +62,18 @@ def test_simple_report():
     idt = 1
     managers = {}
     managers["neurodamus"] = FakeNeurodamusManager()
+    managers["bloodflow"] = FakeBloodflowManager()
     gids = managers["neurodamus"].gids
     offset = managers["neurodamus"].offset
+    n_bf_segs = managers["bloodflow"].n_segs
     managers["metabolism"] = FakeMetabolismManager(gids=gids)
 
     t_unit = "mss"
 
-    rr = MsrReporter(config=conf, gids=gids, t_unit=t_unit)
+    rr = MsrReporter(config=conf, gids=gids, n_bf_segs=n_bf_segs, t_unit=t_unit)
 
     rr.record(idt=idt, manager_name="metabolism", managers=managers, when="after_sync")
+    rr.record(idt=idt, manager_name="bloodflow", managers=managers, when="after_sync")
     utils.comm().Barrier()
 
     for rep in conf.multiscale_run.reports.metabolism.values():
@@ -77,8 +94,28 @@ def test_simple_report():
             assert np.allclose(data, [0, conf.run.tstop, conf.metabolism_dt])
             assert data.attrs["units"] == t_unit
 
+    if utils.rank0:
+        for rep in conf.multiscale_run.reports.bloodflow.values():
+            path = rr._file_path(rep.file_name)
+            with h5py.File(path, "r") as file:
+                data = file[f"{rr.data_loc}/data"]
+                assert np.allclose(
+                    data[idt, :],
+                    managers["bloodflow"].get_flows(**rep.src_get_kwargs),
+                )
+                assert np.allclose(
+                    data[idt - 1, :],
+                    [0] * len(rep.src_get_kwargs.idxs),
+                )
+                assert data.attrs["units"] == rep.unit
+                data = file[f"/report/{pop_name}/mapping/node_ids"]
+                assert np.allclose(data, rep.src_get_kwargs.idxs)
+                data = file[f"/report/{pop_name}/mapping/time"]
+                assert np.allclose(data, [0, conf.run.tstop, conf.metabolism_dt])
+                assert data.attrs["units"] == t_unit
+
     utils.remove_path(folder_path)
 
 
 if __name__ == "__main__":
-    test_simple_report()
+    test_simple_reports()

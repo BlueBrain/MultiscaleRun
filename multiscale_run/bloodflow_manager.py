@@ -45,6 +45,11 @@ class MsrBloodflowManager:
         self.get_entry_nodes()
         self.get_boundary_flows()
 
+    @property
+    def n_segs(self):
+        """Convenience function to return the number of segments"""
+        return len(self.graph.edge_properties.volume) if self.graph else 0
+
     @utils.logs_decorator
     def get_seg_points(self, scale):
         """Get a series disjoint segments described by the extreme points
@@ -72,14 +77,22 @@ class MsrBloodflowManager:
 
         return self.seg_points * scale
 
-    def get_flows(self):
+    def get_flows(self, idxs: list = None):
         """Get the flow in each vasculature segment.
 
         This method retrieves the blood flow values associated with each vasculature segment in the loaded vasculature graph.
 
-        Returns
-            numpy.ndarray: An array containing the flow values for each vasculature segment.
+        Args:
+            idxs (list, optional): A list of indices to select specific segments from the flow array.
+                                    If not provided, the full array is returned.
+
+        Returns:
+            numpy.ndarray: An array containing the flow values for each vasculature segment,
+            or a selection based on the provided indices.
         """
+        if idxs is not None:
+            return self.graph.edge_properties["flow"].iloc[idxs].to_numpy()
+
         return self.graph.edge_properties["flow"].to_numpy()
 
     def get_vols(self):

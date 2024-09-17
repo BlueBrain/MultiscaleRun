@@ -192,8 +192,8 @@ where `2024-04-22` is the name of the folder.
   .. code-block:: console
 
     cd 2024-04-22
-    ln -s julia .julia
-    ln -s julia_environment .julia_environment
+    ln -s .julia julia
+    ln -s .julia_environment julia_environment
 
 6. Finally, link `latest` to this new folder (in `/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/julia-environment`):
 

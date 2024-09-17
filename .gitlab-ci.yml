@@ -3,8 +3,6 @@ include:
     file:
     - github-project-pipelines.gitlab-ci.yml
     - spack-build.gitlab-ci.yml
-  - project: hpc/gitlab-upload-logs
-    file: enable-upload.yml
   - project: nse/ci
     file:
     - ci/lib/tox-bb5.yml
