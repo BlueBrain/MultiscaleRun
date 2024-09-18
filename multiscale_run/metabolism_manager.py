@@ -1,9 +1,9 @@
 import enum
 import logging
 
+import libsonata
 import numpy as np
 import pandas as pd
-import libsonata
 
 from . import config, utils
 
