@@ -6,7 +6,7 @@ from multiscale_run import config, metabolism_manager
 def test_metabolism():
     conf = config.MsrConfig.default()
     metabolism_manager.MsrMetabolismManager(
-        config=conf, main=Main, neuron_pop_name="All", gids=[]
+        config=conf, main=Main, neuron_pop_name="neocortex_neurons", raw_gids=[]
     )
 
 

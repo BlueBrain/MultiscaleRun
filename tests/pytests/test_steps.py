@@ -64,7 +64,7 @@ def test_steps_with_minimesh(tmp_path):
     """To be used manually with multiple ranks to see if omega_h complains"""
 
     conf = MsrConfig.default(circuit="tiny_CI", check=False, force=True)
-    conf.multiscale_run.mesh_path = tmp_path / MESH_FILE
+    conf.multiscale_run.mesh_path = Path(tmp_path) / MESH_FILE
     conf.multiscale_run.preprocessor.mesh.refinement_steps = 0
     conf.cache_load = False
     conf.cache_save = False
@@ -75,5 +75,8 @@ def test_steps_with_minimesh(tmp_path):
 
 
 if __name__ == "__main__":
-    test_steps_with_minimesh()
-    test_steps_connections_mats()
+    tmp_path = "./tmp"
+    test_steps_with_minimesh(tmp_path)
+    utils.remove_path(tmp_path)
+    test_steps_connections_mats(tmp_path)
+    utils.remove_path(tmp_path)

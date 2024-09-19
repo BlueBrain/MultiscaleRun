@@ -1,4 +1,4 @@
-from multiscale_run import MsrConfig, MsrNeurodamusManager
+from multiscale_run import MsrConfig, MsrNeurodamusManager, utils
 
 
 def test_init(tmp_path):
@@ -7,4 +7,6 @@ def test_init(tmp_path):
 
 
 if __name__ == "__main__":
-    test_init()
+    tmp_path = "./tmp"
+    test_init(tmp_path)
+    utils.remove_path(tmp_path)
