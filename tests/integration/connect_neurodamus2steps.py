@@ -88,7 +88,7 @@ def test_connection():
     It also checks various conditions using the 'check_ratio_mat' and 'check_mats_shape' functions.
 
     """
-    conf = MsrConfig.default(circuit="rat_sscxS1HL_V6", check=False, force=True)
+    conf = MsrConfig.default(circuit="tiny_CI", check=False, force=True)
 
     prep = MsrPreprocessor(conf)
     managers = {}

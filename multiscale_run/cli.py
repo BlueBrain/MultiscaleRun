@@ -671,7 +671,6 @@ def main(**kwargs):
     logging.basicConfig(level=log_level)
 
     if callback := args.pop("func", None):
-        callback(**args)
         try:
             callback(**args)
         except Exception as e:
