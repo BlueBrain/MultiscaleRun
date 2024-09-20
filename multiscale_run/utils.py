@@ -475,7 +475,7 @@ def replace_values(obj: dict | list | str, replacements: dict):
         return obj  # In case obj is neither str, list, nor dict, return it as is
 
 
-def get_dict_from_json(path) -> dict:
+def load_json(path, base_subs_d=None) -> dict:
     """Convenience function to load json files.
 
     Args:
@@ -486,7 +486,10 @@ def get_dict_from_json(path) -> dict:
     """
     logging.info(f"reading: {str(path)}")
     with open(str(path), "r") as json_file:
-        return json.load(json_file)
+        ans = json.load(json_file)
+
+    resolve_replaces(ans, base_subs_d=base_subs_d)
+    return ans
 
 
 def heavy_duty_MPI_Gather(v: np.ndarray, root=0):

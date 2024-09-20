@@ -236,15 +236,9 @@ class MsrConfig(dict):
         resolves relative paths.
 
         """
-        with open(self.config_path) as istr:
-            d = json.load(istr)
-        if "multiscale_run" not in d:
-            raise MsrConfigException(
-                f"Missing top-level 'multiscale_run' attribute in config file: '{self.config_path}'"
-            )
-
-        d.setdefault("multiscale_run", {})["pkg_data_path"] = str(DATA_DIR)
-        utils.resolve_replaces(d)
+        d = utils.load_json(
+            self.config_path, base_subs_d={"pkg_data_path": str(DATA_DIR)}
+        )
         self.update(MsrConfig._objectify_config(None, d))
 
         # get msr_dts and fix dts

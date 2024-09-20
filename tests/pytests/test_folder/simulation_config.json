@@ -8,8 +8,8 @@
         "q": 1,
         "d": {
             "q": 0,
-            "miao_path": "${bau_path}/${foo_path}/hola",
-            "bau_path": "${foo_path}/bbb"
+            "miao_path": "$bau_path/${foo_path}/hola",
+            "bau_path": "$foo_path/bbb"
         },
         "includes": [
             "${foo_path}/a",
