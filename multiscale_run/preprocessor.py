@@ -3,9 +3,10 @@ import logging
 from pathlib import Path
 
 import gmsh
-import numpy as np
-import trimesh
 import libsonata
+import numpy as np
+import pandas as pd
+import trimesh
 
 from . import utils
 
@@ -80,14 +81,18 @@ class MsrPreprocessor:
 
         # Generate the node_sets.json
         template = {
-            "testNGVSSCX_AstroMini": ["testNGVSSCX", "Astrocytes"],
-            "src_cells": {"population": "All", "node_id": None},
-            "testNGVSSCX": {"population": "All", "node_id": None},
-            "Astrocytes": {"population": "astrocytes", "node_id": None},
+            "All": ["Neurons", "Astrocytes"],
+            "Neurons": {
+                "population": self.config.multiscale_run.preprocessor.node_sets.neuron_population_name,
+                "node_id": None,
+            },
+            "Astrocytes": {
+                "population": self.config.multiscale_run.preprocessor.node_sets.astrocyte_population_name,
+                "node_id": None,
+            },
         }
 
-        template["src_cells"]["node_id"] = self.selected_neurons.tolist()
-        template["testNGVSSCX"]["node_id"] = self.selected_neurons.tolist()
+        template["Neurons"]["node_id"] = self.selected_neurons.tolist()
         template["Astrocytes"]["node_id"] = self.selected_astrocytes.tolist()
 
         with open(output_filename, "w") as fout:
@@ -121,7 +126,9 @@ class MsrPreprocessor:
             self.config.multiscale_run.preprocessor.node_sets.neuron_population_name
         )
 
-        circuit_config = libsonata.CircuitConfig.from_file(circuit_path)
+        circuit_config = libsonata.CircuitConfig.from_file(
+            str(self.config.config_path.parent / self.config.network)
+        )
         gliovascular = circuit_config.edge_population("gliovascular")
         edges_ids = np.arange(gliovascular.size, dtype=np.uint64)
 
@@ -129,10 +136,9 @@ class MsrPreprocessor:
         endfoot = gliovascular.get_attribute("endfoot_compartment_length", selection)
         targetnode = gliovascular.target_nodes(selection)
         # Convert lists to DataFrame
-        df_combined = pd.DataFrame({
-            '@target_node': targetnode,
-            'endfoot_compartment_length': endfoot
-        })
+        df_combined = pd.DataFrame(
+            {"@target_node": targetnode, "endfoot_compartment_length": endfoot}
+        )
 
         filtered_df = df_combined[df_combined.endfoot_compartment_length > 0]
         selected_astrocytes = filtered_df["@target_node"].unique()
@@ -145,34 +151,36 @@ class MsrPreprocessor:
             # Get the neuroglial edge population
             neuroglial = circuit_config.edge_population("neuroglial")
             # Create a selection of all edges
-            all_edges = libsonata.Selection(np.arange(neuroglial.size, dtype=np.uint16))    
+            all_edges = libsonata.Selection(np.arange(neuroglial.size, dtype=np.uint16))
             # Get source and target nodes
             source_nodes = neuroglial.source_nodes(all_edges)
             target_nodes = neuroglial.target_nodes(all_edges)
-            
+
             # Create a mask for selected astrocytes
             astrocyte_mask = np.isin(source_nodes, selected_astrocytes)
-            
+
             # Get unique target nodes (neurons) connected to selected astrocytes
             selected_neurons = np.unique(target_nodes[astrocyte_mask])
-            
+
             # Create a selection for the selected neurons
             neuron_selection = libsonata.Selection(selected_neurons)
-            
+
             # Get the node population
             node_population = circuit_config.node_population(pop_name)
-            
+
             # Get attributes for selected neurons
             attributes = sorted(node_population.attribute_names)
-            neuro_df = {'node_ids': neuron_selection.flatten()}
+            neuro_df = {"node_ids": neuron_selection.flatten()}
             for attr in attributes:
                 neuro_df[attr] = node_population.get_attribute(attr, neuron_selection)
-            
+
             # Get dynamics attributes for selected neurons
             dynamics_attributes = sorted(node_population.dynamics_attribute_names)
             for attr in dynamics_attributes:
-                neuro_df[f"@dynamics:{attr}"] = node_population.get_dynamics_attribute(attr, neuron_selection)
-            
+                neuro_df[f"@dynamics:{attr}"] = node_population.get_dynamics_attribute(
+                    attr, neuron_selection
+                )
+
             # Convert to pandas DataFrame if needed
             neuro_df = pd.DataFrame(neuro_df)
 
@@ -180,13 +188,13 @@ class MsrPreprocessor:
             node_ids_population = circuit_config.node_population(pop_name)
             selected_neurons = np.arange(node_ids_population.size, dtype=np.uint16)
             sorted_attr_names = sorted(node_ids_population.attribute_names)
-            sorted_dynamic_attr_names = sorted(node_ids_population.dynamics_attribute_names)
-            # Combine sorted_attr_names and sorted_dynamic_attr_names
-            all_sorted_attr_names = sorted_attr_names + [f"@dynamics:{attr}" for attr in sorted_dynamic_attr_names]
+            sorted_dynamic_attr_names = sorted(
+                node_ids_population.dynamics_attribute_names
+            )
 
             node_selection = libsonata.Selection(values=selected_neurons)
             node_ids = node_selection.flatten()
-            data = {'node_ids': node_ids}
+            data = {"node_ids": node_ids}
 
             # Add regular attributes
             for attr in sorted_attr_names:
@@ -194,7 +202,9 @@ class MsrPreprocessor:
 
             # Add dynamics attributes
             for attr in sorted_dynamic_attr_names:
-                data[f"@dynamics:{attr}"] = node_ids_population.get_dynamics_attribute(attr, node_selection)
+                data[f"@dynamics:{attr}"] = node_ids_population.get_dynamics_attribute(
+                    attr, node_selection
+                )
 
             # Create the DataFrame
             neuro_df = pd.DataFrame(data)
@@ -202,7 +212,7 @@ class MsrPreprocessor:
         logging.info(f"There are {selected_neurons.size} selected neurons")
 
         neuro_df = neuro_df.rename(columns={"population": "population_name"})
-        neuro_df= neuro_df.reset_index(drop=False)
+        neuro_df = neuro_df.reset_index(drop=False)
 
         self.neuro_df = neuro_df
         self.selected_neurons = selected_neurons

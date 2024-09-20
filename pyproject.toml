@@ -48,7 +48,6 @@ classifiers = [
 ]
 dependencies = [
     "astrovascpy>=0.1.5",
-    "bluepysnap>=2",
     "diffeqpy>=1.1",
     "gmsh>=4.2",
     "jinja2>=3",

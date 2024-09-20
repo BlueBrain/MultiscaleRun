@@ -19,7 +19,8 @@
             },
             "node_sets": {
                 "filter_neuron": false,
-                "neuron_population_name": "All"
+                "neuron_population_name": "neocortex_neurons",
+                "astrocyte_population_name": "astrocytes"
             }
         },
         "connections": {

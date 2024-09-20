@@ -116,6 +116,7 @@ class MsrSimulation:
                     bf_m=self.managers["bloodflow"],
                 )
                 self.prep.check_mesh()
+                exit()
                 self.managers["steps"] = steps_manager.MsrStepsManager(config=self.conf)
                 self.managers["steps"].init_sim()
                 self.conn_m.connect_neurodamus2steps()
