@@ -365,14 +365,12 @@ class MsrStepsManager:
             # flatten
             st = [i for r in starting_tets for i in r]
 
-
         if not np.allclose(
             mat.transpose().dot(np.ones(mat.shape[0])), np.ones(mat.shape[1])
         ):
             raise utils.MsrException(
                 "steps failed to find some intersections. There is likely a bug in steps. Please report this to the maintainers"
             )
-
 
         return mat, st
 

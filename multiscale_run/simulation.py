@@ -30,14 +30,12 @@ class MsrSimulation:
     def main(self):
         self.compute()
 
-
     @staticmethod
     def stats():
         """Get some stats from a simulation"""
         from multiscale_run import neurodamus_manager
 
         neurodamus_manager.MsrNeurodamusManager.stats()
-
 
     @_run_once
     def warmup(self):

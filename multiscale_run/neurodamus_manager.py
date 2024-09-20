@@ -1,11 +1,9 @@
 import logging
 
-from collection import Counter
-
 import libsonata
-
 import neurodamus
 import numpy as np
+from collection import Counter
 from scipy import sparse
 
 from . import utils
@@ -432,7 +430,6 @@ class MsrNeurodamusManager:
         assert len(vasc_ids) == len(radii), f"{len(vasc_ids)} == {len(radii)}"
 
         return vasc_ids, radii
-
 
     @staticmethod
     def stats():
