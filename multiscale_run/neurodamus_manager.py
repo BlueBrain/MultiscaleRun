@@ -1,9 +1,9 @@
 import logging
+from collections import Counter
 
 import libsonata
 import neurodamus
 import numpy as np
-from collection import Counter
 from scipy import sparse
 
 from . import utils
