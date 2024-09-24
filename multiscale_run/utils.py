@@ -579,7 +579,28 @@ def get_subs_d(d: dict) -> dict:
     Returns:
     dict: A new dictionary containing only string key-value pairs.
     """
-    ans = {k: v for k, v in d.items() if isinstance(k, str) and isinstance(v, str)}
+
+    ans = (
+        {
+            k[2:-1]: v
+            for k, v in d.items()
+            if isinstance(k, str) and isinstance(v, str) and re.match(r"\$\{(.*?)\}", k)
+        }
+        | {
+            k[1:]: v
+            for k, v in d.items()
+            if isinstance(k, str) and isinstance(v, str) and re.match(r"\$(\w+)", k)
+        }
+        | {
+            k: v
+            for k, v in d.items()
+            if isinstance(k, str)
+            and isinstance(v, str)
+            and not re.match(r"\$(\w+)", k)
+            and not re.match(r"\$\{(.*?)\}", k)
+        }
+    )
+
     for k, v in d.items():
         if isinstance(k, str) and isinstance(v, dict):
             ans.update(get_subs_d(v))
@@ -601,10 +622,15 @@ def get_resolved_value(d: dict, key: str, in_place: bool = False):
       str: The resolved value associated with the specified key.
     """
     v = d[key]
-    tokens = set(re.findall(r"\${(.*?)}", v))
-    if not len(tokens):
+    tokens1 = set(re.findall(r"\$\{(.*?)\}", v))
+    for token in tokens1:
+        v = v.replace(f"${{{token}}}", get_resolved_value(d, token, in_place))
+    tokens2 = set(re.findall(r"\$(\w+)", v))
+    for token in tokens2:
+        v = v.replace(f"${token}", get_resolved_value(d, token, in_place))
+
+    if len(tokens1) + len(tokens2) == 0:
         return v
-    for token in tokens:
         v = v.replace(f"${{{token}}}", get_resolved_value(d, token, in_place))
     if in_place:
         d[key] = v
@@ -635,9 +661,15 @@ def resolve_replaces(d: dict, base_subs_d: dict = None) -> None:
 
     def _rep(obj, subs_d):
         if isinstance(obj, str):
-            tokens = set(re.findall(r"\${(.*?)}", obj))
+            tokens = set(re.findall(r"\$\{(.*?)\}", obj))
             for token in tokens:
-                obj = obj.replace(f"${{{token}}}", subs_d[token])
+                if token in subs_d:
+                    obj = obj.replace(f"${{{token}}}", subs_d[token])
+
+            tokens = set(re.findall(r"\$(\w+)", obj))
+            for token in tokens:
+                if token in subs_d:
+                    obj = obj.replace(f"${token}", subs_d[token])
 
         if isinstance(obj, list):
             for idx, item in enumerate(obj):
