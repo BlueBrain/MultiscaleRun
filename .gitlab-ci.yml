@@ -62,7 +62,7 @@ pytest:
 
 .nrun:
   extends: .spack_test
-  timeout: 1 hour
+  timeout: 4 hours
   artifacts:
     when: always
     paths:
