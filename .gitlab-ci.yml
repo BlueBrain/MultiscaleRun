@@ -71,7 +71,7 @@ pytest:
   variables:
     bb5_memory: 32G
     bb5_ntasks: 4
-    bb5_duration: "01:00:00"
+    bb5_duration: "04:00:00"
     circuit: "rat_sscxS1HL_V10_CI"
   script:
   - spack ${SPACK_EXTRA_FLAGS} load /${SPACK_INSTALLED_HASH}
