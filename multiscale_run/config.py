@@ -66,6 +66,14 @@ NAMED_CIRCUITS = {
             time="10:00:00",
         ),
     ),
+    "tiny_CI": NamedCircuit(
+        path=CONFIG_DIR / "tiny_CI",
+        sbatch_parameters=dict(
+            job_name="msr_tiny_CI",
+            nodes=1,
+            time="01:00:00",
+        ),
+    ),
     "rat_sscxS1HL_V10_CI": NamedCircuit(
         path=CONFIG_DIR / "rat_sscxS1HL_V10",
         sbatch_parameters=dict(
@@ -83,7 +91,7 @@ NAMED_CIRCUITS = {
     ),
 }
 
-DEFAULT_CIRCUIT = "rat_sscxS1HL_V10_CI"
+DEFAULT_CIRCUIT = "tiny_CI"
 
 
 class MsrConfigException(Exception):

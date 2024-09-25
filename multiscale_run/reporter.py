@@ -127,7 +127,7 @@ class MsrReporter:
                     )
                 else:
                     idxs = np.array(
-                        [self.gid2pos[gid] for gid in managers["neurodamus"].gids]
+                        [self.gid2pos[gid] for gid in managers["neurodamus"].gids()]
                     )
                 path = self._file_path(rep.file_name)
                 if manager_name == "bloodflow":

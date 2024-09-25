@@ -51,6 +51,7 @@ Preprocessor
 
   - **filter_neuron**: Boolean. Determines if the neurons connected to astrocytes must be filtered out when generating the mesh.
   - **neuron_population_name**: String. Name of the neuron population to use. Typically: "All".
+  - **astrocyte_population_name**: String. Name of the astrocyte population to use. Typically: "astrocytes".
 
 Connections among simulators
 ============================

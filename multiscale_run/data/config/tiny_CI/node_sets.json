@@ -1,0 +1,59 @@
+{
+  "All": [
+        "Neurons",
+        "Astrocytes"
+  ],
+  "Neurons": {
+    "population": "neocortex_neurons"
+  },
+  "Astrocytes": {
+    "population": "astrocytes"
+  },
+  "Excitatory": {
+    "synapse_class": "EXC"
+  },
+  "Inhibitory": {
+    "synapse_class": "INH"
+  },
+  "L23_MC": {
+    "mtype": "L23_MC"
+  },
+  "L5_TPC:A": {
+    "mtype": "L5_TPC:A"
+  },
+  "bAC": {
+    "etype": "bAC"
+  },
+  "bNAC": {
+    "etype": "bNAC"
+  },
+  "cADpyr": {
+    "etype": "cADpyr"
+  },
+  "L3": {
+    "region": "L3"
+  },
+  "L5": {
+    "region": "L5"
+  },
+  "L3_MC": {
+    "mtype": "L23_MC",
+    "region": {
+      "$regex": ".*3"
+    }
+  },
+  "L5_CUSTOM": {
+    "layer": "5"
+  },
+  "L5_TPC": {
+    "mtype": [
+      "L5_TPC:A"
+    ]
+  },
+  "left": {
+    "mtype": "L5_TPC:A"
+  },
+  "right": {
+    "mtype": "L23_MC"
+  }
+}

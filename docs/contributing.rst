@@ -146,6 +146,7 @@ MultiscaleRun relies on ``setuptools-scm`` utility to infer the Python package v
 
   * ``multiscale_run/data/config/rat_sscxS1HL_V6/simulation_config.json``
   * ``multiscale_run/data/config/rat_sscxS1HL_V10/simulation_config.json``
+  * ``multiscale_run/data/config/tiny_CI/simulation_config.json``
 
 2. Ensure the Sphinx documentation is up-to-date. The fastest way is to check the artifacts of the ``docs`` stage in the CI.
 3. Ensure the *Releases Notes* section is completed for this version.

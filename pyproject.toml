@@ -13,6 +13,7 @@ packages = [
     "multiscale_run.data.config",
     "multiscale_run.data.config.rat_sscxS1HL_V10",
     "multiscale_run.data.config.rat_sscxS1HL_V6",
+    "multiscale_run.data.config.tiny_CI",
     "multiscale_run.data.metabolismndam_reduced",
 ]
 
@@ -48,7 +49,6 @@ classifiers = [
 ]
 dependencies = [
     "astrovascpy>=0.1.5",
-    "bluepysnap>=2",
     "diffeqpy>=1.1",
     "gmsh>=4.2",
     "jinja2>=3",

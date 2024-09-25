@@ -73,7 +73,7 @@ def test_valid_commands(tmp_path):
         ap.parse_args(["init", "--force", path])
         ap.parse_args(["init", "--julia", "no", path])
         ap.parse_args(["init", "--julia=no", path])
-        ap.parse_args(["init", "--circuit=rat_sscxS1HL_V6", path])
+        ap.parse_args(["init", "--circuit=tiny_CI", path])
 
         ap.parse_args(["check", path])
         ap.parse_args(["compute", path])

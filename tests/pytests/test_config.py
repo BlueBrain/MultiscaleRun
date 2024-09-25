@@ -15,7 +15,7 @@ TEST_CONFIG = CWD / "test_folder" / "simulation_config.json"
 
 def test_named_circuit():
     conf = MsrConfig.default()
-    assert conf.node_set == "testNGVSSCX_AstroMini_CI"
+    assert conf.node_set == "All"
 
 
 def test_getattr():

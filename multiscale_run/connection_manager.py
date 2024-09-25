@@ -473,7 +473,7 @@ class MsrConnectionManager:
         ndam_m = self.managers["neurodamus"]
         metab_m = self.managers.get("metabolism", None)
 
-        gids = ndam_m.gids
+        gids = ndam_m.gids()
         failed_gids = {
             gids[igid]: e for igid, e in enumerate(failed_cells) if e is not None
         }

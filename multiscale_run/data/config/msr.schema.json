@@ -106,7 +106,11 @@
             "neuron_population_name": {
               "description": "Name of the neuron population to use. Typically: \"All\".",
               "type": "string"
-            }
+            },
+            "astrocyte_population_name": {
+                "description": "Name of the astrocyte population to use. Typically: \"astrocytes\".",
+                "type": "string"
+              }
           },
           "required": [
             "filter_neuron",

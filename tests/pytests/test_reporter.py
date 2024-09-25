@@ -12,6 +12,7 @@ def config_path():
 
 class FakeNeurodamusManager:
     def __init__(self) -> None:
+        self.circuit_offset = 1000
         gids = {0: [1, 2], 1: [6], 2: [], 3: [5, 7, 11]}
         ps = np.cumsum([len(i) for i in gids.values()])
         ps = [0, *ps[:-1]]
@@ -19,20 +20,22 @@ class FakeNeurodamusManager:
         self._gids = gids[utils.rank()]
         self.base_gids = gids.copy()
 
-    @property
-    def gids(self):
-        return self._gids
+    def gids(self, raw=False):
+        if raw:
+            return self._gids
+        else:
+            return [i + self.circuit_offset for i in self._gids]
 
 
 class FakeMetabolismManager:
-    def __init__(self, gids) -> None:
+    def __init__(self, raw_gids) -> None:
         vals = {
-            0: [i + 1 for i in range(len(gids))],
-            1: [i + 3 for i in range(len(gids))],
-            2: [i + 5 for i in range(len(gids))],
-            3: [i + 7 for i in range(len(gids))],
+            0: [i + 1 for i in range(len(raw_gids))],
+            1: [i + 3 for i in range(len(raw_gids))],
+            2: [i + 5 for i in range(len(raw_gids))],
+            3: [i + 7 for i in range(len(raw_gids))],
         }
-        self.vals = np.array([[-1 for _ in gids], vals[utils.rank()]]).transpose()
+        self.vals = np.array([[-1 for _ in raw_gids], vals[utils.rank()]]).transpose()
 
     def get_vals(self, idx):
         return self.vals[:, idx]
@@ -63,10 +66,12 @@ def test_simple_reports():
     managers = {}
     managers["neurodamus"] = FakeNeurodamusManager()
     managers["bloodflow"] = FakeBloodflowManager()
-    gids = managers["neurodamus"].gids
+    gids = managers["neurodamus"].gids()
     offset = managers["neurodamus"].offset
     n_bf_segs = managers["bloodflow"].n_segs
-    managers["metabolism"] = FakeMetabolismManager(gids=gids)
+    managers["metabolism"] = FakeMetabolismManager(
+        raw_gids=managers["neurodamus"].gids(raw=True)
+    )
 
     t_unit = "mss"
 
