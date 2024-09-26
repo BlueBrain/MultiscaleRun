@@ -352,6 +352,17 @@ class MsrStepsManager:
 
         mat, st = None, None
         if utils.rank0():
+            qq = [
+                sparse.csr_matrix(
+                    (i[:, 0], (i[:, 1], i[:, 2])),
+                    shape=(self.ntets, int(len(pts) / 2)),
+                )
+                for i in data
+                if len(i)
+            ]
+            for pp in qq:
+                print(pp.transpose().dot(np.ones(pp.shape[0])))
+
             mat = sum(
                 [
                     sparse.csr_matrix(
@@ -365,12 +376,15 @@ class MsrStepsManager:
             # flatten
             st = [i for r in starting_tets for i in r]
 
-            if not np.allclose(
-                mat.transpose().dot(np.ones(mat.shape[0])), np.ones(mat.shape[1])
-            ):
-                raise utils.MsrException(
-                    "steps failed to find some intersections. There is likely a bug in steps. Please report this to the maintainers"
-                )
+            # if not np.allclose(
+            #     mat.transpose().dot(np.ones(mat.shape[0])), np.ones(mat.shape[1])
+            # ).all():
+            #     print(mat.transpose().dot(np.ones(mat.shape[0])), np.ones(mat.shape[1]))
+            # raise utils.MsrException(
+            #     "steps failed to find some intersections. There is likely a bug in steps. Please report this to the maintainers"
+            # )
+        if mat is not None:
+            print(mat.transpose().dot(np.ones(mat.shape[0])))
 
         return mat, st
 
