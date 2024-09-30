@@ -580,26 +580,10 @@ def get_subs_d(d: dict) -> dict:
     dict: A new dictionary containing only string key-value pairs.
     """
 
-    ans = (
-        {
-            k[2:-1]: v
-            for k, v in d.items()
-            if isinstance(k, str) and isinstance(v, str) and re.match(r"\$\{(.*?)\}", k)
-        }
-        | {
-            k[1:]: v
-            for k, v in d.items()
-            if isinstance(k, str) and isinstance(v, str) and re.match(r"\$(\w+)", k)
-        }
-        | {
-            k: v
-            for k, v in d.items()
-            if isinstance(k, str)
-            and isinstance(v, str)
-            and not re.match(r"\$(\w+)", k)
-            and not re.match(r"\$\{(.*?)\}", k)
-        }
-    )
+    ans = {
+    re.sub(r"\$(?:\{(.*?)\}|(\w+))", r"\1", k): v for k, v in d.items()
+    if isinstance(k, str) and isinstance(v, str)
+    }
 
     for k, v in d.items():
         if isinstance(k, str) and isinstance(v, dict):

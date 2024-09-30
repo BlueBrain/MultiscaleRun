@@ -1,5 +1,6 @@
 import logging
 from collections import Counter
+import textwrap
 
 import libsonata
 import neurodamus
@@ -457,12 +458,12 @@ class MsrNeurodamusManager:
                             d[val] = []
                         d[val].append(idx)
                     d = sorted(d.items())
-                    print(
-                        "    "
-                        + "\n    ".join(
-                            f"{k[0]}: ({len(k[1])}) {np.array(k[1])}" for k in d
-                        )
-                    )
+                    
+                    # Set a desired width, e.g., 70 characters
+                    wrapper = textwrap.TextWrapper(width=70, subsequent_indent='    ')
+                    for k in d:
+                        formatted_line = f"{k[0]}: ({len(k[1])}) {np.array(k[1])}"
+                        print(wrapper.fill(formatted_line))
 
         # extract and print
         print()
