@@ -24,7 +24,6 @@ stages:
 
 variables:
   SPACK_PACKAGE: py-multiscale-run
-  SPACK_PACKAGE_DEPENDENCIES: ^hdf5~cxx
 
 .tox-template:
   tags: [bb5_map]
