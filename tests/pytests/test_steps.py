@@ -77,7 +77,7 @@ def test_steps_with_minimesh(tmp_path):
 if __name__ == "__main__":
     tmp_path = "tmp"
     utils.remove_path(tmp_path)
-    test_steps_with_minimesh()
+    test_steps_with_minimesh(tmp_path)
     utils.remove_path(tmp_path)
     test_steps_connections_mats(tmp_path)
     utils.remove_path(tmp_path)

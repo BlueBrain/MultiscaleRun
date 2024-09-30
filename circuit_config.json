@@ -1,0 +1,67 @@
+{
+    "version": 1,
+    "networks": {
+        "nodes": [
+            {
+                "nodes_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/data/base_circuit/All/nodes.h5",
+                "populations": {
+                    "All": {
+                        "type": "biophysical",
+                        "biophysical_neuron_models_dir": "/gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj34/sh_ngvm/emodels_atp_scan/emodels_atp_1p4",
+                        "alternate_morphologies": {
+                            "neurolucida-asc": "/gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj83/morphologies/fixed_ais_L23PC_20201210/ascii"
+                        }
+                    }
+                }
+            },
+            {
+                "nodes_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/sonata/networks/nodes/astrocytes/nodes.h5",
+                "populations": {
+                    "astrocytes": {
+                        "type": "astrocyte",
+                        "morphologies_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/morphologies/astrocytes/h5",
+                        "biophysical_neuron_models_dir": "/gpfs/bbp.cscs.ch/project/proj137/external_proj_data_copied/proj62/NGV/emodels",
+                        "microdomains_file": "PLACEHOLDER"
+                    }
+                }
+            },
+            {
+                "nodes_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/sonata/networks/nodes/vasculature/nodes.h5",
+                "populations": {
+                    "vasculature": {
+                        "type": "vasculature",
+                        "vasculature_file": "PLACEHOLDER",
+                        "vasculature_mesh": "PLACEHOLDER"
+                    }
+                }
+            }
+        ],
+        "edges": [
+            {
+                "edges_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/data/base_circuit/default/edges.h5",
+                "populations": {
+                    "default": {
+                        "type": "chemical"
+                    }
+                }
+            },
+            {
+                "edges_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/sonata/networks/edges/neuroglial/edges.h5",
+                "populations": {
+                    "neuroglial": {
+                        "type": "synapse_astrocyte"
+                    }
+                }
+            },
+            {
+                "edges_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/rat_sscx_S1HL/V6/build/sonata/networks/edges/gliovascular/edges.h5",
+                "populations": {
+                    "gliovascular": {
+                        "type": "endfoot",
+                        "endfeet_meshes_file" : "PLACEHOLDER"
+                    }
+                }
+            }
+        ]
+    }
+}

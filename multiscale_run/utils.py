@@ -581,8 +581,9 @@ def get_subs_d(d: dict) -> dict:
     """
 
     ans = {
-    re.sub(r"\$(?:\{(.*?)\}|(\w+))", r"\1", k): v for k, v in d.items()
-    if isinstance(k, str) and isinstance(v, str)
+        re.sub(r"\$(?:\{(.*?)\}|(\w+))", r"\1", k): v
+        for k, v in d.items()
+        if isinstance(k, str) and isinstance(v, str)
     }
 
     for k, v in d.items():
