@@ -60,50 +60,51 @@ pytest:
 #     bb5_duration: "00:10:00"
 #     bb5_ntasks: 2
 
-.nrun_test:
+.nrun:
   extends: .spack_test
-  timeout: 3 hours
+  timeout: 4 hours
   artifacts:
     when: always
     paths:
     - msr-sim-$CI_JOB_NAME_SLUG/RESULTS/*
     expire_in: 4 hours
   variables:
-    bb5_memory: 64G
-    bb5_ntasks: 32
-    bb5_duration: "03:00:00"
+    bb5_memory: 32G
+    bb5_ntasks: 4
+    bb5_duration: "04:00:00"
+    circuit: "rat_sscxS1HL_V10_CI"
   script:
   - spack ${SPACK_EXTRA_FLAGS} load /${SPACK_INSTALLED_HASH}
   - ${SPACK_SOURCE_DIR}/.ci/test_simulation.sh
 
-.dualrun_test:
-  extends: .nrun_test
+.dualrun:
+  extends: .nrun
   timeout: 2 hours
   variables:
     steps: "true"
     metabolism: "false"
     bloodflow: "false"
 
-dualrun_test 1/16:
-  extends: .dualrun_test
+dualrun 1/16:
+  extends: .dualrun
   variables:
     bb5_ntasks: 1
     bb5_duration: "02:00:00"
     tstop: 105
 
-dualrun_test 2/16:
-  extends: .dualrun_test
+dualrun 2/16:
+  extends: .dualrun
   variables:
     bb5_ntasks: 2
     tstop: 105
 
-dualrun_test 16/16:
-  extends: .dualrun_test
+dualrun 16/16:
+  extends: .dualrun
   variables:
     bb5_ntasks: 16
 
-nrun_[steps, metab, bf]:
-  extends: .nrun_test
+ratV10_CI_nrun_[steps, metab, bf]:
+  extends: .nrun
   parallel:
     matrix:
     - steps: ["false", "true"]

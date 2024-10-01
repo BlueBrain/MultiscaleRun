@@ -1,5 +1,8 @@
 import logging
+import textwrap
+from collections import Counter
 
+import libsonata
 import neurodamus
 import numpy as np
 from scipy import sparse
@@ -428,3 +431,59 @@ class MsrNeurodamusManager:
         assert len(vasc_ids) == len(radii), f"{len(vasc_ids)} == {len(radii)}"
 
         return vasc_ids, radii
+
+    @staticmethod
+    def stats():
+        """Extract general statistics from a simulation
+
+        simulation_config.json is expected to be in the folder.
+        """
+
+        simulation_config = libsonata.SimulationConfig.from_file(
+            "simulation_config.json"
+        )
+        circuit_config = libsonata.CircuitConfig.from_file(simulation_config.network)
+        node_sets = libsonata.NodeSets.from_file(circuit_config.node_sets_path)
+        node_sets.update(libsonata.NodeSets.from_file(simulation_config.node_sets_file))
+
+        def print_attribute(attribute, pop, selection):
+            """Print attribute if present"""
+            if attribute in pop.attribute_names:
+                with np.printoptions(threshold=3):
+                    print(f"{attribute}: (frequency) gids")
+                    attr = pop.get_attribute(attribute, selection)
+                    d = {}
+                    for idx, val in zip(selection.flatten(), attr):
+                        if val not in d:
+                            d[val] = []
+                        d[val].append(idx)
+                    d = sorted(d.items())
+
+                    # Set a desired width, e.g., 70 characters
+                    wrapper = textwrap.TextWrapper(width=70, subsequent_indent="    ")
+                    for k in d:
+                        formatted_line = f"{k[0]}: ({len(k[1])}) {np.array(k[1])}"
+                        print(wrapper.fill(formatted_line))
+
+        # extract and print
+        print()
+        for pop_name in circuit_config.node_populations:
+            prop = circuit_config.node_population_properties(pop_name)
+            print(f"population: {pop_name}")
+            print(f"type: {prop.type}")
+            pop = circuit_config.node_population(pop_name)
+            selection = node_sets.materialize(simulation_config.node_set, pop)
+            print(f"selection: {len(selection.flatten())}/{pop.size}")
+            print_attribute("etype", pop, selection)
+            print_attribute("mtype", pop, selection)
+            print_attribute("layer", pop, selection)
+            if prop.biophysical_neuron_models_dir:
+                base_path = prop.biophysical_neuron_models_dir
+                print(f"emodel paths in: {base_path}")
+                paths = [
+                    i.split(":")
+                    for i in sorted(set(pop.get_attribute("model_template", selection)))
+                ]
+                paths = [base_path + "/" + i[1] + "." + i[0] for i in paths]
+                print("    " + "\n    ".join(paths))
+                print()
