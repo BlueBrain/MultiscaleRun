@@ -26,6 +26,11 @@ jobs:
       with:
         mpi: openmpi
 
+    - name: Setup Julia
+      uses: julia-actions/setup-julia@v2
+      with:
+        version: '1.9.3'
+
     - name: Checkout repository
       uses: actions/checkout@v4
 
