@@ -16,6 +16,11 @@ jobs:
     name: Build and test the contribution
     runs-on: ubuntu-latest
     steps:
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      with:
+        detached: true
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
