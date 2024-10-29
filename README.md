@@ -135,6 +135,7 @@ For more on how to use ARM MAP on BB5, please check [this page](https://bbpteam.
 
 ### Bugfixes
 
+* Add the command `multiscale_run stats` to retrieve some simple stats from the simulation.
 * `virtualenv` was not setting correctly `HOC_LIBRARY_PATH` when called from a python environment itself.
 
 ## 0.8.1 - 2024-07-03

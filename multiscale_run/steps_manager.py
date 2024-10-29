@@ -365,6 +365,15 @@ class MsrStepsManager:
             # flatten
             st = [i for r in starting_tets for i in r]
 
+            # TODO reactivate once https://github.com/CNS-OIST/HBP_STEPS/pull/1219
+            # is merged
+            # if not np.allclose(
+            #     mat.transpose().dot(np.ones(mat.shape[0])), np.ones(mat.shape[1])
+            # ):
+            #     raise utils.MsrException(
+            #         "steps failed to find some intersections. There is likely a bug in steps. Please report this to the maintainers"
+            #     )
+
         return mat, st
 
     def get_tet_counts(self, species_name, idxs=None):
