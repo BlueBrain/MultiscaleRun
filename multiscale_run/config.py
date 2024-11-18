@@ -9,7 +9,7 @@ import jsonschema
 import numpy as np
 
 from . import utils
-from .data import CONFIG_DIR, DATA_DIR, MSR_CONFIG_JSON, MSR_SCHEMA_JSON
+from .templates import MSR_CONFIG_JSON, MSR_PKG_DIR, MSR_SCHEMA_JSON, TEMPLATES_DIR
 
 
 class NamedCircuit(
@@ -51,7 +51,7 @@ class NamedCircuit(
 
 NAMED_CIRCUITS = {
     "rat_sscxS1HL_V6": NamedCircuit(
-        path=CONFIG_DIR / "rat_sscxS1HL_V6",
+        path=TEMPLATES_DIR / "rat_sscxS1HL_V6",
         sbatch_parameters=dict(
             job_name="msr_ratV6",
             nodes=1,
@@ -59,7 +59,7 @@ NAMED_CIRCUITS = {
         ),
     ),
     "rat_sscxS1HL_V10": NamedCircuit(
-        path=CONFIG_DIR / "rat_sscxS1HL_V10",
+        path=TEMPLATES_DIR / "rat_sscxS1HL_V10",
         sbatch_parameters=dict(
             job_name="msr_ratV10",
             nodes=64,
@@ -67,7 +67,7 @@ NAMED_CIRCUITS = {
         ),
     ),
     "tiny_CI": NamedCircuit(
-        path=CONFIG_DIR / "tiny_CI",
+        path=TEMPLATES_DIR / "tiny_CI",
         sbatch_parameters=dict(
             job_name="msr_tiny_CI",
             nodes=1,
@@ -75,7 +75,7 @@ NAMED_CIRCUITS = {
         ),
     ),
     "rat_sscxS1HL_V10_CI": NamedCircuit(
-        path=CONFIG_DIR / "rat_sscxS1HL_V10",
+        path=TEMPLATES_DIR / "rat_sscxS1HL_V10",
         sbatch_parameters=dict(
             job_name="msr_ratV10_CI",
             nodes=1,
@@ -245,7 +245,7 @@ class MsrConfig(dict):
 
         """
         d = utils.load_json(
-            self.config_path, base_subs_d={"pkg_data_path": str(DATA_DIR)}
+            self.config_path, base_subs_d={"pkg_path": str(MSR_PKG_DIR)}
         )
         self.update(MsrConfig._objectify_config(None, d))
 

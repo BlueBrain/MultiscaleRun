@@ -11,7 +11,7 @@ import pytest
 
 from multiscale_run import utils
 from multiscale_run.cli import argument_parser, main
-from multiscale_run.data import BB5_JULIA_ENV
+from multiscale_run.templates import BB5_JULIA_ENV
 
 
 def test_init_without_metabolism(tmp_path):

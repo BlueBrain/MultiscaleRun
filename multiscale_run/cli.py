@@ -29,13 +29,13 @@ from .config import (
     DEFAULT_CIRCUIT,
     NAMED_CIRCUITS,
 )
-from .data import (
+from .simulation import MsrSimulation
+from .templates import (
     BB5_JULIA_ENV,
     MSR_CONFIG_JSON,
     MSR_POSTPROC,
     SBATCH_TEMPLATE,
 )
-from .simulation import MsrSimulation
 from .utils import (
     MsrException,
     merge_dicts,

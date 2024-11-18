@@ -443,11 +443,13 @@ class MsrNeurodamusManager:
         simulation_config = libsonata.SimulationConfig.from_file(
             "simulation_config.json"
         )
-        
+
         circuit_config = libsonata.CircuitConfig.from_file(simulation_config.network)
-        if (circuit_config.node_sets_path):
+        if circuit_config.node_sets_path:
             node_sets = libsonata.NodeSets.from_file(circuit_config.node_sets_path)
-            node_sets.update(libsonata.NodeSets.from_file(simulation_config.node_sets_file))
+            node_sets.update(
+                libsonata.NodeSets.from_file(simulation_config.node_sets_file)
+            )
         else:
             node_sets = libsonata.NodeSets.from_file(simulation_config.node_sets_file)
 

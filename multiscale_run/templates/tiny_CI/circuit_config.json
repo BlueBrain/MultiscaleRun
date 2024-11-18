@@ -1,8 +1,9 @@
 {
   "version": 2,
   "manifest": {
-    "$BASE_DIR": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/build"
+    "$BASE_DIR": "/gpfs/bbp.cscs.ch/home/cattabia/projects/newCIdata/neurodamus/build"
   },
+  "node_sets_file": "$BASE_DIR/sonata/node_sets.json",
   "networks": {
     "nodes": [
       {
@@ -13,11 +14,11 @@
             "biophysical_neuron_models_dir": "$BASE_DIR/../emodels/hoc",
             "spatial_segment_index_dir": "$BASE_DIR/sonata/networks/nodes/neocortex_neurons/spatial_segment_index",
             "provenance": {
-              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/bioname"
+              "bioname_dir": "$BASE_DIR/../bioname"
             },
             "alternate_morphologies": {
-              "h5v1": "/gpfs/bbp.cscs.ch/project/proj66/entities/morphologies/2018.02.16/h5v1",
-              "neurolucida-asc": "/gpfs/bbp.cscs.ch/project/proj66/entities/morphologies/2018.02.16/ascii"
+              "h5v1": "$BASE_DIR/morphologies/neurons",
+              "neurolucida-asc": "$BASE_DIR/morphologies/neurons"
             }
           }
         }
@@ -32,7 +33,7 @@
             },
             "microdomains_file": "$BASE_DIR/sonata/networks/nodes/astrocytes/microdomains.h5",
             "provenance": {
-              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/bioname"
+              "bioname_dir": "$BASE_DIR/../bioname"
             }
           }
         }
@@ -42,10 +43,10 @@
         "populations": {
           "vasculature": {
             "type": "vasculature",
-            "vasculature_file": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/atlas/vasculature.h5",
-            "vasculature_mesh": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/atlas/vasculature.obj",
+            "vasculature_file": "$BASE_DIR/../atlas/vasculature.h5",
+            "vasculature_mesh": "$BASE_DIR/../atlas/vasculature.obj",
             "provenance": {
-              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/bioname"
+              "bioname_dir": "$BASE_DIR/../bioname"
             }
           }
         }
@@ -58,7 +59,7 @@
           "neocortex_neurons__chemical_synapse": {
             "type": "chemical",
             "provenance": {
-              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/bioname"
+              "bioname_dir": "$BASE_DIR/../bioname"
             },
             "spatial_synapse_index_dir": "$BASE_DIR/sonata/networks/edges/functional/neocortex_neurons__chemical_synapse/spatial_synapse_index"
           }
@@ -70,7 +71,7 @@
           "neuroglial": {
             "type": "synapse_astrocyte",
             "provenance": {
-              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/bioname"
+              "bioname_dir": "$BASE_DIR/../bioname"
             }
           }
         }
@@ -81,7 +82,7 @@
           "glialglial": {
             "type": "glialglial",
             "provenance": {
-              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/bioname"
+              "bioname_dir": "$BASE_DIR/../bioname"
             }
           }
         }
@@ -93,7 +94,7 @@
             "type": "endfoot",
             "endfeet_meshes_file": "$BASE_DIR/sonata/networks/edges/gliovascular/endfeet_meshes.h5",
             "provenance": {
-              "bioname_dir": "/gpfs/bbp.cscs.ch/project/proj137/NGVCircuits/tiny_circuit/bioname"
+              "bioname_dir": "$BASE_DIR/../bioname"
             }
           }
         }
