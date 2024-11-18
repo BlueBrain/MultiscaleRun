@@ -9,12 +9,7 @@ requires = [
 [tool.setuptools]
 packages = [
     "multiscale_run",
-    "multiscale_run.data",
-    "multiscale_run.data.config",
-    "multiscale_run.data.config.rat_sscxS1HL_V10",
-    "multiscale_run.data.config.rat_sscxS1HL_V6",
-    "multiscale_run.data.config.tiny_CI",
-    "multiscale_run.data.metabolismndam_reduced",
+    "multiscale_run.templates",
 ]
 
 [tool.setuptools_scm]
