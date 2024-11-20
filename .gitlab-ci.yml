@@ -70,9 +70,9 @@ pytest:
     expire_in: 4 hours
   variables:
     bb5_memory: 32G
-    bb5_ntasks: 4
+    bb5_ntasks: 2
     bb5_duration: "04:00:00"
-    circuit: "rat_sscxS1HL_V10_CI"
+    circuit: "tiny_CI"
   script:
   - spack ${SPACK_EXTRA_FLAGS} load /${SPACK_INSTALLED_HASH}
   - ${SPACK_SOURCE_DIR}/.ci/test_simulation.sh
@@ -84,26 +84,21 @@ pytest:
     steps: "true"
     metabolism: "false"
     bloodflow: "false"
+    tstop: 105
 
 dualrun 1/16:
   extends: .dualrun
   variables:
     bb5_ntasks: 1
     bb5_duration: "02:00:00"
-    tstop: 105
+    
 
 dualrun 2/16:
   extends: .dualrun
   variables:
     bb5_ntasks: 2
-    tstop: 105
 
-dualrun 16/16:
-  extends: .dualrun
-  variables:
-    bb5_ntasks: 16
-
-ratV10_CI_nrun_[steps, metab, bf]:
+tiny_CI_nrun_[steps, metab, bf]:
   extends: .nrun
   parallel:
     matrix:

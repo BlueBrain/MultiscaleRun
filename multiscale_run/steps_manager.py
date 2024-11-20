@@ -343,6 +343,10 @@ class MsrStepsManager:
                 if len(tet_global_idx)
                 and steps.geom.TetReference(
                     tet_global_idx[0][0], mesh=self.msh, local=False
+                ).toLocal()
+                is not None
+                and steps.geom.TetReference(
+                    tet_global_idx[0][0], mesh=self.msh, local=False
                 )
                 .toLocal()
                 .containsPoint(pts[idx * 2, :])
