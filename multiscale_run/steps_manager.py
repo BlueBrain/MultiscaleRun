@@ -42,7 +42,8 @@ class MsrStepsManager:
     def init_sim(self):
         """Initialize the STEPS simulation.
 
-        This method initializes the STEPS model and solver, sets the initial concentrations, and prepares for simulations.
+        This method initializes the STEPS model and solver,
+        sets the initial concentrations, and prepares for simulations.
         """
         self._init_model()
         self._init_solver()
