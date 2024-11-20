@@ -12,8 +12,8 @@ postproc=${postproc:true}
 steps=${steps:-false}
 metabolism=${metabolism:-false}
 bloodflow=${bloodflow:-false}
-tstop=${tstop:-300}
-circuit=${circuit:-rat_sscxS1HL_V10_CI}
+tstop=${tstop:-290}
+circuit=${circuit:-tiny_CI}
 
 if [ -z ${sim_name:x} ]; then
   fatal_error "expected environment variable 'SIM_NAME'."
