@@ -129,7 +129,9 @@ def julia(args=None, **kwargs):
 
 
 @command
-def init(directory, circuit, julia="shared", check=True, force=False):
+def init(
+    directory, circuit, julia="shared", check=True, force=False, metabolism="standard"
+):
     """Setup a new simulation"""
     if not force:
         dir_content = set(Path(".").iterdir())
@@ -140,6 +142,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
                 "Use option '-f' to overwrite the content of the directory."
             )
     assert julia in ["shared", "create", "no"]
+    assert metabolism in ["standard", "young", "aged"]
 
     circuit_def = NAMED_CIRCUITS[circuit]
 
@@ -203,6 +206,14 @@ def init(directory, circuit, julia="shared", check=True, force=False):
             check_julia_env()
 
     circuit_config = circuit_def.json()
+    if metabolism != "standard":
+        p_split = circuit_config["multiscale_run"]["metabolism"][
+            "julia_code_path"
+        ].rsplit(".", 1)
+        rd.setdefault("metabolism", {})["julia_code_path"] = (
+            f"{p_split[0]}_{metabolism}.{p_split[1]}"
+        )
+
     circuit_config = merge_dicts(child={"multiscale_run": rd}, parent=circuit_config)
     with open(MSR_CONFIG_JSON, "w") as ostr:
         json.dump(circuit_config, ostr, indent=4)
@@ -591,6 +602,12 @@ def argument_parser():
         "'shared' (the default) to reuse an existing env on BB5, "
         "'create' to construct a new env locally, "
         "'no' to skip Julia environment (typically if metabolism model is not required)",
+    )
+    parser_init.add_argument(
+        "--metabolism",
+        choices=["standard", "young", "aged"],
+        default="standard",
+        help="Choose Metabolism type. ",
     )
     parser_init.add_argument(
         "--no-check",
