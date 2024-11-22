@@ -60,4 +60,10 @@ jobs:
         python -m venv venv
         source venv/bin/activate
         pip install .
-        multiscale-run init --help
+
+    - name: Install package in a virtual environment
+      run: |
+        source venv/bin/activate
+        multiscale-run init tiny_CI
+        pushd tiny_CI
+        multiscale-run compute .
