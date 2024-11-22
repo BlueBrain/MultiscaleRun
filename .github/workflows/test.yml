@@ -54,3 +54,14 @@ jobs:
     - name: Run tox
       run: |
         tox -e py${{ env.PYTHON_VERSION }}
+
+    - name: Debugging Stage
+      run: |
+        echo "Listing files in the current directory:"
+        ls -al
+        echo "Checking Julia version:"
+        julia --version
+        echo "Checking STEPS version:"
+        pip freeze
+        echo "Verifying the commit being built:"
+        git log -1
