@@ -57,11 +57,7 @@ jobs:
 
     - name: Debugging Stage
       run: |
-        echo "Listing files in the current directory:"
-        ls -al
-        echo "Checking Julia version:"
-        julia --version
-        echo "Checking STEPS version:"
-        pip freeze
-        echo "Verifying the commit being built:"
-        git log -1
+        multiscale-run init --help
+        multiscale-run init tiny_CI
+        cd tiny_CI
+        multiscale-run compute .
