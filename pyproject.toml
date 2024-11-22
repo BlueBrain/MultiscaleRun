@@ -61,6 +61,7 @@ dependencies = [
     "STEPS[bundle]==5.0.3rc1",
     "tqdm>=4.65",
     "trimesh>=3",
+    "neurodamus>=3.6.0"
 ]
 dynamic = ["version"]
 
