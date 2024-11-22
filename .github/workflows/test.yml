@@ -55,9 +55,9 @@ jobs:
       run: |
         tox -e py${{ env.PYTHON_VERSION }}
 
-    - name: Debugging Stage
+    - name: Install package in a virtual environment
       run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install .
         multiscale-run init --help
-        multiscale-run init tiny_CI
-        cd tiny_CI
-        multiscale-run compute .
