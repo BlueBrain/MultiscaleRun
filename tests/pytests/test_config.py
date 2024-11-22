@@ -69,8 +69,8 @@ def test_check():
     assert "'what?' is not of type 'integer'" in str(excinfo.value)
     default_circuit["multiscale_run"]["metabolism"]["ndts"] = ndts
 
-    print(type(default_circuit["multiscale_run"]["metabolism"]["u0_path"]))
-    print(type(default_circuit.multiscale_run.metabolism.u0_path))
+    assert isinstance(default_circuit["multiscale_run"]["metabolism"]["u0_path"], Path)
+    assert isinstance(type(default_circuit.multiscale_run.metabolism.u0_path), Path)
 
     del default_circuit["multiscale_run"]["metabolism"]["ndts"]
     with pytest.raises(MsrConfigSchemaError) as excinfo:

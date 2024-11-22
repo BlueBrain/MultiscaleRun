@@ -54,9 +54,11 @@ dependencies = [
     "notebook>=6",
     "numpy>=1.22",
     "pandas>=1.4",
+    "petsc4py>=3.15",
     "psutil>=5.8",
     "scipy>=1.11.1",
     "simpleeval>=0.9.13",
+    "STEPS[bundle]==5.0.3rc1",
     "tqdm>=4.65",
     "trimesh>=3",
 ]
