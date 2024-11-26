@@ -1,7 +1,7 @@
 {
   "version": 2,
   "manifest": {
-    "$BASE_DIR": "/gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/multiscale_run/tiny_CI_neurodamus/build"
+    "$BASE_DIR": "tiny_CI_neurodamus/build"
   },
   "node_sets_file": "$BASE_DIR/sonata/node_sets.json",
   "networks": {
