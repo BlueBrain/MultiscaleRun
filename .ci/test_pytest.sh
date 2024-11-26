@@ -8,6 +8,9 @@ set_test_environment
 
 pushd "${SCRIPT_DIR}/.." >/dev/null
 
+wget https://github.com/BlueBrain/MultiscaleRun/releases/download/0.8.2/tiny_CI_neurodamus_release-v0.8.2.tar.gz
+tar -xzvf tiny_CI_neurodamus_release-v0.8.2.tar.gz
+
 num_errors=0
 count_errors() {
     local command="$BASH_COMMAND"
