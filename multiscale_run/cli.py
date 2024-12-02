@@ -226,9 +226,9 @@ def init(
     LOGGER.warning(
         f'Set up with circuit: "{circuit}" and metabolism type: "{metabolism}"'
     )
+    folder_path = os.path.abspath(directory)
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
         LOGGER.warning(f"Folder: {os.path.abspath(directory)}")
-        folder_path = os.path.abspath(directory)
         content = os.listdir(folder_path)
         LOGGER.warning(
             f"Contents of the folder {folder_path}:\n"
