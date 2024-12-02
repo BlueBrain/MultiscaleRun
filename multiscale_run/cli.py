@@ -129,9 +129,6 @@ def init(
     directory, circuit, julia="shared", check=True, force=False, metabolism="standard"
 ):
     """Setup a new simulation"""
-    LOGGER.warning(
-        f"Setup new simulation environment in: {directory}\n circuit: {circuit}\n metabolism type: {metabolism}"
-    )
 
     if not force:
         dir_content = set(Path(".").iterdir())
@@ -225,6 +222,13 @@ def init(
         "generated sbatch file. But feel free to browse and tweak "
         "the JSON configuration files at will!"
     )
+
+    LOGGER.warning(
+        f"Folder: {os.path.abspath(directory)}\n set up with circuit: \"{circuit}\" and metabolism type: \"{metabolism}\""
+    )
+    folder_path = os.path.abspath(directory)
+    content = os.listdir(folder_path)
+    LOGGER.warning(f"Contents of the folder {folder_path}:\n" + "\n".join(f"- {item}" for item in content))
     return directory
 
 
