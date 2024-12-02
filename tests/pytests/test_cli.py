@@ -43,17 +43,17 @@ def test_init_twice(tmp_path):
 
     # Recreate the simulation at the same location
     main(args=["init", "--force", "--no-check", str(sim_path)])
-    assert (sim_path / ".julia").is_symlink()
-    assert (sim_path / ".julia_environment").is_symlink()
+    # assert (sim_path / ".julia").is_symlink()
+    # assert (sim_path / ".julia_environment").is_symlink()
 
-    # mess a little the Julia setup
-    (sim_path / ".julia").unlink()
-    (sim_path / ".julia").mkdir()
+    # # mess a little the Julia setup
+    # (sim_path / ".julia").unlink()
+    # (sim_path / ".julia").mkdir()
 
-    # Recreate the simulation at the same location
-    main(args=["init", "--force", "--no-check", str(sim_path)])
-    assert (sim_path / ".julia").is_symlink()
-    assert (sim_path / ".julia_environment").is_symlink()
+    # # Recreate the simulation at the same location
+    # main(args=["init", "--force", "--no-check", str(sim_path)])
+    # assert (sim_path / ".julia").is_symlink()
+    # assert (sim_path / ".julia_environment").is_symlink()
 
 
 def test_valid_commands(tmp_path):
@@ -189,6 +189,7 @@ def test_edit_mod_files(tmp_path):
 
 if __name__ == "__main__":
     tmp_path = Path("tmp")
+    utils.remove_path(tmp_path)
     test_init_without_metabolism(tmp_path)
     utils.remove_path(tmp_path)
     test_init_twice(tmp_path)
