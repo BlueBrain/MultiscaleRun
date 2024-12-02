@@ -8,7 +8,7 @@ set_test_environment
 
 pushd "${SCRIPT_DIR}/.."
 
-wget https://github.com/BlueBrain/MultiscaleRun/releases/download/0.8.2/tiny_CI_neurodamus_release-v0.8.2.tar.gz
+wget -q https://github.com/BlueBrain/MultiscaleRun/releases/download/0.8.2/tiny_CI_neurodamus_release-v0.8.2.tar.gz
 tar -xzf tiny_CI_neurodamus_release-v0.8.2.tar.gz
 
 echo "multiscale run location: $(pwd)"

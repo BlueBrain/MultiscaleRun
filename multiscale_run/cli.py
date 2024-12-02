@@ -153,12 +153,9 @@ def init(
     sbatch_parameters["loaded_modules"] = loaded_modules
     SBATCH_TEMPLATE.stream(sbatch_parameters).dump("simulation.sbatch")
     shutil.copy(MSR_POSTPROC, MSR_POSTPROC.name)
-    shutil.copytree(
-        str(circuit_def.path),
-        ".",
-        ignore=shutil.ignore_patterns("cache", "msr*"),
-        dirs_exist_ok=True,
-    )
+    shutil.copy(circuit_def.path / "simulation_config.json", ".")
+    shutil.copy(circuit_def.path / "circuit_config.json", ".")
+    shutil.copy(circuit_def.path / "node_sets.json", ".")
 
     rd = {"msr_version": str(__version__)}
     if julia == "no":
