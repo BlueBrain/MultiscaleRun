@@ -8,7 +8,7 @@ set_test_environment
 pushd "${SCRIPT_DIR}/.." >/dev/null
 
 download_tiny_CI_neurodamus_data
-MULTISCALE_RUN_PATH00=$(python -c 'import multiscale_run, pathlib; print(pathlib.Path(multiscale_run.__file__).parent)' | head -n 1)
+MULTISCALE_RUN_PATH00=$(pwd | sed -E 's|(/gpfs/bbp.cscs.ch/ssd/gitlab_map_jobs/bbpcimolsys/)[^/]+(/spack-build/spack-stage-)|\1\2|; s|/spack-src/|/lib/python3.11/site-packages/|')
 ln -s "$(pwd)/tiny_CI_neurodamus" "$MULTISCALE_RUN_PATH00/templates/tiny_CI"
 
 num_errors=0
