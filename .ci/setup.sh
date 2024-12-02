@@ -24,5 +24,4 @@ download_tiny_CI_neurodamus_data() {
     # Download the file
     wget -q "$url" -O "$filename"
     tar -xzf "$filename"
-    ln -s "$(pwd)/tiny_CI_neurodamus" "$(pwd)/multiscale_run/templates/tiny_CI"
 }

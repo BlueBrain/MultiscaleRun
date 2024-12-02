@@ -9,6 +9,7 @@ set_test_environment
 pushd "${SCRIPT_DIR}/.." >/dev/null
 
 download_tiny_CI_neurodamus_data
+ln -s "$(pwd)/tiny_CI_neurodamus" "$(pwd)/multiscale_run/templates/tiny_CI"
 
 num_errors=0
 count_errors() {
