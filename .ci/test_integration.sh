@@ -9,11 +9,18 @@ pushd "${SCRIPT_DIR}/.." >/dev/null
 
 download_tiny_CI_neurodamus_data
 
-echo "------------------------------env-------------------------------"
-env
-echo "------------------------------/env------------------------------"
-# MULTISCALE_RUN_PATH00=$(pwd | sed -E 's|(/gpfs/bbp.cscs.ch/ssd/gitlab_map_jobs/bbpcimolsys/)[^/]+(/spack-build/spack-stage-)|\1\2|; s|/spack-src/|/lib/python3.11/site-packages/|')
-# ln -s "$(pwd)/tiny_CI_neurodamus" "$MULTISCALE_RUN_PATH00/templates/tiny_CI"
+
+# Commit hash stored in PY_MULTISCALE_RUN_COMMIT
+commit_hash=$PY_MULTISCALE_RUN_COMMIT
+MULTISCALE_RUN_PATH=""
+# Loop through the directories in PYTHONPATH and find the one containing the commit hash
+for path in $(echo $PYTHON_PATH | tr ':' '\n'); do
+    if [[ "$path" == *"$PY_MULTISCALE_RUN_COMMIT"* ]]; then
+        MULTISCALE_RUN_PATH=$path
+        break
+    fi
+done
+ln -s "$(pwd)/tiny_CI_neurodamus" "$MULTISCALE_RUN_PATH/multiscale_run/templates/tiny_CI"
 
 num_errors=0
 count_errors() {
