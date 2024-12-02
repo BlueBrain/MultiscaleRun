@@ -523,7 +523,7 @@ def heavy_duty_MPI_Gather(v: np.ndarray, root=0):
 
 
 def copy_symlinks(source_dir, dest_dir):
-    """Copy links to dest_dir if not already present"""
+    """Copy links to dest_dir if it does not exist."""
     # Ensure dest_dir exists, create if necessary
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -540,10 +540,8 @@ def copy_symlinks(source_dir, dest_dir):
             # Create the symbolic link in the destination directory
             dest_symlink_path = dest_dir / item
 
-            if dest_symlink_path.exists() and dest_symlink_path.is_symlink():
-                # Remove the symlink itself
-                os.remove(dest_symlink_path)
-            os.symlink(target_path, dest_symlink_path)
+            if not dest_symlink_path.exists():
+                os.symlink(target_path, dest_symlink_path)
 
 
 def stats(v):
