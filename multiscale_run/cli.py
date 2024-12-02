@@ -36,11 +36,7 @@ from .templates import (
     MSR_POSTPROC,
     SBATCH_TEMPLATE,
 )
-from .utils import (
-    MsrException,
-    merge_dicts,
-    pushd,
-)
+from .utils import MsrException, copy_symlinks, merge_dicts, pushd
 
 
 def _cli_logger():
@@ -156,6 +152,7 @@ def init(
     shutil.copy(circuit_def.path / "simulation_config.json", ".")
     shutil.copy(circuit_def.path / "circuit_config.json", ".")
     shutil.copy(circuit_def.path / "node_sets.json", ".")
+    copy_symlinks(circuit_def.path, ".")
 
     rd = {"msr_version": str(__version__)}
     if julia == "no":

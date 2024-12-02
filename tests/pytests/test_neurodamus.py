@@ -8,5 +8,6 @@ def test_init(tmp_path):
 
 if __name__ == "__main__":
     tmp_path = "./tmp"
+    utils.remove_path(tmp_path)
     test_init(tmp_path)
     utils.remove_path(tmp_path)

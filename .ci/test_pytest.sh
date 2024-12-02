@@ -24,12 +24,6 @@ count_errors() {
 }
 trap count_errors ERR
 
-echo "test cli"
-
-python -mpytest tests/pytests/test_cli.py
-
-echo "start of the standard stuff"
-
 if [ $# -eq 0 ] ;then
     python -mpytest tests/pytests
     $MPIRUN -n 4 python -mpytest -v tests/pytests/test_reporter.py
