@@ -23,13 +23,6 @@ download_tiny_CI_neurodamus_data() {
 
     # Download the file
     wget -q "$url" -O "$filename"
-
-    # Check if download was successful
-    if [[ $? -eq 0 ]]; then
-        # Extract the tar.gz file
-        tar -xzf "$filename"
-        echo "Download and extraction completed."
-    else
-        echo "Download failed."
-    fi
+    tar -xzf "$filename"
+    ln -s "$(pwd)/tiny_CI_neurodamus" "$(pwd)/multiscale_run/templates/tiny_CI"
 }

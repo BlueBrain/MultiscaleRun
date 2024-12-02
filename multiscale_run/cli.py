@@ -129,6 +129,10 @@ def init(
     directory, circuit, julia="shared", check=True, force=False, metabolism="standard"
 ):
     """Setup a new simulation"""
+    LOGGER.warning(
+        f"Setup new simulation environment in: {directory}\n circuit: {circuit}\n metabolism type: {metabolism}"
+    )
+
     if not force:
         dir_content = set(Path(".").iterdir())
         dir_content.discard(Path(".logs"))
