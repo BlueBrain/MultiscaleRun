@@ -52,13 +52,12 @@ pytest:
   - !reference [.bbp_gitlab_access, script]
   - !reference [.spack_test, script]
 
-# TODO: reinstate when ratV10 is working
-# integration:
-#   extends: .spack_test
-#   timeout: 10 minutes
-#   variables:
-#     bb5_duration: "00:10:00"
-#     bb5_ntasks: 2
+integration:
+  extends: .spack_test
+  timeout: 10 minutes
+  variables:
+    bb5_duration: "00:10:00"
+    bb5_ntasks: 2
 
 .nrun:
   extends: .spack_test

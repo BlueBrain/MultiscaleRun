@@ -6,10 +6,9 @@ source ${SCRIPT_DIR}/setup.sh
 
 set_test_environment
 
-pushd "${SCRIPT_DIR}/.."
+pushd "${SCRIPT_DIR}/.." >/dev/null
 
-wget -q https://github.com/BlueBrain/MultiscaleRun/releases/download/0.8.2/tiny_CI_neurodamus_release-v0.8.2.tar.gz
-tar -xzf tiny_CI_neurodamus_release-v0.8.2.tar.gz
+download_tiny_CI_neurodamus_data
 
 echo "multiscale run location: $(pwd)"
 

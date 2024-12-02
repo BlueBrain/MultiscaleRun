@@ -16,3 +16,20 @@ set_test_environment() {
   fi
   MPIRUN=${MPIRUN:-"srun --overlap"}
 }
+
+download_tiny_CI_neurodamus_data() {
+    local url="https://github.com/BlueBrain/MultiscaleRun/releases/download/0.8.2/tiny_CI_neurodamus_release-v0.8.2.tar.gz"
+    local filename="tiny_CI_neurodamus_release-v0.8.2.tar.gz"
+
+    # Download the file
+    wget -q "$url" -O "$filename"
+
+    # Check if download was successful
+    if [[ $? -eq 0 ]]; then
+        # Extract the tar.gz file
+        tar -xzf "$filename"
+        echo "Download and extraction completed."
+    else
+        echo "Download failed."
+    fi
+}

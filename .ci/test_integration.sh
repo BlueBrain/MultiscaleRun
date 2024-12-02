@@ -7,6 +7,8 @@ set_test_environment
 
 pushd "${SCRIPT_DIR}/.." >/dev/null
 
+download_tiny_CI_neurodamus_data
+
 num_errors=0
 count_errors() {
     ((num_errors++))
