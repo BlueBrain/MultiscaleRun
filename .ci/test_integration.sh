@@ -10,11 +10,9 @@ pushd "${SCRIPT_DIR}/.." >/dev/null
 download_tiny_CI_neurodamus_data
 
 
-# Commit hash stored in PY_MULTISCALE_RUN_COMMIT
-commit_hash=$PY_MULTISCALE_RUN_COMMIT
 MULTISCALE_RUN_PATH=""
 # Loop through the directories in PYTHONPATH and find the one containing the commit hash
-for path in $(echo $PYTHON_PATH | tr ':' '\n'); do
+for path in $(echo $PYTHONPATH | tr ':' '\n'); do
     if [[ "$path" == *"$PY_MULTISCALE_RUN_COMMIT"* ]]; then
         MULTISCALE_RUN_PATH=$path
         break
