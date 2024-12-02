@@ -13,7 +13,7 @@ tar -xzf tiny_CI_neurodamus_release-v0.8.2.tar.gz
 
 echo "multiscale run location: $(pwd)"
 
-ln -s "${pwd}/tiny_CI_neurodamus" "$(pwd)/multiscale_run/templates/tiny_CI/"
+ln -s "$(pwd)/tiny_CI_neurodamus" "$(pwd)/multiscale_run/templates/tiny_CI"
 
 num_errors=0
 count_errors() {
