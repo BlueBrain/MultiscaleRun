@@ -11,31 +11,31 @@ pushd "${SCRIPT_DIR}/.."
 wget https://github.com/BlueBrain/MultiscaleRun/releases/download/0.8.2/tiny_CI_neurodamus_release-v0.8.2.tar.gz
 tar -xzf tiny_CI_neurodamus_release-v0.8.2.tar.gz
 
-echo "Stuff pwd"
-pwd
-echo "Stuff echo pwd"
-echo $(pwd)
-echo "Stuff ls"
-ls
+echo "multiscale run location: $(pwd)"
 
+ln -s "${pwd}/tiny_CI_neurodamus" "$(pwd)/multiscale_run/templates/tiny_CI/"
 
-# ln -s "${pwd}/tiny_CI_neurodamus" "$(pwd)/multiscale_run/templates/tiny_CI/"
+num_errors=0
+count_errors() {
+    local command="$BASH_COMMAND"
+    ((num_errors++))
+    echo "Error occurred while executing: $command (Trap: ERR)"
+    echo "num_errors: $num_errors"
+}
+trap count_errors ERR
 
-# num_errors=0
-# count_errors() {
-#     local command="$BASH_COMMAND"
-#     ((num_errors++))
-#     echo "Error occurred while executing: $command (Trap: ERR)"
-#     echo "num_errors: $num_errors"
-# }
-# trap count_errors ERR
+echo "test cli"
 
-# if [ $# -eq 0 ] ;then
-#     python -mpytest tests/pytests
-#     $MPIRUN -n 4 python -mpytest -v tests/pytests/test_reporter.py
-# else
-#     python -mpytest $@
-# fi
+python -mpytest tests/pytests/test_cli.py
 
-# popd >/dev/null
-# exit $num_errors
+echo "start of the standard stuff"
+
+if [ $# -eq 0 ] ;then
+    python -mpytest tests/pytests
+    $MPIRUN -n 4 python -mpytest -v tests/pytests/test_reporter.py
+else
+    python -mpytest $@
+fi
+
+popd >/dev/null
+exit $num_errors
