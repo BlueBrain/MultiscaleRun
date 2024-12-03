@@ -42,7 +42,8 @@ class MsrStepsManager:
     def init_sim(self):
         """Initialize the STEPS simulation.
 
-        This method initializes the STEPS model and solver, sets the initial concentrations, and prepares for simulations.
+        This method initializes the STEPS model and solver,
+        sets the initial concentrations, and prepares for simulations.
         """
         self._init_model()
         self._init_solver()
@@ -340,6 +341,10 @@ class MsrStepsManager:
                 [idx, tet_global_idx[0][0]]
                 for idx, tet_global_idx in enumerate(l)
                 if len(tet_global_idx)
+                and steps.geom.TetReference(
+                    tet_global_idx[0][0], mesh=self.msh, local=False
+                ).toLocal()
+                is not None
                 and steps.geom.TetReference(
                     tet_global_idx[0][0], mesh=self.msh, local=False
                 )

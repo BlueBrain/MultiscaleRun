@@ -7,6 +7,19 @@ set_test_environment
 
 pushd "${SCRIPT_DIR}/.." >/dev/null
 
+download_tiny_CI_neurodamus_data
+
+
+MULTISCALE_RUN_PATH=""
+# Loop through the directories in PYTHONPATH and find the one containing the commit hash
+for path in $(echo $PYTHONPATH | tr ':' '\n'); do
+    if [[ "$path" == *"$PY_MULTISCALE_RUN_COMMIT"* ]]; then
+        MULTISCALE_RUN_PATH=$path
+        break
+    fi
+done
+ln -s "$(pwd)/tiny_CI_neurodamus" "$MULTISCALE_RUN_PATH/multiscale_run/templates/tiny_CI"
+
 num_errors=0
 count_errors() {
     ((num_errors++))

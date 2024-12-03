@@ -15,11 +15,12 @@
             "mesh": {
                 "explode_factor": 1.001,
                 "base_length": 30.0,
-                "refinement_steps": 0
+                "refinement_steps": 1
             },
             "node_sets": {
                 "filter_neuron": false,
-                "neuron_population_name": "All"
+                "neuron_population_name": "All",
+                "astrocyte_population_name": "astrocytes"
             }
         },
         "connections": {
@@ -27,8 +28,8 @@
                 {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
-                    "src_get_kwargs": {"var": "ina","weight": "area"},
                     "dest_simulator": "metabolism",
+                    "src_get_kwargs": {"var": "ina","weight": "area"},
                     "dest_set_func": "set_parameters_idxs",
                     "dest_set_kwargs": {"idxs": [0]},
                     "action": "set"
@@ -36,8 +37,8 @@
                 {
                     "src_simulator": "neurodamus",
                     "src_get_func": "get_var",
-                    "src_get_kwargs": {"var": "ik","weight": "area"},
                     "dest_simulator": "metabolism",
+                    "src_get_kwargs": {"var": "ik","weight": "area"},
                     "dest_set_func": "set_parameters_idxs",
                     "dest_set_kwargs": {"idxs": [1]},
                     "action": "set"
@@ -142,33 +143,31 @@
         },
         "metabolism": {
             "ndts": 4000,
-            "u0_path": "${pkg_data_path}/metabolismndam_reduced/u0steady_22nov22.csv",
-            "julia_code_path": "${pkg_data_path}/metabolismndam_reduced/metabolismWithSBBFinput_ndamAdapted_opt_sys_young_202302210826_2stim.jl",
+            "u0_path": "${pkg_path}/data/metabolism/u0.csv",
+            "julia_code_path": "${pkg_path}/metabolism/ODE_system.jl",
             "model": {
-                "model_path": "/gpfs/bbp.cscs.ch/project/proj34/metabolismndam/sim/metabolism_unit_models/",
-                "pardir_path": "$model_path/optimiz_unit/enzymes/enzymes_preBigg/COMBO/parameters_GLYCOGEN_cleaned4bigg/",
                 "includes" : [
-                    "$model_path/FINAL_CLEAN/data_model_full/u0_db_refined_selected_oct2021.jl",
-                    "$pardir_path/general_parameters.jl",
-                    "$pardir_path/ephys_parameters.jl",
-                    "$pardir_path/bf_input.jl",
-                    "$pardir_path/generalisations.jl",
-                    "$pardir_path/GLC_transport.jl",
-                    "$pardir_path/GLYCOLYSIS.jl",
-                    "$pardir_path/glycogen.jl",
-                    "$pardir_path/creatine.jl",
-                    "$pardir_path/ATDMP.jl",
-                    "$pardir_path/pyrTrCytoMito.jl",
-                    "$pardir_path/lactate.jl",
-                    "$pardir_path/TCA.jl",
-                    "$pardir_path/ETC.jl",
-                    "$pardir_path/PPP_n.jl",
-                    "$pardir_path/PPP_a.jl",
-                    "$pardir_path/gshgssg.jl",
-                    "$pardir_path/MAS.jl",
-                    "$pardir_path/gltgln.jl",
-                    "$pardir_path/pyrCarb.jl",
-                    "$pardir_path/ketones.jl"
+                    "${pkg_path}/data/metabolism/u0_db_refined_selected_oct2021.jl",
+                    "${pkg_path}/data/metabolism/general_parameters.jl",
+                    "${pkg_path}/data/metabolism/ephys_parameters.jl",
+                    "${pkg_path}/data/metabolism/bf_input.jl",
+                    "${pkg_path}/data/metabolism/generalisations.jl",
+                    "${pkg_path}/data/metabolism/GLC_transport.jl",
+                    "${pkg_path}/data/metabolism/GLYCOLYSIS.jl",
+                    "${pkg_path}/data/metabolism/glycogen.jl",
+                    "${pkg_path}/data/metabolism/creatine.jl",
+                    "${pkg_path}/data/metabolism/ATDMP.jl",
+                    "${pkg_path}/data/metabolism/pyrTrCytoMito.jl",
+                    "${pkg_path}/data/metabolism/lactate.jl",
+                    "${pkg_path}/data/metabolism/TCA.jl",
+                    "${pkg_path}/data/metabolism/ETC.jl",
+                    "${pkg_path}/data/metabolism/PPP_n.jl",
+                    "${pkg_path}/data/metabolism/PPP_a.jl",
+                    "${pkg_path}/data/metabolism/gshgssg.jl",
+                    "${pkg_path}/data/metabolism/MAS.jl",
+                    "${pkg_path}/data/metabolism/gltgln.jl",
+                    "${pkg_path}/data/metabolism/pyrCarb.jl",
+                    "${pkg_path}/data/metabolism/ketones.jl"
                 ],
                 "constants": {
                     "xNEmod": 0.025,
@@ -247,7 +246,7 @@
             }
         },
         "steps": {
-            "ndts": 100,
+            "ndts": 1000,
             "conc_factor": 1e-9,
             "compname": "extra",
             "Volsys": {
@@ -320,14 +319,14 @@
                 },
                 "metab_adpi_before_sync": {
                     "src_get_func": "get_vm_idx",
-                    "src_get_kwargs": {"idx": 22},
+                    "src_get_kwargs": {"idx": 23},
                     "unit": "mM",
                     "file_name": "metab_adpi_before_sync.h5",
                     "when": "before_sync"
                 },
                 "metab_adpi_after_sync": {
                     "src_get_func": "get_vm_idx",
-                    "src_get_kwargs": {"idx": 22},
+                    "src_get_kwargs": {"idx": 23},
                     "unit": "mM",
                     "file_name": "metab_adpi_after_sync.h5",
                     "when": "after_sync"
@@ -365,8 +364,7 @@
     "node_sets_file": "node_sets.json",
     "node_set": "testNGVSSCX_AstroMini",
     "output": {
-        "output_dir": "./RESULTS",
-        "spikes_file": "ndam_spikes.h5"
+        "output_dir": "./RESULTS"
     },
     "conditions": {
         "v_init": -65
@@ -406,7 +404,7 @@
         },
         "ndam_ina_sum": {
             "cells": "testNGVSSCX",
-            "type": "compartment",
+            "type": "summation",
             "variable_name": "ina",
             "unit": "nA",
             "dt": 1.0,

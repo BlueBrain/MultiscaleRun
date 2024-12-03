@@ -29,18 +29,14 @@ from .config import (
     DEFAULT_CIRCUIT,
     NAMED_CIRCUITS,
 )
-from .data import (
+from .simulation import MsrSimulation
+from .templates import (
     BB5_JULIA_ENV,
     MSR_CONFIG_JSON,
     MSR_POSTPROC,
     SBATCH_TEMPLATE,
 )
-from .simulation import MsrSimulation
-from .utils import (
-    MsrException,
-    merge_dicts,
-    pushd,
-)
+from .utils import MsrException, copy_symlinks, merge_dicts, pushd
 
 
 def _cli_logger():
@@ -129,8 +125,11 @@ def julia(args=None, **kwargs):
 
 
 @command
-def init(directory, circuit, julia="shared", check=True, force=False):
+def init(
+    directory, circuit, julia="shared", check=True, force=False, metabolism="standard"
+):
     """Setup a new simulation"""
+
     if not force:
         dir_content = set(Path(".").iterdir())
         dir_content.discard(Path(".logs"))
@@ -140,6 +139,7 @@ def init(directory, circuit, julia="shared", check=True, force=False):
                 "Use option '-f' to overwrite the content of the directory."
             )
     assert julia in ["shared", "create", "no"]
+    assert metabolism in ["standard", "young", "aged"]
 
     circuit_def = NAMED_CIRCUITS[circuit]
 
@@ -150,12 +150,10 @@ def init(directory, circuit, julia="shared", check=True, force=False):
     sbatch_parameters["loaded_modules"] = loaded_modules
     SBATCH_TEMPLATE.stream(sbatch_parameters).dump("simulation.sbatch")
     shutil.copy(MSR_POSTPROC, MSR_POSTPROC.name)
-    shutil.copytree(
-        str(circuit_def.path),
-        ".",
-        ignore=shutil.ignore_patterns("cache", "msr*"),
-        dirs_exist_ok=True,
-    )
+    shutil.copy(circuit_def.path / "simulation_config.json", ".")
+    shutil.copy(circuit_def.path / "circuit_config.json", ".")
+    shutil.copy(circuit_def.path / "node_sets.json", ".")
+    copy_symlinks(circuit_def.path, ".")
 
     rd = {"msr_version": str(__version__)}
     if julia == "no":
@@ -203,6 +201,14 @@ def init(directory, circuit, julia="shared", check=True, force=False):
             check_julia_env()
 
     circuit_config = circuit_def.json()
+    if metabolism != "standard":
+        p_split = circuit_config["multiscale_run"]["metabolism"][
+            "julia_code_path"
+        ].rsplit(".", 1)
+        rd.setdefault("metabolism", {})["julia_code_path"] = (
+            f"{p_split[0]}_{metabolism}.{p_split[1]}"
+        )
+
     circuit_config = merge_dicts(child={"multiscale_run": rd}, parent=circuit_config)
     with open(MSR_CONFIG_JSON, "w") as ostr:
         json.dump(circuit_config, ostr, indent=4)
@@ -216,6 +222,20 @@ def init(directory, circuit, julia="shared", check=True, force=False):
         "generated sbatch file. But feel free to browse and tweak "
         "the JSON configuration files at will!"
     )
+
+    LOGGER.warning(
+        f'Set up with circuit: "{circuit}" and metabolism type: "{metabolism}"'
+    )
+    folder_path = os.path.abspath(directory)
+    if os.path.exists(folder_path) and os.path.isdir(folder_path):
+        LOGGER.warning(f"Folder: {os.path.abspath(directory)}")
+        content = os.listdir(folder_path)
+        LOGGER.warning(
+            f"Contents of the folder {folder_path}:\n"
+            + "\n".join(f"- {item}" for item in content)
+        )
+    else:
+        LOGGER.warning(f"Directory: {directory}")
     return directory
 
 
@@ -591,6 +611,12 @@ def argument_parser():
         "'shared' (the default) to reuse an existing env on BB5, "
         "'create' to construct a new env locally, "
         "'no' to skip Julia environment (typically if metabolism model is not required)",
+    )
+    parser_init.add_argument(
+        "--metabolism",
+        choices=["standard", "young", "aged"],
+        default="standard",
+        help="Choose Metabolism type. ",
     )
     parser_init.add_argument(
         "--no-check",

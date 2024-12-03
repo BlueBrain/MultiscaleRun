@@ -88,7 +88,7 @@ def test_connection():
     It also checks various conditions using the 'check_ratio_mat' and 'check_mats_shape' functions.
 
     """
-    conf = MsrConfig.default(circuit="rat_sscxS1HL_V6", check=False, force=True)
+    conf = MsrConfig.default(circuit="tiny_CI", check=False, force=True)
 
     prep = MsrPreprocessor(conf)
     managers = {}
@@ -122,7 +122,9 @@ def test_connection():
 
     utils.rank_print("gid: ", [int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
     failed_cells_dict = {933: "remove from rank 0", 1004: "remove from rank 1"}
-    failed_cells = [failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids]
+    failed_cells = [
+        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids()
+    ]
     conn_m.remove_gids(failed_cells=failed_cells)
 
     utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
@@ -153,7 +155,9 @@ def test_connection():
     utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
 
     failed_cells_dict = {17500: "reason 0"}
-    failed_cells = [failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids]
+    failed_cells = [
+        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids()
+    ]
     conn_m.remove_gids(failed_cells=failed_cells)
     check_mats_shape(
         managers["neurodamus"],
@@ -166,7 +170,9 @@ def test_connection():
     utils.rank_print([int(nc.CCell.gid) for nc in managers["neurodamus"].ncs])
 
     failed_cells_dict = {175: "reason 0"}
-    failed_cells = [failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids]
+    failed_cells = [
+        failed_cells_dict.get(i, None) for i in managers["neurodamus"].gids()
+    ]
 
     check_mats_shape(
         managers["neurodamus"],

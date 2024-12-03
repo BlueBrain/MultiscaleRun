@@ -137,7 +137,9 @@ class MsrSimulation:
                     neuron_pop_name=self.managers[
                         "neurodamus"
                     ].neuron_manager.population_name,
-                    gids=self.neurodamus_manager.gids,
+                    raw_gids=self.neurodamus_manager.gids(
+                        raw=True
+                    ),  # libsonata wants gids without offset
                 )
 
             # sync bloodflow to give initial values to metabolism
@@ -147,7 +149,7 @@ class MsrSimulation:
 
             self.rep = reporter.MsrReporter(
                 config=self.conf,
-                gids=self.neurodamus_manager.gids,
+                gids=self.neurodamus_manager.gids(),
                 n_bf_segs=self.managers["bloodflow"].n_segs
                 if self.conf.is_bloodflow_active()
                 else 0,

@@ -43,10 +43,11 @@ class MsrNeurodamusManager:
         }
         self.removed_gids = {}
 
-    @property
-    def gids(self):
+    def gids(self, raw=False):
         """Convenience function to get the gids from ncs"""
-        return [int(nc.CCell.gid) for nc in self.ncs]
+        if raw:
+            return [nc.raw_gid for nc in self.ncs]
+        return [nc.gid for nc in self.ncs]
 
     def set_managers(self):
         """Find useful node managers for neurons, astrocytes, and glio-vascular management.
@@ -442,9 +443,15 @@ class MsrNeurodamusManager:
         simulation_config = libsonata.SimulationConfig.from_file(
             "simulation_config.json"
         )
+
         circuit_config = libsonata.CircuitConfig.from_file(simulation_config.network)
-        node_sets = libsonata.NodeSets.from_file(circuit_config.node_sets_path)
-        node_sets.update(libsonata.NodeSets.from_file(simulation_config.node_sets_file))
+        if circuit_config.node_sets_path:
+            node_sets = libsonata.NodeSets.from_file(circuit_config.node_sets_path)
+            node_sets.update(
+                libsonata.NodeSets.from_file(simulation_config.node_sets_file)
+            )
+        else:
+            node_sets = libsonata.NodeSets.from_file(simulation_config.node_sets_file)
 
         def print_attribute(attribute, pop, selection):
             """Print attribute if present"""

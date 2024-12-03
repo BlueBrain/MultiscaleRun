@@ -12,8 +12,8 @@ postproc=${postproc:true}
 steps=${steps:-false}
 metabolism=${metabolism:-false}
 bloodflow=${bloodflow:-false}
-tstop=${tstop:-300}
-circuit=${circuit:-rat_sscxS1HL_V10_CI}
+tstop=${tstop:-290}
+circuit=${circuit:-tiny_CI}
 
 if [ -z ${sim_name:x} ]; then
   fatal_error "expected environment variable 'SIM_NAME'."
@@ -23,6 +23,8 @@ rm -rf "$sim_name"
 multiscale-run init --no-check -f "$sim_name" --circuit $circuit
 
 pushd "$sim_name"
+wget https://github.com/BlueBrain/MultiscaleRun/releases/download/0.8.2/tiny_CI_neurodamus_release-v0.8.2.tar.gz
+tar -xzvf tiny_CI_neurodamus_release-v0.8.2.tar.gz
 /gpfs/bbp.cscs.ch/project/proj12/jenkins/subcellular/bin/jq ".multiscale_run.with_steps = $steps | .multiscale_run.with_bloodflow = $bloodflow | .multiscale_run.with_metabolism = $metabolism | .run.tstop = $tstop " simulation_config.json > simulation_config.json.bak
 mv simulation_config.json.bak simulation_config.json
 cat simulation_config.json
