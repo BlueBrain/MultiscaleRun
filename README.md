@@ -1,3 +1,7 @@
+> [!WARNING]
+> The Blue Brain Project concluded in December 2024, so development has ceased under the BlueBrain GitHub organization.
+> Future development will take place at: https://github.com/openbraininstitute/MultiscaleRun
+
 # MultiscaleRun [![PyPI version](https://badge.fury.io/py/multiscale-run.svg)](https://badge.fury.io/py/multiscale-run) [![Documentation Status](https://readthedocs.org/projects/multiscalerun/badge/?version=stable)](https://multiscalerun.readthedocs.io/stable/?badge=stable)
 
 MultiscaleRun is a Python package to run brain cells simulation at different scales.
